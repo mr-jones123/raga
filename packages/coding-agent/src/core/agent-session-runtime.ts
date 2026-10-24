@@ -174,6 +174,8 @@ export class AgentSessionRuntime {
 			targetSessionFile,
 		});
 		this.beforeSessionInvalidate?.();
+		// A resumed or forked session restores the RLM kernel from this snapshot.
+		await this.session.flushRlmSnapshot();
 		this.session.dispose();
 	}
 
@@ -207,6 +209,9 @@ export class AgentSessionRuntime {
 		}
 
 		const previousSessionFile = this.session.sessionFile;
+		// Resuming the current file reads it now, so the RLM snapshot entry must be written first.
+		await this.session.abort();
+		await this.session.flushRlmSnapshot();
 		const sessionManager = SessionManager.open(sessionPath, undefined, options?.cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);
 		await this.teardownCurrent("resume", sessionManager.getSessionFile());
@@ -287,6 +292,9 @@ export class AgentSessionRuntime {
 		}
 
 		const previousSessionFile = this.session.sessionFile;
+		// The fork copies the branch now, so the RLM snapshot entry must be on it before the copy.
+		await this.session.abort();
+		await this.session.flushRlmSnapshot();
 		if (this.session.sessionManager.isPersisted()) {
 			const currentSessionFile = this.session.sessionFile;
 			if (!currentSessionFile) {
@@ -407,6 +415,7 @@ export class AgentSessionRuntime {
 			reason: "quit",
 		});
 		this.beforeSessionInvalidate?.();
+		await this.session.flushRlmSnapshot();
 		this.session.dispose();
 	}
 }

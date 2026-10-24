@@ -113,6 +113,10 @@ export interface CreateAgentSessionOptions {
 	rlm?: boolean;
 	/** RLM mode: input names mapped to file paths, read lazily through `context.inputs`. */
 	rlmInputs?: Record<string, string>;
+	/** RLM mode: `context.data`, any JSON value. `rlm_query` passes its `context` argument to the child. */
+	rlmData?: unknown;
+	/** RLM depth: 0 for a root session (default), the parent's depth + 1 for an `rlm_query` child. */
+	rlmDepth?: number;
 }
 
 /** Result from createAgentSession */
@@ -478,7 +482,8 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		excludedToolNames,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
-		rlm: rlm ? { inputs: options.rlmInputs ?? {} } : undefined,
+		rlm: rlm ? { inputs: options.rlmInputs ?? {}, data: options.rlmData } : undefined,
+		rlmDepth: options.rlmDepth,
 	});
 
 	const extensionsResult = resourceLoader.getExtensions();

@@ -43,10 +43,13 @@ The kernel speaks protocol version `1`. The format is newline-delimited JSON ove
 | `snapshot` | `{"type":"snapshot","id":str,"path":str,"max_bytes"?:int,"max_variable_bytes"?:int}` | `done` with `saved`, `skipped`, `bytes` |
 | `restore` | `{"type":"restore","id":str,"path":str}` | `done` with `restored`, `failed` |
 | `list_names` | `{"type":"list_names","id":str}` | `done` with `names` |
-| `set_context` | `{"type":"set_context","id":str,"task":str,"inputs":{name:path}}` | `done`. Fails with `status: "error"` when `inputs` does not map strings to strings. |
+| `set_context` | `{"type":"set_context","id":str,"task":str,"inputs":{name:path},"data"?:any}` | `done`. Fails with `status: "error"` when `inputs` does not map strings to strings. |
+| `get_answer` | `{"type":"get_answer","id":str}` | `done` with `answer: {"content":str,"ready":bool}` |
 | `shutdown` | `{"type":"shutdown","id"?:str}` | `done` when an id is present, then exit 0 |
 
-The kernel runs `execute`, `snapshot`, `restore`, `list_names`, `set_context`, and `shutdown` in order, one at a time. It handles `interrupt` and `host_reply` on the reader thread as they arrive, so they reach a cell that is still running. A malformed line produces an `error` event with `id: null` and `ename: "ProtocolError"`. Closing stdin has the same effect as `shutdown`. If a synchronous cell blocks the shutdown, the kernel exits with code 0 after 10 seconds.
+The kernel runs `execute`, `snapshot`, `restore`, `list_names`, `set_context`, `get_answer`, and `shutdown` in order, one at a time. It handles `interrupt` and `host_reply` on the reader thread as they arrive, so they reach a cell that is still running. A malformed line produces an `error` event with `id: null` and `ename: "ProtocolError"`. Closing stdin has the same effect as `shutdown`. If a synchronous cell blocks the shutdown, the kernel exits with code 0 after 10 seconds.
+
+`get_answer` reads the name `answer` from the namespace, so it also sees an `answer` that a cell rebound. A string `content` is sent as is; other values are sent as JSON, or as `str()` when they are not JSON-serializable. `ready` is the truth value of `answer["ready"]`. When `answer` is not a dict, the reply is `{"content":"","ready":false}`.
 
 ### Events
 
@@ -67,7 +70,7 @@ The kernel compiles each cell with `PyCF_ALLOW_TOP_LEVEL_AWAIT` and runs it as a
 
 ### Interrupt
 
-An interrupt raises `KeyboardInterrupt` in the running cell. If the cell is in synchronous code, the kernel raises it directly. If the cell is waiting at an `await`, the kernel cancels the cell task and reports a `KeyboardInterrupt`. An interrupt that arrives before its cell starts waits for the cell. Both paths end with an `error` event and `done` with `status: "error"`, and the kernel keeps serving. `snapshot`, `restore`, `list_names`, and `set_context` cannot be interrupted, and the kernel drops an interrupt aimed at one of them. The host sends `interrupt` only with the id of the running cell. The kernel ignores a `host_reply` whose id it no longer tracks, such as the reply to a request from an interrupted cell.
+An interrupt raises `KeyboardInterrupt` in the running cell. If the cell is in synchronous code, the kernel raises it directly. If the cell is waiting at an `await`, the kernel cancels the cell task and reports a `KeyboardInterrupt`. An interrupt that arrives before its cell starts waits for the cell. Both paths end with an `error` event and `done` with `status: "error"`, and the kernel keeps serving. `snapshot`, `restore`, `list_names`, `set_context`, and `get_answer` cannot be interrupted, and the kernel drops an interrupt aimed at one of them. The host sends `interrupt` only with the id of the running cell. The kernel ignores a `host_reply` whose id it no longer tracks, such as the reply to a request from an interrupted cell.
 
 ### Snapshot and restore
 
@@ -93,6 +96,18 @@ Usage from `llm.*` and `rlm.query` during a cell adds up on the `python` tool re
 
 `context.history` reads the session branch, including messages that a compaction removed from the model's context. It leaves out system messages. `total` counts the messages before `offset` and `limit` apply. Assistant tool calls appear as `[tool call <name>] <arguments JSON>` lines.
 
+### Child sessions (`rlm.query`)
+
+`src/core/rlm/children.ts` answers `rlm.query`. It runs `task` in a child `AgentSession` in the same process and returns the child's answer.
+
+1. Depth. A root session has depth 0, and a child has its parent's depth + 1 (`AgentSessionConfig.rlmDepth`). When the child's depth would exceed `rlm.maxDepth`, the request fails with `RLM recursion depth limit reached (depth D, max M)`, where D is the child's depth, and no session is created. The `rlm` prompt section of a child starts with "You are a sub-agent at depth D. Put your final answer in answer['content'] and set answer['ready'] = True." A session at the maximum depth is not told about `rlm_query`.
+2. Session. The child comes from `createAgentSession` with RLM mode on and shares the parent's `ModelRuntime`, `SettingsManager`, and resource loader. Its model is the payload's `model`, then `rlm.subModel`, then the parent's model; its thinking level is the parent's. When the parent is persisted, the child is `SessionManager.create(cwd, parentSessionDir, { parentSession: parentSessionFile })`, so its header names the parent's file. Otherwise it is in memory.
+3. Context. The child's first user message is `task`, so its `context.task` is `task`. Its `context.data` is the payload's `context`.
+4. Answer. After the child's `prompt()` settles, the host sends `get_answer` to the child's kernel. When `answer["ready"]` is true, the result is `answer["content"]` with `ready: true`. Otherwise it is the child's last assistant text with `ready: false`. A child whose last response ended with `stopReason: "error"` and no ready answer fails the request with that error. `session_file` is the child's session file, or `null` for an in-memory child.
+5. Budget and abort. The child is aborted after `max_turns` `turn_end` events (default 30). The abort signal of the parent's cell aborts the child, so aborting the parent session interrupts the child's running cell. The child is disposed after it answers.
+6. Usage. The usage of the child's assistant messages and tool results is combined with `combineUsage` and added to the parent cell's usage, so it lands on the parent's `python` tool result and in the parent's session stats.
+7. Concurrency. The kernel serves host requests concurrently, so `await asyncio.gather(rlm_query(a), rlm_query(b))` runs both children at once. A session runs at most 4 children at a time; more wait in a queue.
+
 ## Python API
 
 The bootstrap binds these names in the kernel namespace. Every function is a coroutine, so the model calls it with `await`.
@@ -105,8 +120,8 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 | `write` | `await write(path, content) -> str` | Runs pi's `write` tool. |
 | `llm_query` | `await llm_query(prompt, system=None, model=None) -> str` | One sub-LLM call with no tools. |
 | `llm_batch` | `await llm_batch(prompts, system=None, model=None) -> list[str]` | Parallel sub-LLM calls. The host limits concurrency to 8. |
-| `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None) -> str` | Runs a child RLM session and returns its answer. |
-| `context` | object | `context.task` is the first user prompt. `context.inputs` maps input names to file contents; each file is read the first time its key is read, then cached, and `context.inputs.path(name)` returns the path. `await context.history(offset=0, limit=None)` returns the session's messages as `{"role","text"}` dicts. |
+| `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None) -> str` | Runs a child RLM session on `task` and returns its answer (see "Child sessions"). `context` is any JSON value and becomes the child's `context.data`. Run several children at once with `await asyncio.gather(rlm_query(a), rlm_query(b))`. |
+| `context` | object | `context.task` is the first user prompt. `context.inputs` maps input names to file contents; each file is read the first time its key is read, then cached, and `context.inputs.path(name)` returns the path. `context.data` is the `context` argument of the parent's `rlm_query`, or `None`. `await context.history(offset=0, limit=None)` returns the session's messages as `{"role","text"}` dicts. |
 | `answer` | `{"content": "", "ready": False}` | A child session returns `answer["content"]` when `answer["ready"]` is true. |
 | `cells` | `list[dict]` | One entry per finished cell: `{"id","code","stdout","stderr","result","error"}`, with full output. `error` is the formatted traceback string, or `None`. |
 
@@ -114,9 +129,19 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 
 The tool's parameters are `{"code": str}`. It runs as `executionMode: "sequential"`. Its result text is the cell's stdout, stderr, result `repr`, traceback, and background output, in that order. Each non-empty part starts with a label line (`[stdout]`, `[stderr]`, `[result]`, `[error]`, `[background]`), and empty parts are left out. A cell with no output returns `(no output)`. When the text exceeds the `rlm.outputLimit` setting (default 16,000 characters), the tool keeps the first three quarters and the last quarter of the limit and puts `[... N characters cut; full output in cells[-1] ...]` between them. `isError` is true when the cell ends with `status: "error"`.
 
-Before the first cell on each kernel process, the host sends `set_context` with `context.task` and the input paths. `context.task` is the text of the first user message on the session branch.
+Before the first cell on each kernel process, the host sends `set_context` with `context.task`, the input paths, and `context.data`. `context.task` is the text of the first user message on the session branch.
 
 The session starts the kernel when it is created. If the start fails, the first `python` call returns the reason as an error result, and the next call tries again. When the session is aborted, the tool sends `interrupt`, waits 1 second, then kills and restarts the kernel. The first result from a new kernel process starts with `[kernel restarted: the namespace is empty]`.
+
+## Persistence
+
+The kernel namespace survives a resume and a fork through a `dill` snapshot.
+
+1. File. A persisted session snapshots to `<sessionDir>/<sessionId>.rlm/kernel.dill`, and an in-memory session to `<os.tmpdir()>/raga-rlm/<sessionId>/kernel.dill`.
+2. Schedule. One second after a cell that ends `ok`, the host sends `snapshot`. A new cell restarts the wait, so a run of quick cells snapshots once. `AgentSession.flushRlmSnapshot()` writes a scheduled snapshot at once and waits for it. `AgentSessionRuntime` calls it before it disposes a session (new, resume, fork, import, quit), and before a fork or resume reads the session file. `AgentSession.dispose()` alone drops a scheduled snapshot, so a child session never writes one after it answers.
+3. Entry. The first successful snapshot of a session file appends a custom entry `rlm-kernel-snapshot` with `{path}`.
+4. Restore. Before the first cell, the host finds the newest `rlm-kernel-snapshot` entry on the current branch and, when its file exists, sends `restore`. The first `python` result then starts with `[kernel restored N variables: a, b, c]`, listing at most 20 names, followed by `; K failed: ...` when some names fail to load. A resumed session finds its own entry. A forked session finds its parent's entry, because a fork copies the branch, and restores the parent's file; its own snapshots go to its own path with its own entry, so it never writes the parent's file.
+5. Failures. A failed snapshot (no `dill`, a write error) or names that the snapshot leaves out (unpicklable values, values over the size caps) never fail a cell. Each distinct problem appears once, as a line at the start of the next `python` result.
 
 ## Settings and flags
 

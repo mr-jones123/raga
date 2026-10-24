@@ -149,7 +149,7 @@ describe("Kernel", () => {
 		const controller = new AbortController();
 		let abortedAt = 0;
 		const out = await kernel.execute(
-			'print("looping")\nwhile True:\n    try:\n        while True:\n            pass\n    except KeyboardInterrupt:\n        pass',
+			'import signal\nsignal.signal(signal.SIGINT, signal.SIG_IGN)\nprint("looping")\nwhile True:\n    pass',
 			{
 				signal: controller.signal,
 				onOutput: () => {
@@ -210,6 +210,15 @@ describe("Kernel", () => {
 		await expect(kernel.setContext("t", { doc: 1 } as unknown as Record<string, string>)).rejects.toThrow(
 			"inputs must map names to file paths",
 		);
+	});
+
+	test("setContext passes context.data and getAnswer reads the answer dict", async () => {
+		const kernel = createKernel();
+		await kernel.setContext("t", {}, { rows: [1, 2] });
+		expect((await kernel.execute("context.data")).result).toBe("{'rows': [1, 2]}");
+		expect(await kernel.getAnswer()).toEqual({ content: "", ready: false });
+		await kernel.execute('answer["content"] = sum(context.data["rows"])\nanswer["ready"] = True');
+		expect(await kernel.getAnswer()).toEqual({ content: "3", ready: true });
 	});
 
 	test("dispose kills the kernel process", async () => {

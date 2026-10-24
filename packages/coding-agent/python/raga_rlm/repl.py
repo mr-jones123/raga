@@ -651,6 +651,20 @@ def _restore(ns: dict[str, Any], path: str) -> dict[str, Any]:
     return {"status": "ok", "restored": sorted(restored), "failed": sorted(failed)}
 
 
+def _answer(ns: dict[str, Any]) -> dict[str, Any]:
+    """`answer` from the namespace as {content: str, ready: bool}; the model may rebind it."""
+    value = ns.get("answer")
+    if not isinstance(value, dict):
+        return {"content": "", "ready": False}
+    content = value.get("content", "")
+    if not isinstance(content, str):
+        try:
+            content = json.dumps(content, allow_nan=False)
+        except (TypeError, ValueError):
+            content = _safe_str(content)
+    return {"content": _cap_text(content), "ready": bool(value.get("ready"))}
+
+
 def _int_field(req: dict[str, Any], field: str, default: int) -> int:
     value = req.get(field, default)
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
@@ -686,8 +700,10 @@ async def _serve(queue: asyncio.Queue[dict[str, Any]], ns: dict[str, Any]) -> No
             elif rtype == "restore":
                 reply = _restore(ns, req["path"])
             elif rtype == "set_context":
-                raga_rlm.set_context(req["task"], req.get("inputs", {}))
+                raga_rlm.set_context(req["task"], req.get("inputs", {}), req.get("data"))
                 reply = {"status": "ok"}
+            elif rtype == "get_answer":
+                reply = {"status": "ok", "answer": _answer(ns)}
             else:
                 reply = {"status": "ok", "names": _user_names(ns)}
             _send({"event": "done", "id": rid, **reply})
@@ -700,6 +716,7 @@ _REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "snapshot": ("id", "path"),
     "restore": ("id", "path"),
     "list_names": ("id",),
+    "get_answer": ("id",),
     "set_context": ("id", "task"),
     "shutdown": (),
 }

@@ -305,6 +305,8 @@ export interface AgentSessionConfig {
 	 * `RLM_ACTIVE_TOOL_NAMES`. See docs/RLM.md.
 	 */
 	rlm?: RlmSessionOptions;
+	/** RLM depth: 0 for a root session, the parent's depth + 1 for an `rlm_query` child. Default: 0. */
+	rlmDepth?: number;
 }
 
 export interface ExtensionBindings {
@@ -483,6 +485,7 @@ export class AgentSession {
 	/** RLM mode: the kernel and the `python` tool. */
 	private _rlm: RlmRuntime | undefined;
 	private _rlmToolCallCount = 0;
+	private _rlmDepth = 0;
 	/** Declared tools whose declarations requests leave out, from `prepareLoadout` hooks. */
 	private _hiddenDeclarations: ReadonlySet<string> = new Set();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -519,14 +522,23 @@ export class AgentSession {
 		this._baseToolsOverride = config.baseToolsOverride;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
 		if (config.rlm) {
+			this._rlmDepth = config.rlmDepth ?? 0;
 			this._rlm = new RlmRuntime({
 				cwd: this._cwd,
 				inputs: config.rlm.inputs ?? {},
+				data: config.rlm.data,
+				depth: this._rlmDepth,
 				settingsManager: this.settingsManager,
 				modelRuntime: this._modelRuntime,
+				resourceLoader: this._resourceLoader,
+				sessionManager: this.sessionManager,
 				getSessionModel: () => this.model,
+				getThinkingLevel: () => this.thinkingLevel,
 				getRequestHooks: () => ({ onPayload: this.agent.onPayload, onResponse: this.agent.onResponse }),
-				getBranch: () => this.sessionManager.getBranch(),
+				appendCustomEntry: (customType, data) => {
+					const entry = this.sessionManager.getEntry(this.sessionManager.appendCustomEntry(customType, data));
+					if (entry) this._emit({ type: "entry_appended", entry });
+				},
 				runTool: (parentToolCallId, name, args, signal) =>
 					this._runRlmToolCall(parentToolCallId, name, args, signal),
 			});
@@ -1465,6 +1477,19 @@ export class AgentSession {
 	}
 
 	/**
+	 * RLM mode: write a scheduled kernel snapshot now and wait for it, so a later session that resumes
+	 * or forks this one restores the namespace. `dispose()` alone drops a scheduled snapshot.
+	 */
+	async flushRlmSnapshot(): Promise<void> {
+		await this._rlm?.flushSnapshot();
+	}
+
+	/** RLM mode: the kernel's `answer` dict. Without RLM mode or a live kernel, it is empty and not ready. */
+	async getRlmAnswer(): Promise<{ content: string; ready: boolean }> {
+		return (await this._rlm?.getAnswer()) ?? { content: "", ready: false };
+	}
+
+	/**
 	 * Remove all listeners and disconnect from agent.
 	 * Call this when completely done with the session.
 	 */
@@ -1803,7 +1828,11 @@ export class AgentSession {
 			toolSnippets,
 			toolGuidelines: Object.fromEntries(this._toolPromptGuidelines),
 			...(this._rlm
-				? { sections: { rlm: buildRlmPromptSection(this.settingsManager.getRlmSettings().outputLimit) } }
+				? {
+						sections: {
+							rlm: buildRlmPromptSection({ ...this.settingsManager.getRlmSettings(), depth: this._rlmDepth }),
+						},
+					}
 				: {}),
 		});
 	}

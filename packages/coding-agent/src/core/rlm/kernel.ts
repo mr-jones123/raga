@@ -269,10 +269,22 @@ export class Kernel {
 		return done.names ?? [];
 	}
 
-	/** Set `context.task` and the input paths behind `context.inputs`. Python reads each file on first access. */
-	async setContext(task: string, inputs: Record<string, string>): Promise<void> {
-		const done = await this.request((id) => ({ type: "set_context", id, task, inputs }));
+	/**
+	 * Set `context.task`, the input paths behind `context.inputs`, and `context.data` (any JSON value).
+	 * Python reads each input file on first access.
+	 */
+	async setContext(task: string, inputs: Record<string, string>, data?: unknown): Promise<void> {
+		const done = await this.request((id) => ({ type: "set_context", id, task, inputs, data }));
 		if (done.status === "error") throw new Error(`Kernel set_context failed: ${done.reason ?? "unknown error"}`);
+	}
+
+	/** The namespace's `answer` dict: `content` as a string and `ready` as a boolean. */
+	async getAnswer(): Promise<{ content: string; ready: boolean }> {
+		const done = await this.request((id) => ({ type: "get_answer", id }));
+		if (done.status === "error" || !done.answer) {
+			throw new Error(`Kernel get_answer failed: ${done.reason ?? "no answer in the reply"}`);
+		}
+		return done.answer;
 	}
 
 	/** Kill the process tree synchronously. Pending requests end with an error; later calls reject. */

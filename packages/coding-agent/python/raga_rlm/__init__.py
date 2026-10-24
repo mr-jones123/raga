@@ -143,11 +143,12 @@ class Inputs(Mapping[str, str]):
 
 
 class Context:
-    """`task` is the first user prompt, `inputs` holds large inputs."""
+    """`task` is the first user prompt, `inputs` holds large inputs, `data` is a JSON value from the parent."""
 
     def __init__(self) -> None:
         self.task: str = ""
         self.inputs: Inputs = Inputs()
+        self.data: Any = None
 
     async def history(self, offset: int = 0, limit: int | None = None) -> list[dict[str, Any]]:
         """Return the session's messages as {"role", "text"} dicts."""
@@ -155,7 +156,10 @@ class Context:
         return list(result["messages"])
 
     def __repr__(self) -> str:
-        return f"Context(task={self.task!r}, inputs=<{len(self.inputs)} keys: {sorted(self.inputs)!r}>)"
+        return (
+            f"Context(task={self.task!r}, inputs=<{len(self.inputs)} keys: {sorted(self.inputs)!r}>, "
+            f"data=<{type(self.data).__name__}>)"
+        )
 
 
 context = Context()
@@ -186,14 +190,15 @@ def bootstrap(namespace: dict[str, Any]) -> None:
         namespace[name] = globals()[name]
 
 
-def set_context(task: str, inputs: dict[str, str]) -> None:
-    """Fill `context.task` and `context.inputs`; `inputs` maps names to file paths."""
+def set_context(task: str, inputs: dict[str, str], data: Any = None) -> None:
+    """Fill `context.task`, `context.inputs`, and `context.data`; `inputs` maps names to file paths."""
     if not isinstance(task, str):
         raise TypeError("task must be a string")
     if not isinstance(inputs, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in inputs.items()):
         raise TypeError("inputs must map names to file paths")
     context.task = task
     context.inputs = Inputs(inputs)
+    context.data = data
 
 
 def record_cell(entry: dict[str, Any]) -> None:

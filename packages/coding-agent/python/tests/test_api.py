@@ -130,6 +130,27 @@ def test_set_context_rejects_bad_inputs(kernel: KernelProcess) -> None:
     assert "inputs must map names to file paths" in done["reason"]
 
 
+def test_set_context_data(kernel: KernelProcess) -> None:
+    done = kernel.request({"type": "set_context", "task": "t", "inputs": {}, "data": {"rows": [1, 2], "name": "x"}})
+    assert done["status"] == "ok"
+    _, events = kernel.execute("(context.task, context.data)")
+    assert only(events, "result")["text"] == repr(("t", {"rows": [1, 2], "name": "x"}))
+    kernel.request({"type": "set_context", "task": "t2", "inputs": {}})
+    _, events = kernel.execute("context.data")
+    assert [e for e in events if e["event"] == "result"] == []
+
+
+def test_get_answer(kernel: KernelProcess) -> None:
+    assert kernel.request({"type": "get_answer"})["answer"] == {"content": "", "ready": False}
+    kernel.execute("answer['content'] = 'forty-two'\nanswer['ready'] = True")
+    assert kernel.request({"type": "get_answer"})["answer"] == {"content": "forty-two", "ready": True}
+    # A rebound answer counts, and non-string content is sent as JSON.
+    kernel.execute("answer = {'content': {'n': 1}, 'ready': 1}")
+    assert kernel.request({"type": "get_answer"})["answer"] == {"content": '{"n": 1}', "ready": True}
+    kernel.execute("answer = None")
+    assert kernel.request({"type": "get_answer"})["answer"] == {"content": "", "ready": False}
+
+
 def test_host_error_from_api(kernel: KernelProcess) -> None:
     host = FakeHost({"llm.query": RuntimeError("no model configured")})
     rid, events = kernel.execute("await llm_query('q')", host)

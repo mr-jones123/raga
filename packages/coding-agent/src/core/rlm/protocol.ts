@@ -17,7 +17,8 @@ export type KernelRequest =
 	| { type: "snapshot"; id: string; path: string; max_bytes?: number; max_variable_bytes?: number }
 	| { type: "restore"; id: string; path: string }
 	| { type: "list_names"; id: string }
-	| { type: "set_context"; id: string; task: string; inputs: Record<string, string> }
+	| { type: "set_context"; id: string; task: string; inputs: Record<string, string>; data?: unknown }
+	| { type: "get_answer"; id: string }
 	| { type: "shutdown"; id?: string };
 
 export interface ReadyEvent {
@@ -64,6 +65,8 @@ export interface DoneEvent {
 	restored?: string[];
 	failed?: string[];
 	names?: string[];
+	/** The `answer` dict of the namespace, from `get_answer`. */
+	answer?: { content: string; ready: boolean };
 	reason?: string;
 }
 
@@ -155,6 +158,14 @@ export function parseKernelEvent(line: string): KernelEvent {
 			if (bytes !== undefined && typeof bytes !== "number") fail("done", "bytes");
 			const reason = obj.reason;
 			if (reason !== undefined && typeof reason !== "string") fail("done", "reason");
+			const answer = obj.answer;
+			let parsedAnswer: DoneEvent["answer"];
+			if (answer !== undefined) {
+				if (!isObject(answer) || typeof answer.content !== "string" || typeof answer.ready !== "boolean") {
+					fail("done", "answer");
+				}
+				parsedAnswer = { content: answer.content, ready: answer.ready };
+			}
 			const done: DoneEvent = { event: "done", id: str(obj, "id"), status };
 			const saved = optStrings(obj, "saved");
 			const skipped = optStrings(obj, "skipped");
@@ -168,6 +179,7 @@ export function parseKernelEvent(line: string): KernelEvent {
 			if (failed) done.failed = failed;
 			if (names) done.names = names;
 			if (reason !== undefined) done.reason = reason;
+			if (parsedAnswer) done.answer = parsedAnswer;
 			return done;
 		}
 		default:
