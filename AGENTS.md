@@ -59,7 +59,7 @@ Committing:
 - Stage explicit paths (`git add <path1> <path2>`); never `git add -A` / `git add .`.
 - Before committing, run `git status` and verify you are only staging your files.
 - `packages/ai/src/models.generated.ts` may always be included alongside your files.
-- Message format: `{feat,fix,docs}[(ai,tui,agent,coding-agent)]: <commit message> (optionally multiple lines)`. Message is informative and concise.
+- Message format: a conventional commit header, `<type>[(<scope>)][!]: <description>`. Types: `feat`, `fix`, `perf`, `revert`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style`. Put `!` after the type or scope for a breaking change and add a `BREAKING CHANGE: <migration note>` footer. The `.husky/commit-msg` hook rejects other headers.
 
 Never run (destroys other agents' work or bypasses checks):
 
@@ -101,24 +101,15 @@ For testing pi's interactive mode, load and follow [.pi/skills/interactive-testi
 
 ## Changelog
 
-Location: `packages/*/CHANGELOG.md` (one per package).
+Raga's changelog is the root `CHANGELOG.md`. `scripts/raga-release.mjs` generates it from commit headers at release time. Never edit it by hand. The commit header is the changelog entry, so write it for a reader of the changelog.
 
-Sections under `## [Unreleased]`: `### Breaking Changes` (API changes requiring migration), `### Added`, `### Changed`, `### Fixed`, `### Removed`.
-
-Rules:
-
-- All new entries go under `## [Unreleased]`. Read the full section first and append to existing subsections; never duplicate them.
-- Released version sections (e.g. `## [0.12.2]`) are immutable; never modify them.
-- Do not create changelog entries when working on a branch other than `main` or pull request
-
-Attribution:
-
-- Internal (from issues): `Fixed foo bar ([#123](https://github.com/earendil-works/pi/issues/123))`
-- External contributions: `Added feature X ([#456](https://github.com/earendil-works/pi/pull/456) by [@username](https://github.com/username))`
+- `feat` becomes **Added**, `fix` becomes **Fixed**, and `perf` and `revert` become **Changed**. A `!` or a `BREAKING CHANGE:` footer puts the commit under **Breaking Changes**. Other types do not appear.
+- `packages/*/CHANGELOG.md` and the `vX.Y.Z` tags belong to upstream pi. Never edit those files outside an upstream merge. The `.husky/commit-msg` hook rejects commits that stage them.
+- Land raga work by rebase or squash. The only merge commits allowed on the raga branch are merges from upstream pi.
 
 ## Releasing
 
-For release preparation, publishing, verification, or recovery, load and follow [.pi/skills/release.md](.pi/skills/release.md).
+Follow [docs/RELEASING.md](docs/RELEASING.md). Never run `npm run release:*`, `npm run version:*`, or `scripts/release.mjs`. Those scripts version and tag upstream pi.
 
 ## User Override
 
