@@ -40,7 +40,7 @@ flowchart TD
 	M --> T{tool calls?}
 	T -- no --> E[turn end]
 	T -- yes --> X[executeToolCalls<br/>beforeToolCall and afterToolCall hooks]
-	X --> K[python tool<br/>KernelManager]
+	X --> K[python tool<br/>Kernel]
 	K <-->|NDJSON stdio| PY[Python kernel]
 	PY -->|host request| H[llm_query, bash, rlm_query]
 	X --> P
@@ -65,8 +65,8 @@ Tool output reaches the model shortened to a head and a tail. The full output st
 | `packages/coding-agent/src/core/compaction/` | Compaction. `compact` summarizes old entries and appends a compaction entry. |
 | `packages/coding-agent/src/core/model-runtime.ts` | `ModelRuntime`. Session-aware model calls with the user's auth and `models.json`. |
 | `packages/coding-agent/src/core/sdk.ts` | `createAgentSession`. Builds a session in code. Raga uses it for child sessions. |
-| `packages/coding-agent/src/core/rlm/` | Planned. `KernelManager`, the `python` tool, and host request handlers. |
-| `packages/rlm-runtime/` | Planned. The Python package with the kernel (`raga_rlm.repl`), `context`, and the sub-LLM functions. |
+| `packages/coding-agent/src/core/rlm/` | The TypeScript side of the RLM runtime. `Kernel` in `kernel.ts` runs one kernel process. [RLM.md](RLM.md) lists every file. |
+| `packages/coding-agent/python/raga_rlm/` | The Python kernel (`raga_rlm.repl`) and the functions the model calls. |
 | `packages/codemode`, `packages/durable`, `packages/env`, `packages/mcp`, `packages/chord`, `packages/tui`, `packages/telemetry` | Pi packages that raga keeps as they are. |
 | `docs/` | Raga docs. Pi's own docs are in `packages/coding-agent/docs/`. |
 
@@ -80,7 +80,7 @@ An earlier attempt ran RLM as a pi extension. It gave the model a `python` tool 
 | History and large inputs live in the kernel, and compaction keeps a pointer to them | Only `context` rewrites and `session_before_compact` |
 | `python` is the only tool and the system prompt is built around it | A full prompt replacement once per run, through `before_agent_start` |
 | Child sessions with a depth limit, a budget, and usage rolled up to the parent | Tools and events cannot create a child `AgentSession` through the API |
-| Python calls built-in tools many times per cell | `NESTED_CALL_LIMITS` caps a tool at 256 nested calls and 32 KB of arguments in total |
+| `python` is the only model tool, and Python still calls `bash`, `read`, `edit`, and `write` | `ctx.executeTool` reaches only tools that are active and visible to the model, so hiding the built-ins also makes them uncallable |
 
 Raga puts the runtime in new directories and adds a few narrow hooks to `AgentSession`. That keeps merges from upstream pi small while the fork still tracks it.
 

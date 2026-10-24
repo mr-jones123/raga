@@ -46,3 +46,7 @@ plans/
 .pi/settings.json
 collect.sh
 packages/agent/docs/extensions/pi-server-artifact/index.md
+
+# Python (RLM runtime)
+__pycache__/
+.pytest_cache/

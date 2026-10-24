@@ -1,0 +1,128 @@
+from __future__ import annotations
+
+from typing import Any
+
+from conftest import KernelProcess, only, text_of
+
+
+class FakeHost:
+    def __init__(self, results: dict[str, Any]) -> None:
+        self.results = results
+        self.requests: list[dict[str, Any]] = []
+
+    def __call__(self, event: dict[str, Any]) -> dict[str, Any]:
+        data = event["data"]
+        self.requests.append(data)
+        key = data["type"] if data["type"] != "tool.call" else f"tool.{data['name']}"
+        result = self.results[key]
+        if isinstance(result, Exception):
+            return {"status": "error", "error": str(result)}
+        return {"status": "ok", "result": result}
+
+
+def test_bootstrap_names(kernel: KernelProcess) -> None:
+    code = (
+        "names = ['bash', 'read', 'edit', 'write', 'llm_query', 'llm_batch', 'rlm_query',\n"
+        "         'context', 'answer', 'cells', 'HostError', 'ToolError']\n"
+        "[n for n in names if n not in globals()]"
+    )
+    _, events = kernel.execute(code)
+    assert only(events, "result")["text"] == "[]"
+    _, events = kernel.execute("(answer, context.task, context.inputs, len(cells))")
+    assert only(events, "result")["text"] == "({'content': '', 'ready': False}, '', {}, 1)"
+
+
+def test_tool_calls(kernel: KernelProcess) -> None:
+    host = FakeHost(
+        {
+            "tool.bash": {"text": "hi\n", "is_error": False},
+            "tool.read": {"text": "file body", "is_error": False},
+            "tool.edit": {"text": "edited", "is_error": False},
+            "tool.write": {"text": "wrote", "is_error": False},
+        }
+    )
+    code = (
+        "out = [await bash('echo hi'), await bash('sleep 1', timeout=5),\n"
+        "       await read('a.txt'), await read('a.txt', offset=2, limit=3),\n"
+        "       await edit('a.txt', [('old', 'new'), {'oldText': 'x', 'newText': 'y'}]),\n"
+        "       await write('b.txt', 'content')]\n"
+        "out"
+    )
+    _, events = kernel.execute(code, host)
+    assert only(events, "result")["text"] == repr(["hi\n", "hi\n", "file body", "file body", "edited", "wrote"])
+    assert host.requests == [
+        {"type": "tool.call", "name": "bash", "args": {"command": "echo hi"}},
+        {"type": "tool.call", "name": "bash", "args": {"command": "sleep 1", "timeout": 5}},
+        {"type": "tool.call", "name": "read", "args": {"path": "a.txt"}},
+        {"type": "tool.call", "name": "read", "args": {"path": "a.txt", "offset": 2, "limit": 3}},
+        {
+            "type": "tool.call",
+            "name": "edit",
+            "args": {"path": "a.txt", "edits": [{"oldText": "old", "newText": "new"}, {"oldText": "x", "newText": "y"}]},
+        },
+        {"type": "tool.call", "name": "write", "args": {"path": "b.txt", "content": "content"}},
+    ]
+
+
+def test_tool_error_raises(kernel: KernelProcess) -> None:
+    host = FakeHost({"tool.bash": {"text": "command failed: exit 2", "is_error": True}})
+    code = "try:\n    await bash('false')\nexcept ToolError as e:\n    print(repr(str(e)))"
+    rid, events = kernel.execute(code, host)
+    assert text_of(events, "stdout", rid) == "'command failed: exit 2'\n"
+
+
+def test_llm_and_rlm_calls(kernel: KernelProcess) -> None:
+    host = FakeHost(
+        {
+            "llm.query": {"text": "answer one"},
+            "llm.batch": {"texts": ["a", "b"]},
+            "rlm.query": {"answer": "child says hi", "ready": True, "session_file": None},
+        }
+    )
+    code = (
+        "(await llm_query('q', system='s'), await llm_batch(['p1', 'p2'], model='prov/m'),\n"
+        " await rlm_query('sub task', context={'k': 1}, max_turns=3))"
+    )
+    _, events = kernel.execute(code, host)
+    assert only(events, "result")["text"] == repr(("answer one", ["a", "b"], "child says hi"))
+    assert host.requests == [
+        {"type": "llm.query", "prompt": "q", "system": "s"},
+        {"type": "llm.batch", "prompts": ["p1", "p2"], "model": "prov/m"},
+        {"type": "rlm.query", "task": "sub task", "context": {"k": 1}, "max_turns": 3},
+    ]
+
+
+def test_context_history_and_set_context(kernel: KernelProcess) -> None:
+    host = FakeHost({"context.history": {"messages": [{"role": "user", "text": "hi"}], "total": 1}})
+    code = (
+        "import raga_rlm\n"
+        "raga_rlm.set_context('the task', {'doc': 'big text'})\n"
+        "(context.task, context.inputs['doc'], await context.history(limit=5))"
+    )
+    _, events = kernel.execute(code, host)
+    assert only(events, "result")["text"] == repr(("the task", "big text", [{"role": "user", "text": "hi"}]))
+    assert host.requests == [{"type": "context.history", "offset": 0, "limit": 5}]
+
+
+def test_host_error_from_api(kernel: KernelProcess) -> None:
+    host = FakeHost({"llm.query": RuntimeError("no model configured")})
+    rid, events = kernel.execute("await llm_query('q')", host)
+    error = only(events, "error")
+    assert error["ename"] == "HostError"
+    assert error["evalue"] == "no model configured"
+
+
+def test_parallel_host_requests(kernel: KernelProcess) -> None:
+    host = FakeHost({"llm.query": {"text": "x"}})
+    code = "import asyncio\nawait asyncio.gather(*(llm_query(str(i)) for i in range(5)))"
+    _, events = kernel.execute(code, host)
+    assert only(events, "result")["text"] == repr(["x"] * 5)
+    assert sorted(r["prompt"] for r in host.requests) == ["0", "1", "2", "3", "4"]
+
+
+def test_bootstrap_names_are_not_snapshotted(kernel: KernelProcess, tmp_path) -> None:
+    kernel.execute("answer['content'] = 'done'\nmine = 1")
+    done = kernel.request({"type": "snapshot", "path": str(tmp_path / "s.bin")})
+    assert done["saved"] == ["mine"]
+    done = kernel.request({"type": "list_names"})
+    assert done["names"] == ["mine"]
