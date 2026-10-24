@@ -7,8 +7,12 @@ function is a coroutine that sends one `host_request` and awaits the reply.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator, Mapping
 from typing import Any
+
+# The kernel starts in the session cwd; `read` resolves relative paths against it even after a cell chdirs.
+_SESSION_CWD = os.getcwd()
 
 __all__ = [
     "BOOTSTRAP_NAMES",
@@ -71,8 +75,15 @@ async def bash(command: str, timeout: float | None = None) -> str:
 
 
 async def read(path: str, offset: int | None = None, limit: int | None = None) -> str:
-    """Run pi's read tool and return its output."""
-    return await _tool("read", _drop_none(path=path, offset=offset, limit=limit))
+    """Return the file's text, whole unless `offset` (1-indexed first line) or `limit` (line count) is given."""
+    with open(os.path.join(_SESSION_CWD, os.path.expanduser(path)), encoding="utf-8", errors="replace") as fh:
+        text = fh.read()
+    if offset is None and limit is None:
+        return text
+    lines = text.splitlines(keepends=True)
+    start = max((offset or 1) - 1, 0)
+    end = len(lines) if limit is None else start + limit
+    return "".join(lines[start:end])
 
 
 async def edit(path: str, edits: list[Any]) -> str:

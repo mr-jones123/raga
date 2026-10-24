@@ -25,7 +25,7 @@ export function buildRlmPromptSection({ outputLimit, depth, maxDepth }: RlmPromp
 	return `${subAgent}You work through one tool, python. Each call runs a cell in a Python kernel that already exists and persists for the whole session: variables, imports, and functions from earlier cells stay defined. Do not restart it or re-create state you already have.
 
 The kernel binds these names. Every function is async, so call it with await (top-level await works):
-- await read(path, offset=None, limit=None) -> str: read a file (pi's read tool).
+- await read(path, offset=None, limit=None) -> str: return the entire file (offset is a 1-indexed first line, limit a line count). Load large files into a variable and process them in Python; never print them.
 - await bash(command, timeout=None) -> str: run a shell command (pi's bash tool). Raises ToolError with the output on failure.
 - await edit(path, edits) -> str: edits is a list of (old, new) tuples; each old text must match exactly once.
 - await write(path, content) -> str: create or overwrite a file.
@@ -41,6 +41,7 @@ Rules:
 - You see at most ${outputLimit} characters of each cell's output; longer output is cut in the middle and the full text stays in cells[-1]["stdout"].
 - Keep large data in variables and print short summaries (counts, lengths, a few lines), not whole files or long lists.
 - To read many files or long text, send the pieces to llm_batch in parallel and print the short answers instead of printing the text.
+- When a question needs judgment over many records (classify, extract, compare, count by meaning), split the records into chunks of about 25-50, send every chunk to llm_batch with an instruction that returns structured output (one label per line, or JSON), parse and aggregate the answers in Python, and check that every record was counted.
 ${rlmQueryRule}- Run programs with await bash(...), not subprocess or os.system.
 - A trailing expression is shown like in a REPL. Use print() for everything else.
 

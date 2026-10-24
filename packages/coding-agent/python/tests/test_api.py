@@ -36,25 +36,21 @@ def test_tool_calls(kernel: KernelProcess) -> None:
     host = FakeHost(
         {
             "tool.bash": {"text": "hi\n", "is_error": False},
-            "tool.read": {"text": "file body", "is_error": False},
             "tool.edit": {"text": "edited", "is_error": False},
             "tool.write": {"text": "wrote", "is_error": False},
         }
     )
     code = (
         "out = [await bash('echo hi'), await bash('sleep 1', timeout=5),\n"
-        "       await read('a.txt'), await read('a.txt', offset=2, limit=3),\n"
         "       await edit('a.txt', [('old', 'new'), {'oldText': 'x', 'newText': 'y'}]),\n"
         "       await write('b.txt', 'content')]\n"
         "out"
     )
     _, events = kernel.execute(code, host)
-    assert only(events, "result")["text"] == repr(["hi\n", "hi\n", "file body", "file body", "edited", "wrote"])
+    assert only(events, "result")["text"] == repr(["hi\n", "hi\n", "edited", "wrote"])
     assert host.requests == [
         {"type": "tool.call", "name": "bash", "args": {"command": "echo hi"}},
         {"type": "tool.call", "name": "bash", "args": {"command": "sleep 1", "timeout": 5}},
-        {"type": "tool.call", "name": "read", "args": {"path": "a.txt"}},
-        {"type": "tool.call", "name": "read", "args": {"path": "a.txt", "offset": 2, "limit": 3}},
         {
             "type": "tool.call",
             "name": "edit",
@@ -173,3 +169,20 @@ def test_bootstrap_names_are_not_snapshotted(kernel: KernelProcess, tmp_path) ->
     assert done["saved"] == ["mine"]
     done = kernel.request({"type": "list_names"})
     assert done["names"] == ["mine"]
+
+
+def test_read_returns_the_whole_file_without_a_host_call(kernel: KernelProcess, tmp_path) -> None:
+    lines = [f"line {i}" for i in range(1, 3001)]
+    path = tmp_path / "big.txt"
+    path.write_bytes(("\n".join(lines) + "\n").encode() + b"bad \xff byte\n")
+    host = FakeHost({})
+    code = (
+        f"whole = await read({str(path)!r})\n"
+        f"part = await read({str(path)!r}, offset=2, limit=3)\n"
+        f"tail = await read({str(path)!r}, offset=3000)\n"
+        "(len(whole.splitlines()), whole.splitlines()[-1], part, tail)"
+    )
+    _, events = kernel.execute(code, host)
+    expected = (3001, "bad \ufffd byte", "line 2\nline 3\nline 4\n", "line 3000\nbad \ufffd byte\n")
+    assert only(events, "result")["text"] == repr(expected)
+    assert host.requests == []

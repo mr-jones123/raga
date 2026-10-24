@@ -800,7 +800,7 @@ export class AgentSession {
 	}
 
 	/**
-	 * Run `read`, `bash`, `edit`, or `write` for the python cell of `parentToolCallId` (the RLM
+	 * Run `bash`, `edit`, or `write` for the python cell of `parentToolCallId` (the RLM
 	 * `tool.call` host request), with the session's tool hooks. The tools run whether or not they are
 	 * declared, so they work as hidden declarations.
 	 */

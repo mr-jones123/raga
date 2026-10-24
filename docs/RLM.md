@@ -82,13 +82,13 @@ Every `host_request` has `data.type`. The host replies with `{"status":"ok","res
 
 | `data.type` | Payload | Result | Milestone |
 |---|---|---|---|
-| `tool.call` | `{"name":"bash"\|"read"\|"edit"\|"write","args":{...}}` | `{"text":str,"is_error":bool}` | M3 |
+| `tool.call` | `{"name":"bash"\|"edit"\|"write","args":{...}}` | `{"text":str,"is_error":bool}` | M3 |
 | `llm.query` | `{"prompt":str,"system"?:str,"model"?:str}` | `{"text":str}` | M4 |
 | `llm.batch` | `{"prompts":[str],"system"?:str,"model"?:str}` | `{"texts":[str]}` | M4 |
 | `context.history` | `{"offset"?:int,"limit"?:int}` | `{"messages":[{"role":str,"text":str}],"total":int}` | M5 |
 | `rlm.query` | `{"task":str,"context"?:any,"model"?:str,"max_turns"?:int}` | `{"answer":str,"ready":bool,"session_file":str\|null}` | M6 |
 
-`args` for `tool.call` match the parameter schemas of pi's built-in tools in `src/core/tools/`. `bash` takes `{command, timeout?}`. `read` takes `{path, offset?, limit?}`. `edit` takes `{path, edits: [{oldText, newText}]}`. `write` takes `{path, content}`. Any other `name` is an error. The host runs the tool through `runToolCall` with the session's `beforeToolCall` and `afterToolCall` hooks, so extensions see a `tool_call` and `tool_result` event whose `parentToolCallId` is the `python` call. `text` is the tool result's text content joined with newlines.
+`args` for `tool.call` match the parameter schemas of pi's built-in tools in `src/core/tools/`. `bash` takes `{command, timeout?}`. `edit` takes `{path, edits: [{oldText, newText}]}`. `write` takes `{path, content}`. Any other `name` is an error. The host runs the tool through `runToolCall` with the session's `beforeToolCall` and `afterToolCall` hooks, so extensions see a `tool_call` and `tool_result` event whose `parentToolCallId` is the `python` call. `text` is the tool result's text content joined with newlines.
 
 `model` is `"provider/id"`. Without it, `llm.*` uses the `rlm.subModel` setting, then the session model. Each call is `ModelRuntime.completeSimple` with the prompt as the only user message, `system` as the system prompt, no tools, a fresh session id, and the session's `before_provider_request` and `after_provider_response` hooks, so extensions that rewrite requests for their providers apply. A call that ends with `stopReason` `error` or `aborted` fails with its error message, so Python raises `HostError`. `llm.batch` runs at most 8 calls at once, and its first failure aborts the calls still running.
 
@@ -115,7 +115,7 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 | Name | Signature | Behavior |
 |---|---|---|
 | `bash` | `await bash(command, timeout=None) -> str` | Runs pi's `bash` tool. Raises `ToolError` with the output when the tool reports an error. |
-| `read` | `await read(path, offset=None, limit=None) -> str` | Runs pi's `read` tool. |
+| `read` | `await read(path, offset=None, limit=None) -> str` | Reads the file in the kernel, without pi's `read` tool, so nothing is truncated. A relative path resolves against the session cwd; the text is decoded as UTF-8 with undecodable bytes replaced. With no `offset` or `limit` it returns the whole file; `offset` is the 1-indexed first line and `limit` a line count. |
 | `edit` | `await edit(path, edits) -> str` | `edits` is a list of `(old, new)` tuples or `{"oldText","newText"}` dicts. |
 | `write` | `await write(path, content) -> str` | Runs pi's `write` tool. |
 | `llm_query` | `await llm_query(prompt, system=None, model=None) -> str` | One sub-LLM call with no tools. |
@@ -152,7 +152,7 @@ The kernel namespace survives a resume and a fork through a `dill` snapshot.
 | `rlm.outputLimit` | `16000` | Characters of cell output that the model sees per cell. |
 | `rlm.maxDepth` | `2` | How many levels of `rlm_query` children may nest. |
 
-In RLM mode the session's active tools are `python` plus `read`, `bash`, `edit`, and `write` as hidden declarations. Hidden tools stay callable from the host and do not reach the model. The `defaultTools` setting, `--tools`, `--no-tools`, and `--no-builtin-tools` do not apply; `--exclude-tools` still removes tools, and extension tools that activate on registration stay declared next to `python`. The system prompt gets an `rlm` section that describes the kernel and its names.
+In RLM mode the session's active tools are `python` plus `bash`, `edit`, and `write` as hidden declarations. Hidden tools stay callable from the host and do not reach the model. The `defaultTools` setting, `--tools`, `--no-tools`, and `--no-builtin-tools` do not apply; `--exclude-tools` still removes tools, and extension tools that activate on registration stay declared next to `python`. The system prompt gets an `rlm` section that describes the kernel and its names.
 
 ## Python interpreter
 

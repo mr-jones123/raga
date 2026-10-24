@@ -53,7 +53,7 @@ describe("AgentSession RLM mode", () => {
 	it("edits a file using only the python tool, which is the only tool the provider sees", async () => {
 		const harness = await setup();
 		writeFileSync(join(harness.tempDir, "notes.txt"), "hello world\n");
-		expect(harness.session.getActiveToolNames()).toEqual(["python", "read", "bash", "edit", "write"]);
+		expect(harness.session.getActiveToolNames()).toEqual(["python", "bash", "edit", "write"]);
 
 		const requestTools: string[][] = [];
 		let rlmSection: string | null | undefined;
@@ -87,16 +87,16 @@ describe("AgentSession RLM mode", () => {
 		expect(toolCalls).toEqual(["python"]);
 	});
 
-	it("rejects host tools other than read, bash, edit, and write", async () => {
+	it("rejects host tools other than bash, edit, and write", async () => {
 		const harness = await setup();
 		harness.setResponses([
 			pythonCall(
-				'import raga_rlm\ntry:\n    await raga_rlm.host_request({"type": "tool.call", "name": "python", "args": {}})\nexcept HostError as e:\n    print("refused:", e)',
+				'import raga_rlm\ntry:\n    await raga_rlm.host_request({"type": "tool.call", "name": "read", "args": {"path": "x"}})\nexcept HostError as e:\n    print("refused:", e)',
 			),
 			fauxAssistantMessage("done"),
 		]);
 		await harness.session.prompt("go");
-		expect(resultText(harness)).toContain('refused: python cannot call tool "python"');
+		expect(resultText(harness)).toContain('refused: python cannot call tool "read"');
 	});
 
 	it("adds the usage of llm_query inside a cell to the session stats", async () => {

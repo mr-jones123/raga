@@ -27,7 +27,7 @@ import { createRlmQueryHandler } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
 /** The tools a python cell reaches through `tool.call`. */
-export const RLM_HOST_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write"];
+export const RLM_HOST_TOOL_NAMES: readonly string[] = ["bash", "edit", "write"];
 /** The active tools in RLM mode: `python` is declared, the host tools stay active as hidden declarations. */
 export const RLM_ACTIVE_TOOL_NAMES: readonly string[] = ["python", ...RLM_HOST_TOOL_NAMES];
 /** Custom entry `{path}` that points to the session's kernel snapshot. */
