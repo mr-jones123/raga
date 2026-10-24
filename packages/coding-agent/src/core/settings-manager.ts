@@ -42,6 +42,7 @@ export type {
 	ProviderRetrySettings,
 	QuietStartup,
 	RetrySettings,
+	RlmSettings,
 	SessionShareDestination,
 	Settings,
 	TerminalSettings,
@@ -1176,6 +1177,17 @@ export class SettingsManager {
 		this.globalSettings.enableSkillCommands = enabled;
 		this.markModified("enableSkillCommands");
 		this.save();
+	}
+
+	/** RLM mode settings with defaults applied. `subModel` is `"provider/id"` or undefined for the session model. */
+	getRlmSettings(): { enabled: boolean; subModel: string | undefined; outputLimit: number; maxDepth: number } {
+		const rlm = this.settings.rlm;
+		return {
+			enabled: rlm?.enabled ?? SETTINGS_DEFAULTS.rlm.enabled,
+			subModel: rlm?.subModel,
+			outputLimit: rlm?.outputLimit ?? SETTINGS_DEFAULTS.rlm.outputLimit,
+			maxDepth: rlm?.maxDepth ?? SETTINGS_DEFAULTS.rlm.maxDepth,
+		};
 	}
 
 	getThinkingBudgets(): ThinkingBudgetsSettings | undefined {

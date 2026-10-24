@@ -17,6 +17,7 @@ export type KernelRequest =
 	| { type: "snapshot"; id: string; path: string; max_bytes?: number; max_variable_bytes?: number }
 	| { type: "restore"; id: string; path: string }
 	| { type: "list_names"; id: string }
+	| { type: "set_context"; id: string; task: string; inputs: Record<string, string> }
 	| { type: "shutdown"; id?: string };
 
 export interface ReadyEvent {

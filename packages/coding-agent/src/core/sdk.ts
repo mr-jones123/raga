@@ -16,6 +16,7 @@ import { findInitialModel } from "./model-resolver.ts";
 import { ModelRuntime } from "./model-runtime.ts";
 import type { ResourceLoader } from "./resource-loader.ts";
 import { DefaultResourceLoader } from "./resource-loader.ts";
+import { RLM_ACTIVE_TOOL_NAMES } from "./rlm/runtime.ts";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.ts";
 import {
 	applyToolModifiers,
@@ -103,6 +104,15 @@ export interface CreateAgentSessionOptions {
 	settingsManager?: SettingsManager;
 	/** Session start event metadata for extension runtime startup. */
 	sessionStartEvent?: SessionStartEvent;
+	/**
+	 * RLM mode: the model gets the `python` tool, backed by a kernel the session owns, and `read`,
+	 * `bash`, `edit`, and `write` stay active as hidden declarations. Ignores `defaultTools`,
+	 * `tools`, and `noTools`; `excludeTools` still applies, and extension tools that activate on
+	 * registration stay declared. Default: the `rlm.enabled` setting. See docs/RLM.md.
+	 */
+	rlm?: boolean;
+	/** RLM mode: input names mapped to file paths, read lazily through `context.inputs`. */
+	rlmInputs?: Record<string, string>;
 }
 
 /** Result from createAgentSession */
@@ -292,6 +302,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	const excludedToolNames = options.excludeTools;
 	const isExcludedTool = excludedToolNames ? createToolNameMatcher(excludedToolNames) : undefined;
 	const initialActiveToolNames = (selectedToolNames ?? defaultToolNames).filter((name) => !isExcludedTool?.(name));
+	const rlm = options.rlm ?? settingsManager.getRlmSettings().enabled;
 
 	// Create convertToLlm wrapper that filters images if blockImages is enabled (defense-in-depth)
 	const convertToLlmWithBlockImages = (messages: AgentMessage[]): Message[] => {
@@ -460,13 +471,14 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		customTools: options.customTools,
 		modelRuntime,
 		cacheWarmer,
-		initialActiveToolNames,
-		usesDefaultTools: (options.tools === undefined || toolModifiers !== undefined) && !options.noTools,
-		defaultToolModifiers: toolModifiers,
-		allowedToolNames,
+		initialActiveToolNames: rlm ? [...RLM_ACTIVE_TOOL_NAMES] : initialActiveToolNames,
+		usesDefaultTools: !rlm && (options.tools === undefined || toolModifiers !== undefined) && !options.noTools,
+		defaultToolModifiers: rlm ? undefined : toolModifiers,
+		allowedToolNames: rlm ? undefined : allowedToolNames,
 		excludedToolNames,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
+		rlm: rlm ? { inputs: options.rlmInputs ?? {} } : undefined,
 	});
 
 	const extensionsResult = resourceLoader.getExtensions();

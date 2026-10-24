@@ -168,6 +168,35 @@ const CodemodeSettingsSchema = Type.Object({
 	),
 });
 
+const RlmSettingsSchema = Type.Object({
+	enabled: Type.Optional(
+		Type.Boolean({
+			description:
+				"RLM mode: the model gets one tool, python, which runs code in a persistent kernel that reaches read, bash, edit, write, and sub-LLM calls. The --rlm flag sets it for one run.",
+			default: SETTINGS_DEFAULTS.rlm.enabled,
+		}),
+	),
+	subModel: Type.Optional(
+		Type.String({
+			description: 'Model for llm_query and llm_batch in the kernel, as "provider/id". Default: the session model.',
+		}),
+	),
+	outputLimit: Type.Optional(
+		Type.Integer({
+			minimum: 1,
+			description: "Characters of cell output the model sees per python call. The full output stays in cells.",
+			default: SETTINGS_DEFAULTS.rlm.outputLimit,
+		}),
+	),
+	maxDepth: Type.Optional(
+		Type.Integer({
+			minimum: 0,
+			description: "How many levels of rlm_query child sessions may nest.",
+			default: SETTINGS_DEFAULTS.rlm.maxDepth,
+		}),
+	),
+});
+
 const PackageSourceSchema = Type.Union(
 	[
 		Type.String({ description: "Load all resources from the package." }),
@@ -386,6 +415,7 @@ export const SettingsSchema = Type.Object(
 		markdown: Type.Optional(MarkdownSettingsSchema),
 		warnings: Type.Optional(WarningSettingsSchema),
 		codemode: Type.Optional(CodemodeSettingsSchema),
+		rlm: Type.Optional(RlmSettingsSchema),
 		sessionDir: Type.Optional(
 			Type.String({
 				description: "Custom session storage directory, in the same format as the --session-dir CLI flag.",
@@ -468,6 +498,7 @@ export interface MarkdownSettings extends Static<typeof MarkdownSettingsSchema> 
 export interface WarningSettings extends Static<typeof WarningSettingsSchema> {}
 export type CodemodeMode = Static<typeof CodemodeModeSchema>;
 export interface CodemodeSettings extends Static<typeof CodemodeSettingsSchema> {}
+export interface RlmSettings extends Static<typeof RlmSettingsSchema> {}
 export type DefaultProjectTrust = NonNullable<SettingsInput["defaultProjectTrust"]>;
 export type QuietStartup = NonNullable<SettingsInput["quietStartup"]>;
 export type TransportSetting = NonNullable<SettingsInput["transport"]>;

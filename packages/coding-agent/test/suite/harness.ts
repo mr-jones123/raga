@@ -20,6 +20,7 @@ import { AgentSession, type AgentSessionEvent } from "../../src/core/agent-sessi
 import { AuthStorage } from "../../src/core/auth-storage.ts";
 import type { ExtensionRunner, ExtensionUIContext } from "../../src/core/extensions/index.ts";
 import { convertToLlm } from "../../src/core/messages.ts";
+import { RLM_ACTIVE_TOOL_NAMES, type RlmSessionOptions } from "../../src/core/rlm/runtime.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
 import { SettingsManager } from "../../src/core/settings-manager.ts";
@@ -122,6 +123,8 @@ export interface HarnessOptions {
 	modelsJson?: Record<string, unknown>;
 	/** Session to continue, for example to test a resume. Default: a new in-memory session. */
 	sessionManager?: SessionManager;
+	/** RLM mode. The default active tools become `RLM_ACTIVE_TOOL_NAMES`. */
+	rlm?: RlmSessionOptions;
 }
 
 export interface Harness {
@@ -157,6 +160,8 @@ export async function createHarness(options: HarnessOptions = {}): Promise<Harne
 	fauxProvider.setResponses([]);
 	const model = fauxProvider.getModel();
 	const toolMap = options.tools ? Object.fromEntries(options.tools.map((tool) => [tool.name, tool])) : undefined;
+	const initialActiveToolNames =
+		options.initialActiveToolNames ?? (options.rlm ? [...RLM_ACTIVE_TOOL_NAMES] : undefined);
 	const withConfiguredAuth = options.withConfiguredAuth ?? true;
 	const extensionRunnerRef: { current?: ExtensionRunner } = {};
 
@@ -239,11 +244,12 @@ export async function createHarness(options: HarnessOptions = {}): Promise<Harne
 		modelRuntime: getModelRuntime(modelRegistry),
 		resourceLoader,
 		baseToolsOverride: toolMap,
-		initialActiveToolNames: options.initialActiveToolNames,
-		usesDefaultTools: options.initialActiveToolNames === undefined,
+		initialActiveToolNames,
+		usesDefaultTools: initialActiveToolNames === undefined,
 		allowedToolNames: options.allowedToolNames,
 		excludedToolNames: options.excludedToolNames,
 		extensionRunnerRef,
+		rlm: options.rlm,
 	});
 
 	const events: AgentSessionEvent[] = [];

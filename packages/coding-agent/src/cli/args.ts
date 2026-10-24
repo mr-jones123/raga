@@ -2,6 +2,7 @@
  * CLI argument parsing and help display
  */
 
+import { basename } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import chalk from "chalk";
 import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR } from "../config.ts";
@@ -51,6 +52,9 @@ export interface Args {
 	tuiMode?: TuiMode;
 	verbose?: boolean;
 	projectTrustOverride?: boolean;
+	rlm?: boolean;
+	/** `--rlm-input` names mapped to the paths as given. */
+	rlmInputs?: Record<string, string>;
 	messages: string[];
 	fileArgs: string[];
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
@@ -244,6 +248,23 @@ export function parseArgs(args: string[]): Args {
 			result.projectTrustOverride = false;
 		} else if (arg === "--offline") {
 			result.offline = true;
+		} else if (arg === "--rlm") {
+			result.rlm = true;
+		} else if (arg === "--rlm-input") {
+			const spec = args[i + 1];
+			if (spec === undefined || spec.startsWith("-")) {
+				result.diagnostics.push({ type: "error", message: "--rlm-input requires <path> or <name>=<path>" });
+				continue;
+			}
+			i++;
+			const named = /^([A-Za-z_][A-Za-z0-9_.-]*)=(.+)$/.exec(spec);
+			const name = named ? named[1] : basename(spec);
+			result.rlmInputs ??= {};
+			if (name in result.rlmInputs) {
+				result.diagnostics.push({ type: "error", message: `--rlm-input: duplicate input name "${name}"` });
+			} else {
+				result.rlmInputs[name] = named ? named[2] : spec;
+			}
 		} else if (arg.startsWith("@")) {
 			result.fileArgs.push(arg.slice(1)); // Remove @ prefix
 		} else if (arg.startsWith("--")) {
@@ -341,6 +362,10 @@ ${chalk.bold("Options:")}
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
+  --rlm                          RLM mode: the model gets one tool, python, a persistent kernel that
+                                 reaches read, bash, edit, write, and sub-LLM calls (setting: rlm.enabled)
+  --rlm-input <[name=]path>      Expose a file as context.inputs[name] in RLM mode (default name: the
+                                 file name; can be used multiple times)
   --                             End option parsing; treat remaining arguments as messages/files
   --help, -h                     Show this help
   --version, -v                  Show version number

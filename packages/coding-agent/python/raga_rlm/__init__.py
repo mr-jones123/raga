@@ -7,12 +7,14 @@ function is a coroutine that sends one `host_request` and awaits the reply.
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 __all__ = [
     "BOOTSTRAP_NAMES",
     "Context",
     "HostError",
+    "Inputs",
     "ToolError",
     "answer",
     "bash",
@@ -113,12 +115,39 @@ async def rlm_query(task: str, context: Any = None, model: str | None = None, ma
     return result["answer"]
 
 
+class Inputs(Mapping[str, str]):
+    """Input names mapped to file contents. Each file is read the first time its key is read, then cached."""
+
+    def __init__(self, paths: dict[str, str] | None = None) -> None:
+        self._paths = dict(paths or {})
+        self._texts: dict[str, str] = {}
+
+    def __getitem__(self, name: str) -> str:
+        if name not in self._texts:
+            with open(self._paths[name], encoding="utf-8", errors="replace") as fh:
+                self._texts[name] = fh.read()
+        return self._texts[name]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._paths)
+
+    def __len__(self) -> int:
+        return len(self._paths)
+
+    def path(self, name: str) -> str:
+        """The file behind `name`, without reading it."""
+        return self._paths[name]
+
+    def __repr__(self) -> str:
+        return f"Inputs({self._paths!r})"
+
+
 class Context:
     """`task` is the first user prompt, `inputs` holds large inputs."""
 
     def __init__(self) -> None:
         self.task: str = ""
-        self.inputs: dict[str, Any] = {}
+        self.inputs: Inputs = Inputs()
 
     async def history(self, offset: int = 0, limit: int | None = None) -> list[dict[str, Any]]:
         """Return the session's messages as {"role", "text"} dicts."""
@@ -157,10 +186,14 @@ def bootstrap(namespace: dict[str, Any]) -> None:
         namespace[name] = globals()[name]
 
 
-def set_context(task: str, inputs: dict[str, Any]) -> None:
-    """Fill `context.task` and `context.inputs`."""
+def set_context(task: str, inputs: dict[str, str]) -> None:
+    """Fill `context.task` and `context.inputs`; `inputs` maps names to file paths."""
+    if not isinstance(task, str):
+        raise TypeError("task must be a string")
+    if not isinstance(inputs, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in inputs.items()):
+        raise TypeError("inputs must map names to file paths")
     context.task = task
-    context.inputs = dict(inputs)
+    context.inputs = Inputs(inputs)
 
 
 def record_cell(entry: dict[str, Any]) -> None:

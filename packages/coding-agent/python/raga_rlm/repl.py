@@ -685,6 +685,9 @@ async def _serve(queue: asyncio.Queue[dict[str, Any]], ns: dict[str, Any]) -> No
                 )
             elif rtype == "restore":
                 reply = _restore(ns, req["path"])
+            elif rtype == "set_context":
+                raga_rlm.set_context(req["task"], req.get("inputs", {}))
+                reply = {"status": "ok"}
             else:
                 reply = {"status": "ok", "names": _user_names(ns)}
             _send({"event": "done", "id": rid, **reply})
@@ -697,6 +700,7 @@ _REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "snapshot": ("id", "path"),
     "restore": ("id", "path"),
     "list_names": ("id",),
+    "set_context": ("id", "task"),
     "shutdown": (),
 }
 

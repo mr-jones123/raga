@@ -13,6 +13,7 @@ import { editRenderers } from "./edit.ts";
 import { findRenderers } from "./find.ts";
 import { grepRenderers } from "./grep.ts";
 import { lsRenderers } from "./ls.ts";
+import { pythonRenderers } from "./python.ts";
 import { readRenderers } from "./read.ts";
 import { writeRenderers } from "./write.ts";
 
@@ -24,12 +25,13 @@ export {
 	findRenderers,
 	grepRenderers,
 	lsRenderers,
+	pythonRenderers,
 	readRenderers,
 	writeRenderers,
 };
 
-/** Renderers for every built-in tool, keyed by tool name. */
-export function createAllToolRenderers(): Record<ToolName, ToolRenderers> {
+/** Renderers for every built-in tool and the RLM `python` tool, keyed by tool name. */
+export function createAllToolRenderers(): Record<ToolName | "python", ToolRenderers> {
 	return {
 		read: readRenderers,
 		bash: createShellRenderers("$"),
@@ -39,6 +41,7 @@ export function createAllToolRenderers(): Record<ToolName, ToolRenderers> {
 		grep: grepRenderers,
 		find: findRenderers,
 		ls: lsRenderers,
+		python: pythonRenderers,
 	};
 }
 
@@ -52,7 +55,7 @@ export function withBuiltInRenderers<TDefinition extends ToolRenderers>(
 	toolName: string,
 	definition: TDefinition | undefined,
 ): TDefinition | ToolRenderers | undefined {
-	const builtIn = createAllToolRenderers()[toolName as ToolName];
+	const builtIn = createAllToolRenderers()[toolName as ToolName | "python"];
 	if (!definition) return builtIn;
 	if (!builtIn) return definition;
 	return {

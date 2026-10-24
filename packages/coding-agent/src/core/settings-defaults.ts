@@ -58,6 +58,11 @@ export const SETTINGS_DEFAULTS = {
 		mode: "on",
 		inlineBudget: 3000,
 	},
+	rlm: {
+		enabled: false,
+		outputLimit: 16000,
+		maxDepth: 2,
+	},
 	cacheWarming: "streaming",
 	tuiMode: "fullscreen",
 	fullscreenExitOutput: "transcript",

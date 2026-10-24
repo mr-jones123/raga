@@ -631,6 +631,32 @@
         }
       }
     },
+    "rlm": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "RLM mode: the model gets one tool, python, which runs code in a persistent kernel that reaches read, bash, edit, write, and sub-LLM calls. The --rlm flag sets it for one run.",
+          "default": false
+        },
+        "subModel": {
+          "type": "string",
+          "description": "Model for llm_query and llm_batch in the kernel, as \"provider/id\". Default: the session model."
+        },
+        "outputLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Characters of cell output the model sees per python call. The full output stays in cells.",
+          "default": 16000
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many levels of rlm_query child sessions may nest.",
+          "default": 2
+        }
+      }
+    },
     "sessionDir": {
       "type": "string",
       "description": "Custom session storage directory, in the same format as the --session-dir CLI flag."

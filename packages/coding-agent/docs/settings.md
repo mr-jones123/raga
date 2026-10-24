@@ -59,6 +59,17 @@ This replaces `bash` with `powershell` and enables `grep`: `["-bash", "+powershe
 
 CLI tool options override this setting for one invocation. `--tools` with only `+name` and `-name` entries changes the resolved `defaultTools` selection instead, for example `pi --tools +codemode`. On `/reload`, these entries apply to the reloaded setting too, so a tool removed with `-name` stays removed. See [Command Line](cli.md#tools).
 
+### RLM mode
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `rlm.enabled` | boolean | `false` | RLM mode. The model gets one tool, `python`, which runs code in a Python kernel the session owns. Code in the kernel calls `read`, `bash`, `edit`, `write`, and sub-LLMs. `read`, `bash`, `edit`, and `write` stay active as hidden declarations, and `defaultTools` and `--tools` selections are ignored. `--rlm` turns it on for one run. |
+| `rlm.subModel` | string | Session model | Model for `llm_query` and `llm_batch` in the kernel, as `"provider/id"`. A `model` argument in the call takes precedence. |
+| `rlm.outputLimit` | number | `16000` | Characters of cell output the model sees per `python` call. Longer output keeps its first three quarters and last quarter of the limit, and the full output stays in `cells[-1]`. |
+| `rlm.maxDepth` | number | `2` | How many levels of `rlm_query` child sessions may nest. |
+
+`--rlm-input <path>` or `--rlm-input <name>=<path>` exposes a file as `context.inputs[name]` in the kernel; without a name the file name is the key. Python reads the file the first time the key is read. See the [RLM runtime reference](../../../docs/RLM.md).
+
 ## Sessions and context
 
 | Setting | Type | Default | Description |

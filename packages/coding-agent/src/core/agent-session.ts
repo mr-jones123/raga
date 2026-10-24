@@ -24,6 +24,7 @@ import {
 	type AgentMessage,
 	type AgentState,
 	type AgentTool,
+	type AgentToolCall,
 	type AgentToolCallOutcome,
 	type BeforeToolCallContext,
 	type BeforeToolCallResult,
@@ -120,6 +121,8 @@ import type { ModelRuntime } from "./model-runtime.ts";
 import { NestedToolCallRunner } from "./nested-tool-calls.ts";
 import { expandPromptTemplate, type PromptTemplate } from "./prompt-templates.ts";
 import type { ResourceExtensionPaths, ResourceLoader } from "./resource-loader.ts";
+import { buildRlmPromptSection } from "./rlm/prompt.ts";
+import { RLM_HOST_TOOL_NAMES, RlmRuntime, type RlmSessionOptions } from "./rlm/runtime.ts";
 import { exportSessionToJsonl } from "./session-export.ts";
 import {
 	type BranchSummaryEntry,
@@ -297,6 +300,11 @@ export interface AgentSessionConfig {
 	extensionRunnerRef?: { current?: ExtensionRunner };
 	/** Session start event metadata emitted when extensions bind to this runtime. */
 	sessionStartEvent?: SessionStartEvent;
+	/**
+	 * RLM mode: registers the `python` tool backed by a kernel the session owns. The caller activates
+	 * `RLM_ACTIVE_TOOL_NAMES`. See docs/RLM.md.
+	 */
+	rlm?: RlmSessionOptions;
 }
 
 export interface ExtensionBindings {
@@ -472,6 +480,9 @@ export class AgentSession {
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
 	private _nestedToolCalls: NestedToolCallRunner | undefined;
+	/** RLM mode: the kernel and the `python` tool. */
+	private _rlm: RlmRuntime | undefined;
+	private _rlmToolCallCount = 0;
 	/** Declared tools whose declarations requests leave out, from `prepareLoadout` hooks. */
 	private _hiddenDeclarations: ReadonlySet<string> = new Set();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -507,6 +518,19 @@ export class AgentSession {
 		this._excludedTools = config.excludedToolNames ? createToolNameMatcher(config.excludedToolNames) : undefined;
 		this._baseToolsOverride = config.baseToolsOverride;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
+		if (config.rlm) {
+			this._rlm = new RlmRuntime({
+				cwd: this._cwd,
+				inputs: config.rlm.inputs ?? {},
+				settingsManager: this.settingsManager,
+				modelRuntime: this._modelRuntime,
+				getSessionModel: () => this.model,
+				getRequestHooks: () => ({ onPayload: this.agent.onPayload, onResponse: this.agent.onResponse }),
+				getBranch: () => this.sessionManager.getBranch(),
+				runTool: (parentToolCallId, name, args, signal) =>
+					this._runRlmToolCall(parentToolCallId, name, args, signal),
+			});
+		}
 
 		// Always subscribe to agent events for internal handling
 		// (session persistence, extensions, auto-compaction, retry logic)
@@ -761,6 +785,41 @@ export class AgentSession {
 			},
 		});
 		return this._nestedToolCalls.execute(parentToolCallId, name, args, options);
+	}
+
+	/**
+	 * Run `read`, `bash`, `edit`, or `write` for the python cell of `parentToolCallId` (the RLM
+	 * `tool.call` host request), with the session's tool hooks. The tools run whether or not they are
+	 * declared, so they work as hidden declarations.
+	 */
+	private async _runRlmToolCall(
+		parentToolCallId: string,
+		name: string,
+		args: Record<string, unknown>,
+		signal: AbortSignal,
+	): Promise<{ text: string; is_error: boolean }> {
+		if (!RLM_HOST_TOOL_NAMES.includes(name)) {
+			throw new Error(`python cannot call tool "${name}"; it calls ${RLM_HOST_TOOL_NAMES.join(", ")}`);
+		}
+		const tool = this._toolRegistry.get(name);
+		if (!tool) throw new Error(`Tool ${name} is not available in this session`);
+		const assistantMessage = this._findLastAssistantMessage();
+		if (!assistantMessage) throw new Error("No assistant message issued this call");
+		const toolCall: AgentToolCall = {
+			type: "toolCall",
+			id: `${parentToolCallId}/${name}-${++this._rlmToolCallCount}`,
+			name,
+			arguments: args as AgentToolCall["arguments"],
+		};
+		const outcome = await runToolCall(toolCall, {
+			tools: [tool],
+			assistantMessage,
+			context: { messages: this.agent.state.messages, tools: this.agent.state.tools },
+			beforeToolCall: (context) => this._beforeToolCall(context, parentToolCallId),
+			afterToolCall: (context) => this._afterToolCall(context, parentToolCallId),
+			signal,
+		});
+		return { text: contentText(outcome.result.content), is_error: outcome.isError };
 	}
 
 	/** Whether `projection`, the current session projection, exceeds the compaction threshold of `model`. */
@@ -1429,6 +1488,7 @@ export class AgentSession {
 			this._cacheWarmer.onWarmed = undefined;
 			this._cacheWarmer.cancel();
 		}
+		this._rlm?.dispose();
 		cleanupSessionResources(this.sessionId);
 	}
 
@@ -1742,6 +1802,9 @@ export class AgentSession {
 			hiddenTools: [...this._hiddenDeclarations],
 			toolSnippets,
 			toolGuidelines: Object.fromEntries(this._toolPromptGuidelines),
+			...(this._rlm
+				? { sections: { rlm: buildRlmPromptSection(this.settingsManager.getRlmSettings().outputLimit) } }
+				: {}),
 		});
 	}
 
@@ -3686,6 +3749,7 @@ export class AgentSession {
 		this._baseToolDefinitions = new Map(
 			Object.entries(baseToolDefinitions).map(([name, tool]) => [name, tool as ToolDefinition]),
 		);
+		if (this._rlm) this._baseToolDefinitions.set("python", this._rlm.toolDefinition as ToolDefinition);
 
 		const extensionsResult = this._resourceLoader.getExtensions();
 		if (options.flagValues) {

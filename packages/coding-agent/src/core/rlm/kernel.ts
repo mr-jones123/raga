@@ -269,6 +269,12 @@ export class Kernel {
 		return done.names ?? [];
 	}
 
+	/** Set `context.task` and the input paths behind `context.inputs`. Python reads each file on first access. */
+	async setContext(task: string, inputs: Record<string, string>): Promise<void> {
+		const done = await this.request((id) => ({ type: "set_context", id, task, inputs }));
+		if (done.status === "error") throw new Error(`Kernel set_context failed: ${done.reason ?? "unknown error"}`);
+	}
+
 	/** Kill the process tree synchronously. Pending requests end with an error; later calls reject. */
 	dispose(): void {
 		if (this.disposed) return;

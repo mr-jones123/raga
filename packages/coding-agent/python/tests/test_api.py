@@ -29,7 +29,7 @@ def test_bootstrap_names(kernel: KernelProcess) -> None:
     _, events = kernel.execute(code)
     assert only(events, "result")["text"] == "[]"
     _, events = kernel.execute("(answer, context.task, context.inputs, len(cells))")
-    assert only(events, "result")["text"] == "({'content': '', 'ready': False}, '', {}, 1)"
+    assert only(events, "result")["text"] == "({'content': '', 'ready': False}, '', Inputs({}), 1)"
 
 
 def test_tool_calls(kernel: KernelProcess) -> None:
@@ -92,16 +92,42 @@ def test_llm_and_rlm_calls(kernel: KernelProcess) -> None:
     ]
 
 
-def test_context_history_and_set_context(kernel: KernelProcess) -> None:
+def test_context_history_and_set_context(kernel: KernelProcess, tmp_path) -> None:
+    doc = tmp_path / "doc.txt"
+    doc.write_text("big text")
     host = FakeHost({"context.history": {"messages": [{"role": "user", "text": "hi"}], "total": 1}})
     code = (
         "import raga_rlm\n"
-        "raga_rlm.set_context('the task', {'doc': 'big text'})\n"
+        f"raga_rlm.set_context('the task', {{'doc': {str(doc)!r}}})\n"
         "(context.task, context.inputs['doc'], await context.history(limit=5))"
     )
     _, events = kernel.execute(code, host)
     assert only(events, "result")["text"] == repr(("the task", "big text", [{"role": "user", "text": "hi"}]))
     assert host.requests == [{"type": "context.history", "offset": 0, "limit": 5}]
+
+
+def test_set_context_request_reads_inputs_lazily(kernel: KernelProcess, tmp_path) -> None:
+    doc = tmp_path / "doc.txt"
+    missing = tmp_path / "missing.txt"
+    done = kernel.request(
+        {"type": "set_context", "task": "summarize", "inputs": {"doc": str(doc), "gone": str(missing)}}
+    )
+    assert done["status"] == "ok"
+    # The file is read on first access, after set_context, and then cached.
+    doc.write_text("first")
+    _, events = kernel.execute("(context.task, sorted(context.inputs), context.inputs['doc'])")
+    assert only(events, "result")["text"] == repr(("summarize", ["doc", "gone"], "first"))
+    doc.write_text("second")
+    _, events = kernel.execute("context.inputs['doc']")
+    assert only(events, "result")["text"] == repr("first")
+    _, events = kernel.execute("context.inputs['gone']")
+    assert only(events, "error")["ename"] == "FileNotFoundError"
+
+
+def test_set_context_rejects_bad_inputs(kernel: KernelProcess) -> None:
+    done = kernel.request({"type": "set_context", "task": "t", "inputs": {"doc": 1}})
+    assert done["status"] == "error"
+    assert "inputs must map names to file paths" in done["reason"]
 
 
 def test_host_error_from_api(kernel: KernelProcess) -> None:

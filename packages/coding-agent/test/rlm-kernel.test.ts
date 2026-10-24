@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
@@ -198,6 +198,18 @@ describe("Kernel", () => {
 
 		const missing = await kernel.restore(join(tempDir, "missing.pkl"));
 		expect(missing).toEqual({ restored: [], failed: [], reason: "snapshot not found" });
+	});
+
+	test("setContext fills context.task and reads context.inputs lazily", async () => {
+		const kernel = createKernel();
+		const doc = join(tempDir, "context-doc.txt");
+		await kernel.setContext("the task", { doc });
+		writeFileSync(doc, "file body");
+		const out = await kernel.execute('context.task, list(context.inputs), context.inputs["doc"]');
+		expect(out.result).toBe("('the task', ['doc'], 'file body')");
+		await expect(kernel.setContext("t", { doc: 1 } as unknown as Record<string, string>)).rejects.toThrow(
+			"inputs must map names to file paths",
+		);
 	});
 
 	test("dispose kills the kernel process", async () => {

@@ -290,6 +290,30 @@ describe("parseArgs", () => {
 		});
 	});
 
+	describe("--rlm flags", () => {
+		test("parses --rlm", () => {
+			const result = parseArgs(["--rlm"]);
+			expect(result.rlm).toBe(true);
+			expect(result.unknownFlags.size).toBe(0);
+		});
+
+		test("parses repeatable --rlm-input with optional names", () => {
+			const result = parseArgs(["--rlm-input", "docs/big.txt", "--rlm-input", "spec=../spec=v2.md", "-p", "go"]);
+			expect(result.rlmInputs).toEqual({ "big.txt": "docs/big.txt", spec: "../spec=v2.md" });
+			expect(result.messages).toEqual(["go"]);
+			expect(result.diagnostics).toEqual([]);
+		});
+
+		test("reports a missing value and a duplicate name", () => {
+			expect(parseArgs(["--rlm-input"]).diagnostics).toEqual([
+				{ type: "error", message: "--rlm-input requires <path> or <name>=<path>" },
+			]);
+			expect(parseArgs(["--rlm-input", "a=x.txt", "--rlm-input", "a=y.txt"]).diagnostics).toEqual([
+				{ type: "error", message: '--rlm-input: duplicate input name "a"' },
+			]);
+		});
+	});
+
 	describe("--skill flag", () => {
 		test("parses single --skill", () => {
 			const result = parseArgs(["--skill", "./skill-dir"]);
