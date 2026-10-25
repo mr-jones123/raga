@@ -67,6 +67,8 @@ export interface DoneEvent {
 	names?: string[];
 	/** The `answer` dict of the namespace, from `get_answer`. */
 	answer?: { content: string; ready: boolean };
+	/** Kernel memory in MiB after an `execute`: current RSS on Linux, peak RSS elsewhere. */
+	rss_mb?: number;
 	reason?: string;
 }
 
@@ -158,6 +160,8 @@ export function parseKernelEvent(line: string): KernelEvent {
 			if (bytes !== undefined && typeof bytes !== "number") fail("done", "bytes");
 			const reason = obj.reason;
 			if (reason !== undefined && typeof reason !== "string") fail("done", "reason");
+			const rssMb = obj.rss_mb;
+			if (rssMb !== undefined && typeof rssMb !== "number") fail("done", "rss_mb");
 			const answer = obj.answer;
 			let parsedAnswer: DoneEvent["answer"];
 			if (answer !== undefined) {
@@ -180,6 +184,7 @@ export function parseKernelEvent(line: string): KernelEvent {
 			if (names) done.names = names;
 			if (reason !== undefined) done.reason = reason;
 			if (parsedAnswer) done.answer = parsedAnswer;
+			if (rssMb !== undefined) done.rss_mb = rssMb;
 			return done;
 		}
 		default:

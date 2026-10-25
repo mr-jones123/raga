@@ -16,6 +16,7 @@ _SESSION_CWD = os.getcwd()
 
 __all__ = [
     "BOOTSTRAP_NAMES",
+    "CELLS_OUTPUT_BUDGET",
     "Context",
     "HostError",
     "Inputs",
@@ -176,6 +177,9 @@ class Context:
 context = Context()
 answer: dict[str, Any] = {"content": "", "ready": False}
 cells: list[dict[str, Any]] = []
+# Characters of stdout and stderr that the newest `cells` entries keep in full.
+CELLS_OUTPUT_BUDGET = 32 * 1024 * 1024
+_DROPPED_PREFIX = "[output dropped to bound memory: "
 
 BOOTSTRAP_NAMES = frozenset(
     {
@@ -213,5 +217,31 @@ def set_context(task: str, inputs: dict[str, str], data: Any = None) -> None:
 
 
 def record_cell(entry: dict[str, Any]) -> None:
-    """Append one finished cell; called by the kernel."""
+    """Append one finished cell; called by the kernel.
+
+    The newest cells keep full stdout and stderr up to CELLS_OUTPUT_BUDGET
+    characters in total; older cells keep code, result, and error only. The
+    newest cell always keeps its output.
+    """
     cells.append(entry)
+    kept = 0
+    evicting = False
+    for index, cell in enumerate(reversed(cells)):
+        if not isinstance(cell, dict):
+            continue
+        live = {
+            key: text
+            for key in ("stdout", "stderr")
+            if isinstance(text := cell.get(key), str) and text and not _is_dropped(text)
+        }
+        size = sum(len(text) for text in live.values())
+        if not evicting and (index == 0 or kept + size <= CELLS_OUTPUT_BUDGET):
+            kept += size
+            continue
+        evicting = True
+        for key, text in live.items():
+            cell[key] = f"{_DROPPED_PREFIX}{len(text)} characters]"
+
+
+def _is_dropped(text: str) -> bool:
+    return text.startswith(_DROPPED_PREFIX) and text.endswith(" characters]")

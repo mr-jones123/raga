@@ -28,6 +28,11 @@ import types
 import uuid
 from typing import Any
 
+try:
+    import resource
+except ImportError:  # Windows
+    resource = None  # type: ignore[assignment]
+
 import raga_rlm
 
 PROTOCOL_VERSION = 1
@@ -42,6 +47,8 @@ _RESULT_TEXT_CAP = 1024 * 1024
 _HOST_REQUEST_CAP = 16 * 1024 * 1024
 # After stdin EOF a synchronous cell can block the queued shutdown forever.
 _EOF_EXIT_GRACE_SECONDS = 10.0
+# The host passes the `rlm.memoryLimitMb` setting; unset or 0 means no limit.
+_MEMORY_LIMIT_ENV = "RAGA_RLM_MEMORY_LIMIT_MB"
 
 _RUNTIME_FILES = {os.path.abspath(__file__), os.path.abspath(raga_rlm.__file__)}
 
@@ -501,7 +508,47 @@ async def _handle_execute(req: dict[str, Any], ns: dict[str, Any]) -> None:
             "error": "".join(error["traceback"]) if error else None,
         }
     )
-    _send({"event": "done", "id": rid, "status": status})
+    done: dict[str, Any] = {"event": "done", "id": rid, "status": status}
+    rss_mb = _rss_mb()
+    if rss_mb is not None:
+        done["rss_mb"] = rss_mb
+    _send(done)
+
+
+# --- memory ------------------------------------------------------------------
+
+
+def _apply_memory_limit() -> None:
+    """Cap the data segment (heap and private mappings) at the host's limit.
+
+    On Linux an allocation past RLIMIT_DATA fails with MemoryError in the cell,
+    and the kernel keeps serving. macOS does not enforce RLIMIT_DATA, so there
+    is no hard limit there.
+    """
+    raw = os.environ.get(_MEMORY_LIMIT_ENV, "")
+    limit_mb = int(raw) if raw else 0
+    if limit_mb <= 0 or resource is None or not sys.platform.startswith("linux"):
+        return
+    limit = limit_mb * 1024 * 1024
+    _, hard = resource.getrlimit(resource.RLIMIT_DATA)
+    if hard != resource.RLIM_INFINITY:
+        limit = min(limit, hard)
+    resource.setrlimit(resource.RLIMIT_DATA, (limit, limit))
+
+
+def _rss_mb() -> int | None:
+    """Current RSS in MiB on Linux; peak RSS elsewhere, where getrusage has no current value."""
+    try:
+        with open("/proc/self/statm", "rb") as fh:
+            pages = int(fh.read().split()[1])
+        return pages * os.sysconf("SC_PAGE_SIZE") // (1024 * 1024)
+    except (OSError, ValueError, IndexError):
+        pass
+    if resource is None:
+        return None
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # ru_maxrss is bytes on macOS and KiB on the other Unixes.
+    return peak // (1024 * 1024) if sys.platform == "darwin" else peak // 1024
 
 
 # --- snapshot and restore ----------------------------------------------------
@@ -554,10 +601,15 @@ def _snapshot(ns: dict[str, Any], path: str, max_bytes: int, max_variable_bytes:
         with os.fdopen(fd, "wb") as fh:
             total = fh.write(_SNAPSHOT_MAGIC)
             for name in _user_names(ns):
+                value = ns[name]
+                # A large buffer arrives in one write, after dill has copied it whole.
+                if _estimated_size(value) > max_variable_bytes:
+                    skipped.append(name)
+                    continue
                 try:
                     encoded = name.encode("utf-8")
                     buffer = io.BytesIO()
-                    dill.dump(ns[name], _CappedWriter(buffer, max_variable_bytes))
+                    dill.dump(value, _CappedWriter(buffer, max_variable_bytes))
                 except Exception:  # noqa: BLE001 - _TooLarge or unpicklable: skip this name only
                     skipped.append(name)
                     continue
@@ -582,28 +634,43 @@ def _snapshot(ns: dict[str, Any], path: str, max_bytes: int, max_variable_bytes:
     return {"status": "ok", "saved": saved, "skipped": skipped, "bytes": total}
 
 
-def _read_records(path: str) -> dict[str, bytes]:
-    with open(path, "rb") as fh:
-        data = fh.read()
-    if not data.startswith(_SNAPSHOT_MAGIC):
+def _estimated_size(value: Any) -> int:
+    """A cheap lower bound on a value's pickle size, without pickling it; 0 when unknown."""
+    if isinstance(value, (str, bytes, bytearray)):
+        return len(value)
+    if isinstance(value, memoryview):
+        return value.nbytes
+    try:
+        # numpy arrays and similar buffers, without importing numpy.
+        nbytes = getattr(value, "nbytes", None)
+    except Exception:  # noqa: BLE001 - a broken __getattr__ only loses the estimate
+        return 0
+    return nbytes if isinstance(nbytes, int) and not isinstance(nbytes, bool) else 0
+
+
+def _index_records(fh: io.BufferedReader) -> dict[str, tuple[int, int]]:
+    """Map each name to its blob's (offset, length), reading only the record headers."""
+    if fh.read(len(_SNAPSHOT_MAGIC)) != _SNAPSHOT_MAGIC:
         raise ValueError("not a raga RLM snapshot")
-    records: dict[str, bytes] = {}
+    size = os.fstat(fh.fileno()).st_size
+    records: dict[str, tuple[int, int]] = {}
     pos = len(_SNAPSHOT_MAGIC)
-    while pos < len(data):
-        if pos + 4 > len(data):
+    while pos < size:
+        header = fh.read(4)
+        if len(header) < 4:
             raise ValueError("truncated snapshot record")
-        name_len = int.from_bytes(data[pos : pos + 4], "little")
+        name_len = int.from_bytes(header, "little")
         pos += 4
-        if pos + name_len + 8 > len(data):
+        if pos + name_len + 8 > size:
             raise ValueError("truncated snapshot record")
-        name = data[pos : pos + name_len].decode("utf-8")
-        pos += name_len
-        blob_len = int.from_bytes(data[pos : pos + 8], "little")
-        pos += 8
-        if pos + blob_len > len(data):
+        name = fh.read(name_len).decode("utf-8")
+        blob_len = int.from_bytes(fh.read(8), "little")
+        pos += name_len + 8
+        if pos + blob_len > size:
             raise ValueError("truncated snapshot record")
-        records[name] = data[pos : pos + blob_len]
+        records[name] = (pos, blob_len)
         pos += blob_len
+        fh.seek(pos)
     return records
 
 
@@ -632,22 +699,26 @@ def _restore(ns: dict[str, Any], path: str) -> dict[str, Any]:
         import dill
     except ImportError:
         return {"status": "error", "reason": "dill not installed"}
-    try:
-        records = _read_records(path)
-    except (OSError, ValueError) as err:
-        return {"status": "error", "reason": f"snapshot load failed: {err}"}
     unpickler = _snapshot_unpickler(dill)
     restored: list[str] = []
     failed: list[str] = []
-    for name, blob in records.items():
-        if name.startswith("_") or name in raga_rlm.BOOTSTRAP_NAMES:
-            continue
-        try:
-            ns[name] = unpickler(io.BytesIO(blob)).load()
-        except Exception:  # noqa: BLE001 - one broken name must not abort the restore
-            failed.append(name)
-            continue
-        restored.append(name)
+    try:
+        with open(path, "rb") as fh:
+            records = _index_records(fh)
+            # One blob in memory at a time.
+            for name, (offset, length) in records.items():
+                if name.startswith("_") or name in raga_rlm.BOOTSTRAP_NAMES:
+                    continue
+                try:
+                    fh.seek(offset)
+                    ns[name] = unpickler(io.BytesIO(fh.read(length))).load()
+                except Exception:  # noqa: BLE001 - one broken name must not abort the restore
+                    failed.append(name)
+                    continue
+                restored.append(name)
+    except (OSError, ValueError) as err:
+        # Only opening the file and indexing its headers raise here, before any name loads.
+        return {"status": "error", "reason": f"snapshot load failed: {err}"}
     return {"status": "ok", "restored": sorted(restored), "failed": sorted(failed)}
 
 
@@ -812,6 +883,7 @@ def _setup_fds() -> int:
 
 def main() -> None:
     global _loop, _serve_task
+    _apply_memory_limit()
     stdin_fd = _setup_fds()
 
     # `python -m` runs this file as `__main__`; alias it so `raga_rlm.repl` is this module.

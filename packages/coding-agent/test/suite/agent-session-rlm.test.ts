@@ -193,6 +193,57 @@ describe("AgentSession RLM mode", () => {
 		expect(getMessageText(results[1])).toBe("[result]\n1001");
 	});
 
+	it("passes rlm.memoryLimitMb to the kernel as RAGA_RLM_MEMORY_LIMIT_MB", async () => {
+		const harness = await setup({ settings: { rlm: { memoryLimitMb: 1234 } } });
+		harness.setResponses([
+			pythonCall(
+				'import os, sys\nprint(os.environ["RAGA_RLM_MEMORY_LIMIT_MB"])\nif sys.platform.startswith("linux"):\n    import resource\n    print(resource.getrlimit(resource.RLIMIT_DATA)[0] // (1024 * 1024))',
+			),
+			fauxAssistantMessage("done"),
+		]);
+		await harness.session.prompt("show the limit");
+		expect(resultText(harness)).toBe(process.platform === "linux" ? "[stdout]\n1234\n1234" : "[stdout]\n1234");
+	});
+
+	it("warns in the python result when the kernel uses 75% of rlm.memoryLimitMb", async () => {
+		const harness = await setup({ settings: { rlm: { memoryLimitMb: 200 } } });
+		harness.setResponses([
+			pythonCall("small = 1"),
+			pythonCall("blob = b'x' * (145 * 1024 * 1024)"),
+			fauxAssistantMessage("done"),
+		]);
+		await harness.session.prompt("fill memory");
+
+		const results = harness.session.messages.filter((message) => message.role === "toolResult");
+		expect(getMessageText(results[0])).toBe("(no output)");
+		expect(getMessageText(results[1])).toMatch(
+			/^\(no output\)\n\[kernel memory: \d+ MiB of 200 MiB limit; free large variables with del\]$/,
+		);
+	});
+
+	it.skipIf(process.platform !== "linux")(
+		"notes the memory limit when a cell raises MemoryError and keeps the namespace",
+		async () => {
+			const harness = await setup({ settings: { rlm: { memoryLimitMb: 200 } } });
+			harness.setResponses([
+				pythonCall("keep = 41"),
+				pythonCall("big = bytearray(400 * 1024 * 1024)"),
+				pythonCall("keep + 1"),
+				fauxAssistantMessage("done"),
+			]);
+			await harness.session.prompt("allocate too much");
+
+			const results = harness.session.messages.filter((message) => message.role === "toolResult");
+			expect(results[1].role === "toolResult" && results[1].isError).toBe(true);
+			const text = getMessageText(results[1]);
+			expect(text).toContain("MemoryError");
+			expect(text).toMatch(
+				/\n\[kernel memory limit 200 MiB reached; free large variables with del, or process data in chunks\]$/,
+			);
+			expect(getMessageText(results[2])).toBe("[result]\n42");
+		},
+	);
+
 	it("reads --rlm-input files through context.inputs", async () => {
 		const notes = join(inputsDir, "notes.md");
 		writeFileSync(notes, "# Large input\nline two\n");

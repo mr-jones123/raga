@@ -23,7 +23,7 @@ import type { SessionEntry, SessionManager } from "../session-manager.ts";
 import type { SettingsManager } from "../settings-manager.ts";
 import { pythonRenderers } from "../tools/renderers/python.ts";
 import { combineUsage } from "../usage-totals.ts";
-import { createRlmQueryHandler } from "./children.ts";
+import { createRlmQueryHandler, RlmChildSlots } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
 /** The tools a python cell reaches through `tool.call`. */
@@ -38,6 +38,8 @@ const UPDATE_THROTTLE_MS = 100;
 const SNAPSHOT_DELAY_MS = 1000;
 const RESTORE_NAMES_SHOWN = 20;
 const RESTART_NOTICE = "[kernel restarted: the namespace is empty]";
+/** Kernel memory, as a fraction of `rlm.memoryLimitMb`, from which the python result warns. */
+const MEMORY_WARNING_FRACTION = 0.75;
 
 /** RLM options of one session. Its presence turns RLM mode on. */
 export interface RlmSessionOptions {
@@ -45,6 +47,8 @@ export interface RlmSessionOptions {
 	inputs?: Record<string, string>;
 	/** `context.data`: any JSON value. An `rlm_query` child gets the parent's `context` argument. */
 	data?: unknown;
+	/** The tree's child slots. Omitted for a root session, which creates them. */
+	childSlots?: RlmChildSlots;
 }
 
 export interface RlmHost {
@@ -53,6 +57,8 @@ export interface RlmHost {
 	data: unknown;
 	/** 0 for a root session; an `rlm_query` child has its parent's depth + 1. */
 	depth: number;
+	/** The tree's child slots; a root session passes none and gets new ones. */
+	childSlots?: RlmChildSlots;
 	settingsManager: SettingsManager;
 	modelRuntime: ModelRuntime;
 	/** Shared with `rlm_query` children. */
@@ -176,10 +182,27 @@ export function formatCellOutput(output: CellOutput, limit: number): { text: str
 	};
 }
 
+/** Memory lines for a python result; none when `limitMb` is 0 (no limit). */
+export function formatMemoryNotes(output: CellOutput, limitMb: number): string[] {
+	if (limitMb <= 0) return [];
+	const notes: string[] = [];
+	if (output.rssMb !== undefined && output.rssMb >= limitMb * MEMORY_WARNING_FRACTION) {
+		notes.push(`[kernel memory: ${output.rssMb} MiB of ${limitMb} MiB limit; free large variables with del]`);
+	}
+	if (output.error?.ename === "MemoryError") {
+		notes.push(
+			`[kernel memory limit ${limitMb} MiB reached; free large variables with del, or process data in chunks]`,
+		);
+	}
+	return notes;
+}
+
 export class RlmRuntime {
 	readonly toolDefinition: ToolDefinition<typeof pythonSchema, PythonToolDetails>;
 	private readonly host: RlmHost;
 	private readonly kernel: Kernel;
+	/** `rlm.memoryLimitMb` when the kernel was created; every kernel process of this session gets it. */
+	private readonly memoryLimitMb: number;
 	private disposed = false;
 	/** Settles with the eager start's error, reported by the first python call. */
 	private startFailure: Promise<unknown> | undefined;
@@ -214,6 +237,7 @@ export class RlmRuntime {
 			getThinkingLevel: () => host.getThinkingLevel(),
 			resolveModel: (ref) => this.resolveModel(ref),
 			addUsage: (usage) => this.addCellUsage(usage),
+			childSlots: host.childSlots ?? new RlmChildSlots(),
 		});
 		const handlers = new Map<string, HostHandler>([
 			["tool.call", (data, ctx) => this.handleToolCall(data, ctx.signal)],
@@ -222,7 +246,12 @@ export class RlmRuntime {
 			["context.history", async (data) => this.handleHistory(data)],
 			["rlm.query", (data, ctx) => rlmQuery(data, ctx.signal)],
 		]);
-		this.kernel = new Kernel({ cwd: host.cwd, handlers });
+		this.memoryLimitMb = host.settingsManager.getRlmSettings().memoryLimitMb;
+		this.kernel = new Kernel({
+			cwd: host.cwd,
+			env: { RAGA_RLM_MEMORY_LIMIT_MB: String(this.memoryLimitMb) },
+			handlers,
+		});
 		this.startFailure = this.kernel.start().then(
 			() => undefined,
 			(error: unknown) => error ?? new Error("unknown error"),
@@ -333,7 +362,9 @@ export class RlmRuntime {
 
 		const { text, cutCharacters } = formatCellOutput(output, outputLimit);
 		return {
-			content: [{ type: "text", text: [...notices, text].join("\n") }],
+			content: [
+				{ type: "text", text: [...notices, text, ...formatMemoryNotes(output, this.memoryLimitMb)].join("\n") },
+			],
 			details: { cutCharacters, restarted },
 			...(usage ? { usage } : {}),
 			...(output.status === "error" ? { isError: true } : {}),

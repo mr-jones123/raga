@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import time
 from pathlib import Path
+from unittest.mock import ANY
 
 from conftest import KernelProcess, only, text_of
 
@@ -19,7 +20,7 @@ def test_execute_stdout_and_result(kernel: KernelProcess) -> None:
     rid, events = kernel.execute("x = 20\nprint('hello')\nx + 22")
     assert text_of(events, "stdout", rid) == "hello\n"
     assert only(events, "result") == {"event": "result", "id": rid, "text": "42"}
-    assert events[-1] == {"event": "done", "id": rid, "status": "ok"}
+    assert events[-1] == {"event": "done", "id": rid, "status": "ok", "rss_mb": ANY}
     # The value is bound to `_` and the namespace persists.
     _, events = kernel.execute("_ + x")
     assert only(events, "result")["text"] == "62"
@@ -41,7 +42,7 @@ def test_error_traceback_names_cell(kernel: KernelProcess) -> None:
     assert '"<cell-2>", line 4' in text
     assert "return 1 / 0" in text
     assert "repl.py" not in text
-    assert events[-1] == {"event": "done", "id": rid, "status": "error"}
+    assert events[-1] == {"event": "done", "id": rid, "status": "error", "rss_mb": ANY}
 
 
 def test_syntax_error(kernel: KernelProcess) -> None:
@@ -67,7 +68,7 @@ def test_background_task_keeps_cell_id(kernel: KernelProcess) -> None:
         "task = asyncio.create_task(later())\n"
     )
     rid, events = kernel.execute(code)
-    assert events[-1] == {"event": "done", "id": rid, "status": "ok"}
+    assert events[-1] == {"event": "done", "id": rid, "status": "ok", "rss_mb": ANY}
     # print() writes the text and the newline separately.
     events = [kernel.next_event(), kernel.next_event()]
     assert all(e["event"] == "stdout" and e["id"] == rid for e in events)
@@ -110,7 +111,7 @@ def test_interrupt_sync_loop(kernel: KernelProcess) -> None:
     error = only(events, "error")
     assert error["ename"] == "KeyboardInterrupt"
     assert "<cell-1>" in "".join(error["traceback"])
-    assert events[-1] == {"event": "done", "id": rid, "status": "error"}
+    assert events[-1] == {"event": "done", "id": rid, "status": "error", "rss_mb": ANY}
     _, events = kernel.execute("1 + 1")
     assert only(events, "result")["text"] == "2"
 
@@ -148,11 +149,11 @@ def test_interrupt_before_execute_starts(kernel: KernelProcess) -> None:
     events = kernel.collect(second, timeout=10)
     first_events = [e for e in events if e["id"] == first]
     assert only(first_events, "result")["text"] == "'first'"
-    assert first_events[-1] == {"event": "done", "id": first, "status": "ok"}
+    assert first_events[-1] == {"event": "done", "id": first, "status": "ok", "rss_mb": ANY}
     second_events = [e for e in events if e["id"] == second]
     assert text_of(second_events, "stdout", second) == ""
     assert only(second_events, "error")["ename"] == "KeyboardInterrupt"
-    assert second_events[-1] == {"event": "done", "id": second, "status": "error"}
+    assert second_events[-1] == {"event": "done", "id": second, "status": "error", "rss_mb": ANY}
     # The parked interrupt was consumed; the next cell runs normally.
     _, events = kernel.execute("3")
     assert only(events, "result")["text"] == "3"

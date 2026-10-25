@@ -527,6 +527,7 @@ export class AgentSession {
 				cwd: this._cwd,
 				inputs: config.rlm.inputs ?? {},
 				data: config.rlm.data,
+				childSlots: config.rlm.childSlots,
 				depth: this._rlmDepth,
 				settingsManager: this.settingsManager,
 				modelRuntime: this._modelRuntime,

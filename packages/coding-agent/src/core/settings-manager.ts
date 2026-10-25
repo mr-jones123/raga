@@ -1180,13 +1180,20 @@ export class SettingsManager {
 	}
 
 	/** RLM mode settings with defaults applied. `subModel` is `"provider/id"` or undefined for the session model. */
-	getRlmSettings(): { enabled: boolean; subModel: string | undefined; outputLimit: number; maxDepth: number } {
+	getRlmSettings(): {
+		enabled: boolean;
+		subModel: string | undefined;
+		outputLimit: number;
+		maxDepth: number;
+		memoryLimitMb: number;
+	} {
 		const rlm = this.settings.rlm;
 		return {
 			enabled: rlm?.enabled ?? SETTINGS_DEFAULTS.rlm.enabled,
 			subModel: rlm?.subModel,
 			outputLimit: rlm?.outputLimit ?? SETTINGS_DEFAULTS.rlm.outputLimit,
 			maxDepth: rlm?.maxDepth ?? SETTINGS_DEFAULTS.rlm.maxDepth,
+			memoryLimitMb: rlm?.memoryLimitMb ?? SETTINGS_DEFAULTS.rlm.memoryLimitMb,
 		};
 	}
 

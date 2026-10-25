@@ -15,6 +15,8 @@ import type { HostRequest } from "./kernel.ts";
 
 /** Children of one session that run at once; more wait in a queue. */
 export const RLM_CHILD_CONCURRENCY = 4;
+/** Live child sessions across one RLM tree; more wait in a queue. */
+export const RLM_TREE_CHILD_LIMIT = 8;
 /** Turns a child gets when `max_turns` is not given. */
 export const RLM_CHILD_DEFAULT_MAX_TURNS = 30;
 
@@ -23,6 +25,104 @@ export interface RlmQueryResult {
 	ready: boolean;
 	/** The child's session file, or null when the parent session is not persisted. */
 	session_file: string | null;
+}
+
+/** The child counter of one session. */
+export interface RlmChildParent {
+	running: number;
+}
+
+interface SlotRequest {
+	parent: RlmChildParent;
+	depth: number;
+	maxDepth: number;
+}
+
+interface Waiter extends SlotRequest {
+	start(): void;
+}
+
+/**
+ * The child slots of one RLM tree. The root session creates it and every child session shares it, so
+ * at most {@link RLM_TREE_CHILD_LIMIT} children are live across the tree and at most
+ * {@link RLM_CHILD_CONCURRENCY} per parent. A child at depth `d` starts only while `maxDepth - d` slots
+ * stay free for deeper children: parents that wait on their own children hold slots, and without the
+ * reserve they could fill the tree and wait forever. With the reserve, the deepest waiting parent's
+ * child can always start.
+ */
+export class RlmChildSlots {
+	private live = 0;
+	private readonly waiting: Waiter[] = [];
+	private readonly limit: number;
+
+	constructor(limit = RLM_TREE_CHILD_LIMIT) {
+		this.limit = limit;
+	}
+
+	/** Run `child` once a slot for a child of `parent` at `depth` is free. */
+	async run<T>(
+		parent: RlmChildParent,
+		depth: number,
+		maxDepth: number,
+		signal: AbortSignal,
+		child: () => Promise<T>,
+	): Promise<T> {
+		await this.acquire({ parent, depth, maxDepth }, signal);
+		try {
+			return await child();
+		} finally {
+			parent.running--;
+			this.live--;
+			this.startWaiting();
+		}
+	}
+
+	private admits({ parent, depth, maxDepth }: SlotRequest): boolean {
+		const reserve = Math.min(Math.max(maxDepth - depth, 0), this.limit - 1);
+		return parent.running < RLM_CHILD_CONCURRENCY && this.live + 1 + reserve <= this.limit;
+	}
+
+	private take({ parent }: SlotRequest): void {
+		parent.running++;
+		this.live++;
+	}
+
+	private acquire(request: SlotRequest, signal: AbortSignal): Promise<void> {
+		if (this.admits(request)) {
+			this.take(request);
+			return Promise.resolve();
+		}
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		const onAbort = () => {
+			this.waiting.splice(this.waiting.indexOf(waiter), 1);
+			reject(new Error("rlm_query was aborted"));
+		};
+		// `startWaiting` takes the slot before it calls `start`.
+		const waiter: Waiter = {
+			...request,
+			start: () => {
+				signal.removeEventListener("abort", onAbort);
+				resolve();
+			},
+		};
+		this.waiting.push(waiter);
+		signal.addEventListener("abort", onAbort, { once: true });
+		return promise;
+	}
+
+	/** Start every waiting child that fits now, oldest first. */
+	private startWaiting(): void {
+		for (let i = 0; i < this.waiting.length; ) {
+			const waiter = this.waiting[i];
+			if (!this.admits(waiter)) {
+				i++;
+				continue;
+			}
+			this.waiting.splice(i, 1);
+			this.take(waiter);
+			waiter.start();
+		}
+	}
 }
 
 /** What a child shares with its parent session. */
@@ -39,39 +139,18 @@ export interface RlmChildHost {
 	resolveModel(ref: string | undefined): Model<Api>;
 	/** Add the child's usage to the parent's running python cell. */
 	addUsage(usage: Usage): void;
+	/** The tree's child slots, created by the root session and passed to every child. */
+	childSlots: RlmChildSlots;
 }
 
-/** The `rlm.query` handler of one session. Children beyond {@link RLM_CHILD_CONCURRENCY} wait in a queue. */
+/**
+ * The `rlm.query` handler of one session. A child waits in a queue while its parent runs
+ * {@link RLM_CHILD_CONCURRENCY} children or the tree runs {@link RLM_TREE_CHILD_LIMIT}.
+ */
 export function createRlmQueryHandler(
 	host: RlmChildHost,
 ): (data: HostRequest, signal: AbortSignal) => Promise<RlmQueryResult> {
-	let running = 0;
-	const waiting: Array<() => void> = [];
-	const acquire = async (signal: AbortSignal): Promise<void> => {
-		if (running < RLM_CHILD_CONCURRENCY) {
-			running++;
-			return;
-		}
-		const { promise, resolve, reject } = Promise.withResolvers<void>();
-		const onAbort = () => {
-			waiting.splice(waiting.indexOf(start), 1);
-			reject(new Error("rlm_query was aborted"));
-		};
-		// `release` hands its slot over, so `running` stays the same.
-		const start = () => {
-			signal.removeEventListener("abort", onAbort);
-			resolve();
-		};
-		waiting.push(start);
-		signal.addEventListener("abort", onAbort, { once: true });
-		return promise;
-	};
-	const release = () => {
-		const next = waiting.shift();
-		if (next) next();
-		else running--;
-	};
-
+	const parent: RlmChildParent = { running: 0 };
 	return async (data, signal) => {
 		const task = data.task;
 		if (typeof task !== "string" || task.trim() === "") throw new Error('rlm.query needs a non-empty string "task"');
@@ -89,12 +168,9 @@ export function createRlmQueryHandler(
 		const model = host.resolveModel(modelRef ?? undefined);
 
 		if (signal.aborted) throw new Error("rlm_query was aborted");
-		await acquire(signal);
-		try {
-			return await runChild(host, { task, data: data.context, model, depth, maxTurns: maxTurnsValue }, signal);
-		} finally {
-			release();
-		}
+		return host.childSlots.run(parent, depth, maxDepth, signal, () =>
+			runChild(host, { task, data: data.context, model, depth, maxTurns: maxTurnsValue }, signal),
+		);
 	};
 }
 
@@ -145,6 +221,7 @@ async function runChild(
 		rlm: true,
 		rlmDepth: options.depth,
 		rlmData: options.data,
+		rlmChildSlots: host.childSlots,
 	});
 	try {
 		if (signal.aborted) throw new Error("rlm_query was aborted");

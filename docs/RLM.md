@@ -60,7 +60,7 @@ The kernel runs `execute`, `snapshot`, `restore`, `list_names`, `set_context`, `
 | `result` | `{"event":"result","id":str,"text":str}`. The `repr` of a trailing expression that is not `None`. The value is also bound to `_`. |
 | `host_request` | `{"event":"host_request","id":str,"cell":str\|null,"data":{"type":str,...}}`. The host answers with `host_reply` and the same `id`. `cell` is the id of the cell whose task made the request. |
 | `error` | `{"event":"error","id":str\|null,"ename":str,"evalue":str,"traceback":[str]}` |
-| `done` | `{"event":"done","id":str,"status":"ok"\|"error",...}`. Exactly one per request with an id, after every other event of that request. |
+| `done` | `{"event":"done","id":str,"status":"ok"\|"error",...}`. Exactly one per request with an id, after every other event of that request. The `done` of an `execute` has `rss_mb`, the kernel's memory in MiB: current RSS on Linux, peak RSS elsewhere. |
 
 Before a cell's `done`, the kernel drains both output channels, so every byte that the cell wrote synchronously comes before `done`.
 
@@ -74,7 +74,7 @@ An interrupt raises `KeyboardInterrupt` in the running cell. If the cell is in s
 
 ### Snapshot and restore
 
-`snapshot` saves the user namespace with `dill`, one name at a time. It skips names that start with `_`, the names that the bootstrap binds, modules, and any name whose pickle exceeds `max_variable_bytes` (default 16 MiB) or would push the total over `max_bytes` (default 256 MiB). It writes the file atomically. `restore` loads each name on its own and lists the names that failed. A missing file restores nothing and reports `status: "ok"` with `reason: "snapshot not found"`. If `dill` is not installed, both requests fail with `reason: "dill not installed"`.
+`snapshot` saves the user namespace with `dill`, one name at a time. It skips names that start with `_`, the names that the bootstrap binds, modules, and any name whose pickle exceeds `max_variable_bytes` (default 16 MiB) or would push the total over `max_bytes` (default 256 MiB). Before it pickles a name, it estimates the size without copying: `len()` of a `str`, `bytes`, or `bytearray`, and `nbytes` of a `memoryview` or of any object with an integer `nbytes` attribute, such as a numpy array. A name whose estimate exceeds `max_variable_bytes` is skipped without pickling, so such a value is never copied whole; a large buffer nested in a container is still pickled before the cap rejects it. It writes the file atomically. `restore` reads the record headers first and fails with `reason: "snapshot load failed: ..."` before it loads any name when the file is not a snapshot or is truncated. It then reads and loads one record at a time, so only one pickle is in memory at once, and lists the names that failed. A missing file restores nothing and reports `status: "ok"` with `reason: "snapshot not found"`. If `dill` is not installed, both requests fail with `reason: "dill not installed"`.
 
 ## Host requests
 
@@ -106,7 +106,7 @@ Usage from `llm.*` and `rlm.query` during a cell adds up on the `python` tool re
 4. Answer. After the child's `prompt()` settles, the host sends `get_answer` to the child's kernel. When `answer["ready"]` is true, the result is `answer["content"]` with `ready: true`. Otherwise it is the child's last assistant text with `ready: false`. A child whose last response ended with `stopReason: "error"` and no ready answer fails the request with that error. `session_file` is the child's session file, or `null` for an in-memory child.
 5. Budget and abort. The child is aborted after `max_turns` `turn_end` events (default 30). The abort signal of the parent's cell aborts the child, so aborting the parent session interrupts the child's running cell. The child is disposed after it answers.
 6. Usage. The usage of the child's assistant messages and tool results is combined with `combineUsage` and added to the parent cell's usage, so it lands on the parent's `python` tool result and in the parent's session stats.
-7. Concurrency. The kernel serves host requests concurrently, so `await asyncio.gather(rlm_query(a), rlm_query(b))` runs both children at once. A session runs at most 4 children at a time; more wait in a queue.
+7. Concurrency. The kernel serves host requests concurrently, so `await asyncio.gather(rlm_query(a), rlm_query(b))` runs both children at once. A session runs at most 4 children at a time, and the whole RLM tree runs at most 8 child sessions at a time; a child waits in a queue while either limit is full. The root session creates the tree's counter (`RlmChildSlots`) and every child passes it to its own children. A child at depth D also waits while starting it would leave fewer than `rlm.maxDepth` − D slots free, so parents that wait on their own children cannot fill the tree and wait forever; the deepest waiting parent's child can always start. With the default `rlm.maxDepth` of 2, 4 children at depth 1 leave at least 4 slots for depth 2.
 
 ## Python API
 
@@ -123,15 +123,28 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 | `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None) -> str` | Runs a child RLM session on `task` and returns its answer (see "Child sessions"). `context` is any JSON value and becomes the child's `context.data`. Run several children at once with `await asyncio.gather(rlm_query(a), rlm_query(b))`. |
 | `context` | object | `context.task` is the first user prompt. `context.inputs` maps input names to file contents; each file is read the first time its key is read, then cached, and `context.inputs.path(name)` returns the path. `context.data` is the `context` argument of the parent's `rlm_query`, or `None`. `await context.history(offset=0, limit=None)` returns the session's messages as `{"role","text"}` dicts. |
 | `answer` | `{"content": "", "ready": False}` | A child session returns `answer["content"]` when `answer["ready"]` is true. |
-| `cells` | `list[dict]` | One entry per finished cell: `{"id","code","stdout","stderr","result","error"}`, with full output. `error` is the formatted traceback string, or `None`. |
+| `cells` | `list[dict]` | One entry per finished cell: `{"id","code","stdout","stderr","result","error"}`. `error` is the formatted traceback string, or `None`. The newest entries keep their full `stdout` and `stderr` up to 32 Mi characters in total, and the newest entry always keeps its own. In older entries each non-empty `stdout` and `stderr` becomes `"[output dropped to bound memory: N characters]"`, where N is its length; `code`, `result`, and `error` stay. |
 
 ## The python tool
 
 The tool's parameters are `{"code": str}`. It runs as `executionMode: "sequential"`. Its result text is the cell's stdout, stderr, result `repr`, traceback, and background output, in that order. Each non-empty part starts with a label line (`[stdout]`, `[stderr]`, `[result]`, `[error]`, `[background]`), and empty parts are left out. A cell with no output returns `(no output)`. When the text exceeds the `rlm.outputLimit` setting (default 16,000 characters), the tool keeps the first three quarters and the last quarter of the limit and puts `[... N characters cut; full output in cells[-1] ...]` between them. `isError` is true when the cell ends with `status: "error"`.
 
+After the output come memory lines when `rlm.memoryLimitMb` is not 0. When the cell's `done` reports `rss_mb` of at least 75% of the limit, the result ends with `[kernel memory: X MiB of Y MiB limit; free large variables with del]`. When the cell fails with `MemoryError`, it ends with `[kernel memory limit Y MiB reached; free large variables with del, or process data in chunks]`.
+
 Before the first cell on each kernel process, the host sends `set_context` with `context.task`, the input paths, and `context.data`. `context.task` is the text of the first user message on the session branch.
 
 The session starts the kernel when it is created. If the start fails, the first `python` call returns the reason as an error result, and the next call tries again. When the session is aborted, the tool sends `interrupt`, waits 1 second, then kills and restarts the kernel. The first result from a new kernel process starts with `[kernel restarted: the namespace is empty]`.
+
+## Memory
+
+Each kernel is a separate process. An idle kernel uses about 21 MiB of RSS. A tree holds the root's kernel and at most 8 child kernels at once (see "Child sessions").
+
+1. Limit. The host starts every kernel with the environment variable `RAGA_RLM_MEMORY_LIMIT_MB` set to the `rlm.memoryLimitMb` setting (default 2048). Before the bootstrap, the kernel sets the soft and hard `RLIMIT_DATA` to that many MiB, or to the existing hard limit when that is lower. `0` sets no limit.
+2. Linux. `RLIMIT_DATA` covers the heap and private anonymous mappings, so an allocation past the limit raises `MemoryError` in the cell. The cell ends with `status: "error"`, the kernel keeps serving, and earlier variables stay in the namespace.
+3. Other platforms. The kernel sets the limit only on Linux. macOS does not enforce `RLIMIT_DATA`, so there is no hard limit there; the memory lines in the `python` result still appear.
+4. Subprocesses. A process started from Python code (`subprocess`, `os.system`) inherits the limit. `bash()` runs pi's `bash` tool in the host process, so its commands do not.
+5. Visibility. The `done` of every `execute` carries `rss_mb`, and the `python` result warns from 75% of the limit (see "The python tool").
+6. Growth that the kernel bounds itself: `cells` keeps full output for at most 32 Mi characters (see "Python API"), a snapshot skips a large buffer without pickling it, and `restore` holds one pickle in memory at a time (see "Snapshot and restore").
 
 ## Persistence
 
@@ -151,6 +164,7 @@ The kernel namespace survives a resume and a fork through a `dill` snapshot.
 | `rlm.subModel` | none | `"provider/id"` for `llm_query`, `llm_batch`, and `rlm_query`. |
 | `rlm.outputLimit` | `16000` | Characters of cell output that the model sees per cell. |
 | `rlm.maxDepth` | `2` | How many levels of `rlm_query` children may nest. |
+| `rlm.memoryLimitMb` | `2048` | Memory limit of each kernel in MiB, applied as `RLIMIT_DATA` on Linux. `0` disables it. See "Memory". |
 
 In RLM mode the session's active tools are `python` plus `bash`, `edit`, and `write` as hidden declarations. Hidden tools stay callable from the host and do not reach the model. The `defaultTools` setting, `--tools`, `--no-tools`, and `--no-builtin-tools` do not apply; `--exclude-tools` still removes tools, and extension tools that activate on registration stay declared next to `python`. The system prompt gets an `rlm` section that describes the kernel and its names.
 

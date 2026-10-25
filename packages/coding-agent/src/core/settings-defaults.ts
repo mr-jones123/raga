@@ -62,6 +62,7 @@ export const SETTINGS_DEFAULTS = {
 		enabled: false,
 		outputLimit: 16000,
 		maxDepth: 2,
+		memoryLimitMb: 2048,
 	},
 	cacheWarming: "streaming",
 	tuiMode: "fullscreen",

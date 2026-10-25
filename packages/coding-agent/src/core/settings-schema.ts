@@ -195,6 +195,14 @@ const RlmSettingsSchema = Type.Object({
 			default: SETTINGS_DEFAULTS.rlm.maxDepth,
 		}),
 	),
+	memoryLimitMb: Type.Optional(
+		Type.Integer({
+			minimum: 0,
+			description:
+				"Memory limit of each RLM Python kernel in MiB. On Linux an allocation past it raises MemoryError in the cell. 0 disables it.",
+			default: SETTINGS_DEFAULTS.rlm.memoryLimitMb,
+		}),
+	),
 });
 
 const PackageSourceSchema = Type.Union(

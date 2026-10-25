@@ -33,6 +33,8 @@ export interface CellOutput {
 	background: string;
 	/** True when the kernel was killed and restarted during the cell, so the namespace is empty. */
 	restarted: boolean;
+	/** Kernel memory in MiB when the cell finished, from `done.rss_mb`. */
+	rssMb?: number;
 }
 
 export interface KernelOptions {
@@ -490,6 +492,7 @@ export class Kernel {
 					case "done":
 						if (event.id !== id) return;
 						output.status = event.status;
+						if (event.rss_mb !== undefined) output.rssMb = event.rss_mb;
 						this.pending = undefined;
 						this.setState("ready");
 						settle();

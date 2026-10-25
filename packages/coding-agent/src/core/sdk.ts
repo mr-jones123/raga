@@ -16,6 +16,7 @@ import { findInitialModel } from "./model-resolver.ts";
 import { ModelRuntime } from "./model-runtime.ts";
 import type { ResourceLoader } from "./resource-loader.ts";
 import { DefaultResourceLoader } from "./resource-loader.ts";
+import type { RlmChildSlots } from "./rlm/children.ts";
 import { RLM_ACTIVE_TOOL_NAMES } from "./rlm/runtime.ts";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.ts";
 import {
@@ -117,6 +118,8 @@ export interface CreateAgentSessionOptions {
 	rlmData?: unknown;
 	/** RLM depth: 0 for a root session (default), the parent's depth + 1 for an `rlm_query` child. */
 	rlmDepth?: number;
+	/** RLM mode: the tree's child slots. A root session creates them; `rlm_query` passes them to the child. */
+	rlmChildSlots?: RlmChildSlots;
 }
 
 /** Result from createAgentSession */
@@ -482,7 +485,9 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		excludedToolNames,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
-		rlm: rlm ? { inputs: options.rlmInputs ?? {}, data: options.rlmData } : undefined,
+		rlm: rlm
+			? { inputs: options.rlmInputs ?? {}, data: options.rlmData, childSlots: options.rlmChildSlots }
+			: undefined,
 		rlmDepth: options.rlmDepth,
 	});
 

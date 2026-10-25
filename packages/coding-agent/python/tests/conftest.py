@@ -20,9 +20,9 @@ HostHandler = Callable[[dict[str, Any]], dict[str, Any]]
 class KernelProcess:
     """Drives a real `python -m raga_rlm.repl` subprocess over stdin/stdout."""
 
-    def __init__(self, cwd: Path, extra_path: Path | None = None) -> None:
+    def __init__(self, cwd: Path, extra_path: Path | None = None, env: dict[str, str] | None = None) -> None:
         pythonpath = os.pathsep.join(str(p) for p in (extra_path, PYTHON_DIR) if p is not None)
-        env = dict(os.environ, PYTHONPATH=pythonpath, PYTHONUNBUFFERED="1")
+        env = {**os.environ, **(env or {}), "PYTHONPATH": pythonpath, "PYTHONUNBUFFERED": "1"}
         self.proc = subprocess.Popen(
             [sys.executable, "-m", "raga_rlm.repl"],
             cwd=cwd,
@@ -116,8 +116,8 @@ def kernel(tmp_path: Path) -> Iterator[KernelProcess]:
 def spawn(tmp_path: Path) -> Iterator[Callable[..., KernelProcess]]:
     procs: list[KernelProcess] = []
 
-    def make(extra_path: Path | None = None) -> KernelProcess:
-        proc = KernelProcess(tmp_path, extra_path)
+    def make(extra_path: Path | None = None, env: dict[str, str] | None = None) -> KernelProcess:
+        proc = KernelProcess(tmp_path, extra_path, env)
         procs.append(proc)
         return proc
 
