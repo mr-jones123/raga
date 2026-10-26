@@ -804,7 +804,7 @@
     },
     {
       "path": "skills/peak-setup/SKILL.md",
-      "sha256": "73888e46a99c5f3ae6c847fd9fed286268c6d403161f8191d7891bfcd1e00a4d",
+      "sha256": "f2989def1dc7f2112e8583de961d8865f20fd6333cacab05f9a64ee0399c7681",
       "source": "pstack/skills/setup-pstack/SKILL.md",
       "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
       "adaptation": "raga execution adaptation of skills/peak-setup/SKILL.md"

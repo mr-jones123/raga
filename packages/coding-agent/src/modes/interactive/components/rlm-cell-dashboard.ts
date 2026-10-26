@@ -33,7 +33,6 @@ const LINGER_MS = 1200;
 const MAX_VISIBLE = 4;
 
 interface Cell {
-	cellId: string;
 	depth: number;
 	code: string;
 	startedAt: number;
@@ -60,9 +59,14 @@ export class RlmCellDashboard implements Component {
 	}
 
 	render(width: number): string[] {
+		if (width < 10) return [];
 		const now = Date.now();
 		const visible = [...this.cells.values()]
 			.filter((cell) => cell.endedAt === undefined || now - cell.endedAt < LINGER_MS)
+			.sort(
+				(left, right) =>
+					Number(left.endedAt !== undefined) - Number(right.endedAt !== undefined) || left.ordinal - right.ordinal,
+			)
 			.slice(0, MAX_VISIBLE);
 		if (visible.length === 0) return [];
 		const mode = theme.getColorMode();
@@ -99,23 +103,30 @@ export class RlmCellDashboard implements Component {
 	}
 
 	private handle(event: RlmCellEvent): void {
+		const key = `${event.sessionId}:${event.cellId}`;
 		if (event.type === "start") {
-			this.cells.set(event.cellId, {
-				cellId: event.cellId,
+			this.cells.set(key, {
 				depth: event.depth,
 				code: event.code,
 				startedAt: event.startedAt,
 				ordinal: ++this.ordinal,
-				color: this.ordinal - 1,
+				color: this.nextColor(),
 			});
 			this.startTimer();
 		} else {
-			const cell = this.cells.get(event.cellId);
+			const cell = this.cells.get(key);
 			if (!cell) return;
 			cell.endedAt = Date.now();
 			cell.status = event.status;
 		}
 		this.requestRender();
+	}
+
+	/** A color no visible cell uses, so concurrent wheels stay distinguishable. */
+	private nextColor(): number {
+		const used = new Set([...this.cells.values()].map((cell) => cell.color));
+		for (let index = 0; index < PALETTE.length; index++) if (!used.has(index)) return index;
+		return (this.ordinal - 1) % PALETTE.length;
 	}
 
 	private startTimer(): void {
