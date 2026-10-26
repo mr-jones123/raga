@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const commit = "eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10";
 /** Raga calls the pstack engineering workflow "peak"; the old name must not ship. */
-const RENAMED_SKILLS = new Map([["poteto-mode", "peak"]]);
+const RENAMED_SKILLS = new Map([
+  ["poteto-mode", "peak"],
+  ["setup-pstack", "peak-setup"],
+]);
 const renameSkill = (name) => RENAMED_SKILLS.get(name) ?? name;
 const nmCommit = "4822244e763fd4c3d7f48be6433f92df10bb5b33";
 const [source, noMistakes, commander] = process.argv.slice(2).map((path) => resolve(path));
@@ -142,6 +145,7 @@ function adapt(text) {
   text = text.replace(/a git worktree where possible, otherwise `\/tmp\/arena-<slug>\/candidate-<n>\/`/g, "a supervisor-owned child workspace for code, or an independent returned artifact for a read-only design");
   text = text.replace(/Work in a worktree off main\. Commit and open a PR\. Don't push to main directly\./g, "Write the skill through instance.candidate_write and commit through instance.candidate_commit. Return the candidate and evidence for explicit operator promotion. Do not open an application PR for an instance-only proposal.");
   text = text.replaceAll("poteto-mode", "peak");
+  text = text.replaceAll("setup-pstack", "peak-setup");
   text = text.replaceAll("Poteto mode", "Peak");
   text = text.replaceAll("poteto mode", "peak");
   text = text.replaceAll("poteto's agent style", "peak's agent style");
@@ -386,7 +390,7 @@ printf '%s\\n' 'Use the supervisor workspace ownership records and git worktree 
 git worktree list --porcelain
 `, "raga read-only workspace inventory");
 const setup = `---
-name: setup-pstack
+name: peak-setup
 description: Configure real native model selectors for the bundled engineering workflows through a candidate harness revision.
 ---
 
@@ -398,10 +402,12 @@ Use \`await instance.candidate_read(id, 'agents/model-roles.json')\` and \`await
 
 Read agents/model-roles.json from the pinned resource root. Null inherits the session model. Choose code, judgment, and verification roles from available models. Record when roles use one family so reviews do not claim diversity. Never silently replace a rejected selector.
 
-Use the candidate authoring workflow to propose the model-role JSON. The supervisor validates selectors against its registry. Commit the candidate and request explicit promotion. This does not change a running session's pinned configuration.
+## Pick a role for each model entry
+
+Read \`agents/model-roles.json\` and list every entry to the operator. For each entry, offer the current value, then ask the operator to choose an exact provider/model selector from the host's available models, or inherit. Do not choose silently, and do not reuse one model for a diverse panel unless the operator asks for it. Record same-family picks so a review does not claim diversity. Write the finished JSON through \`instance.candidate_write\`, commit the candidate, and request explicit promotion. This does not change a running session's pinned configuration.
 `;
-emit("skills/setup-pstack/SKILL.md", setup, "raga native role setup");
-emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/setup-pstack/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
+emit("skills/peak-setup/SKILL.md", setup, "raga native role setup");
+emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/peak-setup/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
 emit("skills/poteto-help/SKILL.md", `---
 name: poteto-help
 description: Find the bundled engineering skill or playbook for understanding, design, implementation, verification, and communication.

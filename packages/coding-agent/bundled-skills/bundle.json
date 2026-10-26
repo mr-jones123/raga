@@ -139,6 +139,11 @@
       "source": "pstack"
     },
     {
+      "name": "peak-setup",
+      "path": "skills/peak-setup/SKILL.md",
+      "source": "pstack"
+    },
+    {
       "name": "poteto-help",
       "path": "skills/poteto-help/SKILL.md",
       "source": "pstack"
@@ -279,11 +284,6 @@
       "source": "pstack"
     },
     {
-      "name": "setup-pstack",
-      "path": "skills/setup-pstack/SKILL.md",
-      "source": "pstack"
-    },
-    {
       "name": "sharpen",
       "path": "skills/sharpen/SKILL.md",
       "source": "pstack"
@@ -405,7 +405,7 @@
     },
     {
       "path": "docs/guide/01-setup.md",
-      "sha256": "098083cc44e7835e74f679695bd99b0a9244884f6eb3e987993d7382d76e6935",
+      "sha256": "dd276a5fd482afd597944dfcfd110362be561daa426937e064bdcaca160ce903",
       "source": "pstack/docs/guide/01-setup.md",
       "sourceSha256": "384655bdecc713122ca69a485723c58462002a1d512415e94e48597d0dce2fa5",
       "adaptation": "raga native setup guide"
@@ -426,7 +426,7 @@
     },
     {
       "path": "docs/guide/04-design.md",
-      "sha256": "38590b11ec1dcf0b1986ffb2d6fc5a4117c6ffa9fd0c3a2d889ce43f9fc9c158",
+      "sha256": "224d2457d4bbcc17e9552a392b44a3efbae0dfbc1bdd20c2021f0de924990536",
       "source": "pstack/docs/guide/04-design.md",
       "sourceSha256": "cff616278303b533e617c5c4408af6d28895edbb8687d6ce99bb5dd1f6644a6c",
       "adaptation": "pstack/docs/guide/04-design.md"
@@ -801,6 +801,13 @@
       "source": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md",
       "sourceSha256": "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44",
       "adaptation": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md"
+    },
+    {
+      "path": "skills/peak-setup/SKILL.md",
+      "sha256": "73888e46a99c5f3ae6c847fd9fed286268c6d403161f8191d7891bfcd1e00a4d",
+      "source": "pstack/skills/setup-pstack/SKILL.md",
+      "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
+      "adaptation": "raga execution adaptation of skills/peak-setup/SKILL.md"
     },
     {
       "path": "skills/peak/playbooks/authoring-a-skill.md",
@@ -1438,13 +1445,6 @@
       "source": "pstack/skills/reflect/SKILL.md",
       "sourceSha256": "1f5a8c246cdee8251f8667d85bd5d97f6c2801f505843c26ddbd6c621632519b",
       "adaptation": "raga scoped-history adaptation of skills/reflect/SKILL.md"
-    },
-    {
-      "path": "skills/setup-pstack/SKILL.md",
-      "sha256": "e8c22ff900aeec9d38168578a3f78d3ce2879e5a22a2299685b79670c15c2d14",
-      "source": "pstack/skills/setup-pstack/SKILL.md",
-      "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
-      "adaptation": "raga execution adaptation of skills/setup-pstack/SKILL.md"
     },
     {
       "path": "skills/sharpen/SKILL.md",
