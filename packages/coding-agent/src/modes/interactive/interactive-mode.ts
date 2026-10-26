@@ -48,8 +48,6 @@ import {
 	type TUI,
 	TuiAltScreen,
 	TuiMainScreen,
-	type TuiMouseEvent,
-	type TuiMouseEventResult,
 	visibleWidth,
 } from "@earendil-works/pi-tui";
 import chalk from "chalk";
@@ -65,6 +63,7 @@ import {
 	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "../../config.ts";
+import { agentCommand } from "../../core/agent-command.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
 import { type AgentSessionRuntime, SessionImportFileNotFoundError } from "../../core/agent-session-runtime.ts";
 import type { AgentSessionRuntimeDiagnostic } from "../../core/agent-session-services.ts";
@@ -94,6 +93,15 @@ import type {
 } from "../../core/extensions/index.ts";
 import { FooterDataProvider, type ReadonlyFooterDataProvider } from "../../core/footer-data-provider.ts";
 import { configureHttpDispatcher, formatHttpIdleTimeoutMs } from "../../core/http-dispatcher.ts";
+import {
+	checkBendFormal,
+	draftBendFormal,
+	scaffoldBendFiles,
+	writeBendDraft,
+} from "../../core/instances/bend-formal.ts";
+import { instancePaths, readInstance } from "../../core/instances/store.ts";
+import type { InstanceManifest } from "../../core/instances/types.ts";
+import { installedBend, readVerificationConfig } from "../../core/instances/verification.ts";
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.ts";
 import type { McpHttpServerConfig } from "../../core/mcp-servers.ts";
 import { createCompactionSummaryMessage, createCustomMessage } from "../../core/messages.ts";
@@ -145,7 +153,7 @@ import { CustomEntryComponent } from "./components/custom-entry.ts";
 import { CustomMessageComponent } from "./components/custom-message.ts";
 import { DynamicBorder } from "./components/dynamic-border.ts";
 import { EarendilAnnouncementComponent } from "./components/earendil-announcement.ts";
-import { playArmin3d, playPiLogo3d } from "./components/easter-egg-3d.lazy.ts";
+import { playArmin3d } from "./components/easter-egg-3d.lazy.ts";
 import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
@@ -160,8 +168,8 @@ import {
 	formatAuthSelectorProviderType,
 	OAuthSelectorComponent,
 } from "./components/oauth-selector.ts";
-import { piLogoLines, piWordmark, supportsPiLogo } from "./components/pi-logo.ts";
 import { createLoginMenuSelector } from "./components/radius-login-selector.ts";
+import { ragaLogoLines, ragaWordmark, supportsRagaLogo } from "./components/raga-logo.ts";
 import { ScopedModelsSelectorComponent } from "./components/scoped-models-selector.ts";
 import { SessionSelectorComponent } from "./components/session-selector.ts";
 import { SettingsSelectorComponent } from "./components/settings-selector.ts";
@@ -250,17 +258,6 @@ class ExpandableText extends ThemedText implements Expandable {
 	setExpanded(expanded: boolean): void {
 		this.state.expanded = expanded;
 		this.invalidate();
-	}
-}
-
-/** The built-in header. Clicking its logo (the first two lines, after one column of padding) plays an easter egg. */
-class BuiltInHeader extends ExpandableText {
-	onLogoClick: ((column: number, row: number) => void) | undefined;
-
-	handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
-		if (event.type !== "click" || event.y > 1 || event.x < 1 || event.x > 4 || !this.onLogoClick) return undefined;
-		this.onLogoClick(event.screenX - event.x + 1, event.screenY - event.y);
-		return { handled: true };
 	}
 }
 
@@ -1013,11 +1010,15 @@ export class InteractiveMode {
 			// Built on demand so the header follows theme changes. The logo's first line carries the version,
 			// its second line the first line of key hints. Terminals that cannot render the logo get a
 			// "Pi vX" line instead, with the key hints below it.
-			const showLogo = supportsPiLogo();
+			const showLogo = supportsRagaLogo();
 			const withLogo = (hints: string) => {
-				if (!showLogo) return `${piWordmark()} ${theme.fg("dim", `v${this.version}`)}\n${hints}`;
-				const [top, bottom] = piLogoLines();
-				return `${top} ${theme.fg("dim", `v${this.version}`)}\n${bottom} ${hints}`;
+				if (!showLogo) return `${ragaWordmark()} ${theme.fg("dim", `v${this.version}`)}\n${hints}`;
+				const lines = ragaLogoLines();
+				const middle = Math.floor(lines.length / 2);
+				const logo = lines.map((line, index) =>
+					index === middle ? `${line} ${theme.fg("dim", `v${this.version}`)}` : line,
+				);
+				return `${logo.join("\n")}\n${hints}`;
 			};
 
 			// Build startup instructions using keybinding hint helpers
@@ -1062,15 +1063,17 @@ export class InteractiveMode {
 					`Press ${keyText("app.tools.expand")} to show full startup help${showDetails ? " and loaded resources" : ""}.`,
 				);
 			const onboarding = () =>
-				theme.fg("dim", `Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.`);
-			const header = new BuiltInHeader(
+				theme.fg(
+					"dim",
+					`${APP_NAME} can explain its own features and look up its docs. Ask it how to use or extend ${APP_NAME}.`,
+				);
+			const header = new ExpandableText(
 				() => `${withLogo(compactInstructions())}\n${compactOnboarding()}\n\n${onboarding()}`,
 				() => `${withLogo(expandedInstructions())}\n\n${onboarding()}`,
 				this.getStartupExpansionState(),
 				1,
 				0,
 			);
-			if (showLogo) header.onLogoClick = (column, row) => playPiLogo3d(this.renderer, column, row);
 			this.builtInHeader = header;
 
 			// Setup UI layout
@@ -3261,6 +3264,11 @@ export class InteractiveMode {
 			if (text === "/new") {
 				this.editor.setText("");
 				await this.handleClearCommand();
+				return;
+			}
+			if (text === "/bend-formal") {
+				this.editor.setText("");
+				await this.handleBendFormalCommand();
 				return;
 			}
 			if (text === "/compact" || text.startsWith("/compact ")) {
@@ -7071,6 +7079,81 @@ export class InteractiveMode {
 
 		this.bashComponent = undefined;
 		this.ui.requestRender();
+	}
+
+	/**
+	 * `/bend-formal`: scaffold laws, draft them on request, then check them with the pinned
+	 * Bend release. Drafts are written only after a confirmation; enabling is a separate one.
+	 */
+	private async handleBendFormalCommand(): Promise<void> {
+		const cwd = this.sessionManager.getCwd();
+		const root = instancePaths(cwd).root;
+		let manifest: InstanceManifest;
+		try {
+			manifest = await readInstance(root);
+		} catch {
+			this.showStatus("Bend formal needs a raga instance in this project. Run `raga init` first.");
+			return;
+		}
+		const choice = await this.showExtensionSelector("Bend formal verification", [
+			"Write the laws myself",
+			"Describe the rules and let the agent draft them",
+			"Check the current laws",
+		]);
+		if (!choice) return;
+		try {
+			if (choice === "Write the laws myself") {
+				const scaffold = await scaffoldBendFiles(root);
+				const state = scaffold.created.length
+					? `Created ${scaffold.created.join(" and ")}.`
+					: "Both files already exist.";
+				this.showStatus(
+					`Bend formal: ${state}\nEdit ${scaffold.lawsPath} and ${scaffold.proofPath}, then run /bend-formal to check.`,
+				);
+				return;
+			}
+			if (choice.startsWith("Describe")) {
+				const rules = await this.showExtensionInput(
+					"Rules that must never break",
+					"For example: no player can reach the flag",
+				);
+				if (!rules?.trim()) return;
+				this.showStatus("Bend formal: drafting laws with the agent. This can take a few minutes.");
+				const draft = await draftBendFormal(agentCommand(), { projectRoot: cwd, request: rules });
+				const preview = `${draft.laws.slice(0, 1500)}\n\n--- proof ---\n${draft.proof.slice(0, 800)}`;
+				const save = await this.showExtensionConfirm("Save these laws?", preview);
+				if (!save) return;
+				const written = await writeBendDraft(root, draft, { approved: true, overwrite: true });
+				this.showStatus(`Bend formal: saved ${written.lawsPath} and ${written.proofPath}.`);
+			}
+			const tool = await installedBend(root);
+			if (!tool) {
+				const download = await this.showExtensionConfirm(
+					"Download pinned Bend 2.0.39?",
+					"About 37 MB from GitHub. The archive checksum is verified before it is used.",
+				);
+				if (!download) return;
+			}
+			if (!(await readVerificationConfig(root))?.enabled) {
+				const enable = await this.showExtensionConfirm(
+					"Enable verification?",
+					"Once enabled, activating a harness revision requires a passing proof.",
+				);
+				if (!enable) return;
+			}
+			this.showStatus("Bend formal: checking proofs in the sandbox.");
+			const check = await checkBendFormal(root, {
+				instanceId: manifest.id,
+				revision: manifest.activeRevision,
+				install: !tool,
+				network: true,
+				enable: true,
+			});
+			const output = (check.result.stdout || check.result.stderr).trim();
+			this.showStatus(`Bend formal: ${check.record.verdict.toUpperCase()}.\n${output.slice(0, 2000)}`);
+		} catch (error) {
+			this.showStatus(`Bend formal: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	private async handleCompactCommand(customInstructions?: string): Promise<void> {

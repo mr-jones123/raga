@@ -575,16 +575,21 @@ try {
 }
 
 const piConfigName: string | undefined = pkg.piConfig?.name;
+/** The raga launcher is the same code under another name; branding changes, storage does not. */
+const launchedAsRaga = /(?:^|[\\/])raga(?:\.[a-z]+)?$/.test(process.argv[1] ?? "");
+const ragaBrand: string | undefined = launchedAsRaga ? "raga" : undefined;
 export const PACKAGE_NAME: string = pkg.name || "@earendil-works/pi-coding-agent";
-export const APP_NAME: string = piConfigName || "pi";
-export const APP_TITLE: string = piConfigName ? APP_NAME : "π";
+export const APP_NAME: string = ragaBrand || piConfigName || "pi";
+export const APP_TITLE: string = ragaBrand || (piConfigName ? APP_NAME : "π");
 export const CONFIG_DIR_NAME: string = pkg.piConfig?.configDir || ".pi";
 export const PROJECT_CONFIG_DIR_NAME = ".raga";
 export const VERSION: string = pkg.version || "0.0.0";
+export const IS_RAGA_CLI = launchedAsRaga;
 
-// e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR
-export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;
-export const ENV_SESSION_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_SESSION_DIR`;
+// e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR. Branding never moves credentials.
+const AGENT_ENV_NAME = (piConfigName || "pi").toUpperCase();
+export const ENV_AGENT_DIR = `${AGENT_ENV_NAME}_CODING_AGENT_DIR`;
+export const ENV_SESSION_DIR = `${AGENT_ENV_NAME}_CODING_AGENT_SESSION_DIR`;
 
 export function expandTildePath(path: string): string {
 	return normalizePath(path);

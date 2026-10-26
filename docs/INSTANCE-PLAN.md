@@ -10,6 +10,12 @@ The engine remains fixed during execution. Changes to the Node implementation ar
 
 ## Use an instance
 
+`raga` is the dedicated executable for this workflow. It accepts every instance command
+without the `instance` level: `raga init`, `raga run`, `raga status`, `raga verify run`.
+Bare `raga` opens the interactive session for the project's instance. The `pi` executable
+keeps `pi instance ...` for the same commands, and both share credentials under `~/.pi`.
+
+
 An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or newer. Writing children, refinement, and skill proposals also need the project to be a Git repository with a commit at `HEAD`. Every `pi instance` command prints JSON, except `run`. `--project PATH` selects the project, and the default is the current directory. `pi instance --help` lists every command and flag.
 
 1. Create the instance.
@@ -362,6 +368,11 @@ Each probe replay builds a fresh project workspace from one snapshot, runs a rea
 **Delivered.** An instance can require a proof before a harness revision becomes active. The layer stays off unless the operator creates `.raga/verification.json` with `enabled: true` and writes `.raga/verification/LAWS.bend` and `PROOF.bend`. None of those files belong to a harness revision, forks do not copy them, and the sandbox masks `.raga`. Agents therefore cannot enable the layer, weaken a law, or supply their own proof. `pi instance verify enable --approved` writes configuration only and refuses while either file is missing.
 
 `pi instance verify install --approved --network` downloads Bend 2.0.39 for the current platform, checks the pinned SHA-256, keeps the release tree, and records the executable hash. `pi instance verify run [--revision REV]` copies the user's files into a private workspace and runs `bend PROOF.bend` under bubblewrap with no network. A pass requires exit code 0 and `ALL PROOFS CHECK`. The record binds the instance, revision, law digest, proof digest, and tool digest. `activateRevision` refuses a revision with no passing record, or with a record invalidated by an edited law, proof, or tool. `--verdict` is not used because it needs a Lean kernel; run it yourself for that second check.
+
+Inside an interactive session, `/bend-formal` offers three choices: write the laws
+yourself (raga creates `LAWS.bend` and `PROOF.bend` templates), describe the rules in
+natural language (an agent drafts both files for your review), or check the current laws.
+Drafts are written only after you confirm, and enabling remains a separate confirmation.
 
 `pi instance verify suggest` asks the configured agent for law drafts and writes them under `.raga/verification/suggestions/` with `verified: false`. Suggestions carry no proof, never reach the active directory, and cannot satisfy the gate. A human decides what to promote.
 

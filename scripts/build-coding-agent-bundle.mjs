@@ -159,6 +159,7 @@ const mainResult = await build({
 	entryNames: "[name]",
 	entryPoints: {
 		"cli-runtime": join(codingAgentDistDir, "cli.js"),
+		"raga-runtime": join(codingAgentDistDir, "raga.js"),
 		index: join(codingAgentDistDir, "index.js"),
 		"rpc-entry": join(codingAgentDistDir, "rpc-entry.js"),
 	},
@@ -252,6 +253,14 @@ createRequire(import.meta.url)("./cli-runtime.js");
 `;
 writeFileSync(join(bundleDir, "cli.js"), cliLauncher);
 chmodSync(join(bundleDir, "cli.js"), 0o755);
+const ragaLauncher = `#!/usr/bin/env node
+import { createRequire, enableCompileCache } from "node:module";
+
+enableCompileCache();
+createRequire(import.meta.url)("./raga-runtime.js");
+`;
+writeFileSync(join(bundleDir, "raga.js"), ragaLauncher);
+chmodSync(join(bundleDir, "raga.js"), 0o755);
 chmodSync(join(bundleDir, "rpc-entry.js"), 0o755);
 
 const files = new Set(metafiles.flatMap((metafile) => Object.keys(metafile.outputs))).size + 1;

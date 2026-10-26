@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import { mkdir, mkdtemp, open, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
-import { APP_NAME, isBunBinary, VERSION } from "../config.ts";
+import { APP_NAME, IS_RAGA_CLI } from "../config.ts";
+import { agentCommand } from "../core/agent-command.ts";
 import {
 	disableAutomaticPromotion,
 	disableAutomation,
@@ -10,6 +11,7 @@ import {
 	enableAutomation,
 	readAutomation,
 } from "../core/instances/automation.ts";
+import { draftBendFormal } from "../core/instances/bend-formal.ts";
 import { getBundledHarnessPath } from "../core/instances/bundle.ts";
 import { runModelCheckpoint } from "../core/instances/checkpoint.ts";
 import { InstanceMemory, type MemoryEntry, type MemoryInput } from "../core/instances/memory.ts";
@@ -180,8 +182,11 @@ interface ParsedCommand {
 	trailing: string[];
 }
 
-function help(): void {
-	console.log(`Usage: ${APP_NAME} instance COMMAND [--project PATH]\n\n${Object.values(COMMANDS)
+const COMMAND_PREFIX = IS_RAGA_CLI ? APP_NAME : `${APP_NAME} instance`;
+
+/** Help for the instance command surface, without the `instance` level under raga. */
+export function printInstanceHelp(): void {
+	console.log(`Usage: ${COMMAND_PREFIX} COMMAND [--project PATH]\n\n${Object.values(COMMANDS)
 		.map((spec) => `  ${spec.usage}`)
 		.join("\n")}\n\n--project defaults to the current directory. All results except run are JSON.
 Run starts the same executable in the bound project with an accepted revision and isolated instance sessions.
@@ -230,7 +235,7 @@ function parse(args: string[]): ParsedCommand {
 			values.set(key, value);
 		}
 	}
-	if (operands.length !== (spec.operands ?? 0)) throw new UsageError(`Usage: ${APP_NAME} instance ${spec.usage}`);
+	if (operands.length !== (spec.operands ?? 0)) throw new UsageError(`Usage: ${COMMAND_PREFIX} ${spec.usage}`);
 	for (const key of spec.required ?? []) {
 		if (!values.has(key) && !flags.has(key)) throw new UsageError(`Missing required --${key}.`);
 	}
@@ -327,22 +332,6 @@ function memoryInput(value: unknown): MemoryInput {
 	return input as unknown as MemoryInput;
 }
 
-function agentCommand(): { executable: string; args: string[]; version: string } {
-	if (!isBunBinary && !process.argv[1]) throw new Error("Cannot locate the current CLI entry point.");
-	const runtimeArgs = process.execArgv.map((arg, index, args) => {
-		const option = /^(--import|--loader|--require|-r)=(.*)$/.exec(arg);
-		if (option && /^\.{1,2}\//.test(option[2])) return `${option[1]}=${resolve(option[2])}`;
-		if (["--import", "--loader", "--require", "-r"].includes(args[index - 1]) && /^\.{1,2}\//.test(arg))
-			return resolve(arg);
-		return arg;
-	});
-	return {
-		executable: process.execPath,
-		args: isBunBinary ? [] : [...runtimeArgs, resolve(process.argv[1])],
-		version: VERSION,
-	};
-}
-
 /**
  * Draft laws with a read-only agent run. The result is a suggestion: it has no proof,
  * never reaches the active directory, and cannot satisfy the activation gate.
@@ -352,83 +341,27 @@ async function suggestVerificationLaws(
 	projectRoot: string,
 ): Promise<{ directory: string; files: string[]; verified: false; note: string }> {
 	const paths = verificationPaths(instanceRoot);
-	await mkdir(paths.records, { recursive: true, mode: 0o700 });
-	const work = await mkdtemp(join(paths.records, "suggest-"));
-	const agent = agentCommand();
-	const prompt = [
-		"You are drafting Bend laws for a human to review.",
-		`Read the project at ${projectRoot} and propose at most six laws for behavior that must never break.`,
-		"Each law must be precise enough to prove in Bend, and you must say what it does not cover.",
-		"Return one fenced ```bend block containing a LAWS.bend draft, then a short list of limits.",
-		"Do not write files, do not run builds, and never claim a law is proven.",
-	].join("\n");
-	let stdout = "";
-	let stderr = "";
-	let timedOut = false;
-	try {
-		const { promise, resolve, reject } = Promise.withResolvers<void>();
-		const child = spawn(
-			agent.executable,
-			[
-				...agent.args,
-				"--print",
-				"--no-extensions",
-				"--no-skills",
-				"--no-context-files",
-				"--no-prompt-templates",
-				"--no-mcp",
-				"--tools",
-				"read,grep,glob,ls",
-				prompt,
-			],
-			{ cwd: projectRoot, env: { ...process.env }, stdio: ["ignore", "pipe", "pipe"] },
-		);
-		const timer = setTimeout(() => {
-			timedOut = true;
-			child.kill("SIGKILL");
-		}, 10 * 60_000);
-		child.stdout.on("data", (chunk: Buffer) => {
-			if (stdout.length < 1_000_000) stdout += chunk.toString("utf8");
-		});
-		child.stderr.on("data", (chunk: Buffer) => {
-			if (stderr.length < 100_000) stderr += chunk.toString("utf8");
-		});
-		child.once("error", (error) => {
-			clearTimeout(timer);
-			reject(error);
-		});
-		child.once("close", (code) => {
-			clearTimeout(timer);
-			if (timedOut) reject(new Error("Law suggestion timed out after 10 minutes"));
-			else if (code !== 0) reject(new Error(`Law suggestion exited ${code}: ${stderr.trim()}`));
-			else resolve();
-		});
-		await promise;
-		const blocks = [...stdout.matchAll(/```bend\s*\n([\s\S]*?)```/g)];
-		const draft = blocks.at(-1)?.[1]?.trim();
-		const directory = join(paths.suggestions, new Date().toISOString().replace(/[:.]/g, "-"));
-		await mkdir(directory, { recursive: true, mode: 0o700 });
-		const files = ["LAWS.suggested.bend", "NOTES.md", "meta.json"];
-		await writeFile(
-			join(directory, "LAWS.suggested.bend"),
-			`${draft ?? "// The agent returned no Bend block. Review NOTES.md.\n"}\n`,
-			{ mode: 0o600 },
-		);
-		await writeFile(join(directory, "NOTES.md"), `${stdout.slice(0, 64_000).trim()}\n`, { mode: 0o600 });
-		await writeFile(
-			join(directory, "meta.json"),
-			`${JSON.stringify({ schemaVersion: 1, verified: false, hasDraft: draft !== undefined, createdAt: new Date().toISOString(), note: "Suggestion only: no proof exists, and nothing here is active." }, null, 2)}\n`,
-			{ mode: 0o600 },
-		);
-		return {
-			directory,
-			files,
-			verified: false,
-			note: "Review, edit, and copy the laws into verification/LAWS.bend yourself.",
-		};
-	} finally {
-		await rm(work, { recursive: true, force: true });
-	}
+	const draft = await draftBendFormal(agentCommand(), {
+		projectRoot,
+		request: "Derive the rules that matter most from the code and its documentation.",
+	});
+	const directory = join(paths.suggestions, new Date().toISOString().replace(/[:.]/g, "-"));
+	await mkdir(directory, { recursive: true, mode: 0o700 });
+	const files = ["LAWS.suggested.bend", "PROOF.suggested.bend", "NOTES.md", "meta.json"];
+	await writeFile(join(directory, "LAWS.suggested.bend"), `${draft.laws.trim()}\n`, { mode: 0o600 });
+	await writeFile(join(directory, "PROOF.suggested.bend"), `${draft.proof.trim()}\n`, { mode: 0o600 });
+	await writeFile(join(directory, "NOTES.md"), `${draft.notes}\n`, { mode: 0o600 });
+	await writeFile(
+		join(directory, "meta.json"),
+		`${JSON.stringify({ schemaVersion: 1, verified: false, createdAt: new Date().toISOString(), note: "Suggestion only: no proof has been checked, and nothing here is active." }, null, 2)}\n`,
+		{ mode: 0o600 },
+	);
+	return {
+		directory,
+		files,
+		verified: false,
+		note: "Review, edit, and copy the laws into verification/LAWS.bend yourself.",
+	};
 }
 
 async function run(pin: HarnessPin, args: string[]): Promise<void> {
@@ -702,13 +635,18 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 	throw new Error(`Unimplemented instance command ${name}.`);
 }
 
+/** Top-level command names the raga executable accepts without the `instance` prefix. */
+export function isInstanceCommandName(name: string): boolean {
+	return Object.keys(COMMANDS).some((command) => command.split(" ")[0] === name);
+}
+
 export async function handleInstanceCommand(args: string[]): Promise<boolean> {
 	if (args[0] !== "instance") return false;
 	try {
 		const separator = args.indexOf("--");
 		const ownArgs = separator === -1 ? args : args.slice(0, separator);
 		if (args.length === 1 || ownArgs.includes("--help") || ownArgs.includes("-h") || args[1] === "help") {
-			help();
+			printInstanceHelp();
 			return true;
 		}
 		const result = await execute(parse(args));
@@ -718,7 +656,7 @@ export async function handleInstanceCommand(args: string[]): Promise<boolean> {
 				process.exitCode = result.exitCode;
 		}
 	} catch (error) {
-		console.error(`${APP_NAME} instance: ${error instanceof Error ? error.message : String(error)}`);
+		console.error(`${COMMAND_PREFIX}: ${error instanceof Error ? error.message : String(error)}`);
 		process.exitCode = error instanceof UsageError ? 2 : 1;
 	}
 	return true;
