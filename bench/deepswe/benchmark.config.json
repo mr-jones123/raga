@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "dataset": {
+    "repository": "https://github.com/datacurve-ai/deep-swe",
+    "revision": "0b9fabbb63b9104d678fe965e1632f2dd9eaa2ea"
+  },
+  "model": {
+    "provider": "exe-dev-openai",
+    "id": "gpt-6.1-sol@llm",
+    "thinking": "high"
+  },
+  "limits": {
+    "taskModelCalls": 80,
+    "taskTimeoutMs": 1800000,
+    "learningModelCalls": 20,
+    "learningTimeoutMs": 600000,
+    "maxOutputTokens": 8192,
+    "handoffAfterCalls": 20,
+    "verifierTimeoutMs": 1800000,
+    "cpus": 2,
+    "memoryMb": 8192
+  },
+  "tasks": [
+    {
+      "id": "anko-default-function-arguments",
+      "repository": "https://github.com/mattn/anko",
+      "baseCommit": "9d2d84bb1564e9513287998c56ccf16c01c19008",
+      "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:31c8dce39317314800d1200610475ba27b98c71350d524d25e7df71d80c5752a"
+    },
+    {
+      "id": "anko-typed-variable-bindings",
+      "repository": "https://github.com/mattn/anko",
+      "baseCommit": "3f269a72ff69398b1250c584171f32d12c0d8085",
+      "image": "public.ecr.aws/d3j8x8q7/swe-bench-202605@sha256:4fb704fd8dff600f6d028c20ae4aca5e1261968bb615bb41c01a111dd371255b"
+    }
+  ]
+}
