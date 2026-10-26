@@ -15,6 +15,8 @@ export interface PythonEnv {
 	python: string;
 	runtimeDir: string;
 	hasDill: boolean;
+	runtimeRoots: string[];
+	modulePaths: string[];
 }
 
 const MIN_PYTHON: readonly [number, number] = [3, 11];
@@ -23,18 +25,23 @@ const PROVISION_TIMEOUT_MS = 10 * 60_000;
 /** Lock is considered abandoned when its mtime is older than this; holders refresh it at half the interval. */
 const LOCK_STALE_MS = 30_000;
 
-/** Prints `<major> <minor> <micro> <has dill: 0|1>`. */
 const PROBE_SCRIPT =
-	'import importlib.util, sys; print(*sys.version_info[:3], int(importlib.util.find_spec("dill") is not None))';
+	'import importlib.util, json, site, sys; print(json.dumps({"version": list(sys.version_info[:3]), "dill": importlib.util.find_spec("dill") is not None, "executable": sys.executable, "roots": [sys.prefix, sys.base_prefix], "modules": site.getsitepackages()}))';
 
-async function checkInterpreter(python: string, source: string): Promise<{ python: string; hasDill: boolean }> {
-	let fields: number[];
+async function checkInterpreter(python: string, source: string): Promise<Omit<PythonEnv, "runtimeDir">> {
+	let probe: {
+		version: [number, number, number];
+		dill: boolean;
+		executable: string;
+		roots: string[];
+		modules: string[];
+	};
 	try {
 		const { stdout } = await execFileAsync(python, ["-c", PROBE_SCRIPT], {
 			timeout: PROBE_TIMEOUT_MS,
 			windowsHide: true,
 		});
-		fields = stdout.trim().split(" ").map(Number);
+		probe = JSON.parse(stdout.trim());
 	} catch (error) {
 		const missing = error instanceof Error && "code" in error && error.code === "ENOENT";
 		throw new Error(
@@ -43,13 +50,18 @@ async function checkInterpreter(python: string, source: string): Promise<{ pytho
 				: `RLM: cannot run ${python} (${source}): ${errorText(error)}`,
 		);
 	}
-	const [major, minor, micro, dill] = fields;
+	const [major, minor, micro] = probe.version;
 	if (!(major > MIN_PYTHON[0] || (major === MIN_PYTHON[0] && minor >= MIN_PYTHON[1]))) {
 		throw new Error(
 			`RLM: ${python} (${source}) is Python ${major}.${minor}.${micro}; Python ${MIN_PYTHON.join(".")} or newer is required`,
 		);
 	}
-	return { python, hasDill: dill === 1 };
+	return {
+		python: probe.executable,
+		hasDill: probe.dill,
+		runtimeRoots: [...new Set(probe.roots)],
+		modulePaths: probe.modules,
+	};
 }
 
 function errorText(error: unknown): string {

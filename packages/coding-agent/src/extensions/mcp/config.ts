@@ -2,7 +2,7 @@
  * MCP server configuration.
  *
  * Servers are read from `mcp.json` in the agent directory and, for trusted projects, from
- * `<project>/.pi/mcp.json`. Both use the `mcpServers` shape shared by other MCP clients, so
+ * `<project>/.raga/mcp.json`. Both use the `mcpServers` shape shared by other MCP clients, so
  * existing configurations can be copied over. Project entries replace global entries with the
  * same name.
  *
@@ -31,7 +31,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { CONFIG_DIR_NAME } from "../../config.ts";
+import { PROJECT_CONFIG_DIR_NAME } from "../../config.ts";
 import {
 	type McpExposure,
 	type McpServerConfig,
@@ -146,7 +146,7 @@ function readConfigFile(path: string, scope: "global" | "project", state: McpCon
 export function loadMcpConfig(options: { agentDir: string; cwd: string; projectTrusted: boolean }): LoadedMcpConfig {
 	const state: McpConfigState = { servers: new Map(), errors: [] };
 	readConfigFile(join(options.agentDir, "mcp.json"), "global", state);
-	const projectConfig = options.projectTrusted ? join(options.cwd, CONFIG_DIR_NAME, "mcp.json") : undefined;
+	const projectConfig = options.projectTrusted ? join(options.cwd, PROJECT_CONFIG_DIR_NAME, "mcp.json") : undefined;
 	if (projectConfig) readConfigFile(projectConfig, "project", state);
 	return {
 		servers: [...state.servers.values()],

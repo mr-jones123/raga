@@ -9,7 +9,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import chalk from "chalk";
-import { APP_NAME, CONFIG_DIR_NAME } from "../../config.ts";
+import { APP_NAME, CONFIG_DIR_NAME, PROJECT_CONFIG_DIR_NAME } from "../../config.ts";
 import { validateMcpServerConfig } from "../../core/mcp-servers.ts";
 import { ProjectTrustStore } from "../../core/trust-manager.ts";
 import { openBrowser } from "../../utils/open-browser.ts";
@@ -39,7 +39,7 @@ const HELP = `${chalk.bold("Usage:")}
   ${APP_NAME} mcp logout <server>
 
 Configure and check MCP servers and sign in to OAuth servers without starting a session.
-Reads ~/${CONFIG_DIR_NAME}/agent/mcp.json and, in trusted projects, ${CONFIG_DIR_NAME}/mcp.json.
+Reads ~/${CONFIG_DIR_NAME}/agent/mcp.json and, in trusted projects, ${PROJECT_CONFIG_DIR_NAME}/mcp.json.
 
 Commands:
   add <server>            Add or replace a server in mcp.json
@@ -49,7 +49,7 @@ Commands:
   logout <server>         Delete the stored OAuth credentials
 
 Options for add and remove:
-  -l, --local             Use ${CONFIG_DIR_NAME}/mcp.json in the current project instead of the global file
+  -l, --local             Use ${PROJECT_CONFIG_DIR_NAME}/mcp.json in the current project instead of the global file
 
 Options for add:
   --url <url>             Streamable HTTP server URL (instead of a command)
@@ -191,7 +191,7 @@ export async function runMcpCommand(args: string[], options: McpCommandOptions):
 		return 0;
 	}
 
-	const projectConfig = join(options.cwd, CONFIG_DIR_NAME, "mcp.json");
+	const projectConfig = join(options.cwd, PROJECT_CONFIG_DIR_NAME, "mcp.json");
 	if (command === "add" || command === "remove") {
 		return command === "add"
 			? add(rest, projectConfig, options, log, error)
@@ -485,7 +485,7 @@ async function list(
 		return failed ? 1 : 0;
 	}
 	if (reports.length === 0 && loaded.errors.length === 0) {
-		log(`No MCP servers configured. Add them to ${join(options.agentDir, "mcp.json")} or .pi/mcp.json.`);
+		log(`No MCP servers configured. Add them to ${join(options.agentDir, "mcp.json")} or .raga/mcp.json.`);
 	}
 	for (const report of reports) {
 		const state =

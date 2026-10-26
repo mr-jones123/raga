@@ -20,11 +20,11 @@ import type { AgentToolResult, ThinkingLevel } from "@earendil-works/pi-agent-co
 import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
 import {
-	CONFIG_DIR_NAME,
 	type ExtensionAPI,
 	formatReadLineRange,
 	getAgentDir,
 	getMarkdownTheme,
+	PROJECT_CONFIG_DIR_NAME,
 	withFileMutationQueue,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
@@ -474,7 +474,7 @@ export default function (pi: ExtensionAPI) {
 			"Delegate tasks to specialized subagents with isolated context.",
 			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
 			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
-			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
+			`To enable project-local agents in ${PROJECT_CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
 		].join(" "),
 		parameters: SubagentParams,
 

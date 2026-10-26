@@ -4,8 +4,12 @@
  * answers host requests, interrupts, restarts, snapshots, and stops it. See docs/RLM.md.
  */
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { delimiter } from "node:path";
 import { attachJsonlLineReader, serializeJsonLine } from "../../modes/rpc/jsonl.ts";
 import { killProcessTree } from "../../utils/shell.ts";
+import { checkSandbox, sandboxLaunch } from "../instances/sandbox.ts";
+import type { SandboxPolicy } from "../instances/types.ts";
 import {
 	type DoneEvent,
 	type ErrorEvent,
@@ -43,6 +47,7 @@ export interface KernelOptions {
 	handlers: ReadonlyMap<string, HostHandler>;
 	/** Defaults to `resolvePythonEnv()`. */
 	pythonEnv?: () => Promise<PythonEnv>;
+	sandbox?: SandboxPolicy;
 }
 
 /**
@@ -95,9 +100,27 @@ class KernelProcess {
 		onEvent: (event: KernelEvent) => void,
 		onExit: (detail: string) => void,
 	) {
-		this.child = spawn(python.python, ["-m", "raga_rlm.repl"], {
-			cwd: options.cwd,
-			env: { ...process.env, ...options.env, PYTHONPATH: python.runtimeDir, PYTHONUNBUFFERED: "1" },
+		const args = ["-m", "raga_rlm.repl"];
+		const env = {
+			...options.env,
+			PYTHONPATH: [python.runtimeDir, ...(options.sandbox ? python.modulePaths : [])].join(delimiter),
+			PYTHONUNBUFFERED: "1",
+		};
+		const launch = options.sandbox
+			? sandboxLaunch(realpathSync(python.python), args, {
+					...options.sandbox,
+					workspace: realpathSync(options.sandbox.workspace),
+					cwd: realpathSync(options.cwd),
+					readOnly: [...options.sandbox.readOnly, python.runtimeDir, ...python.runtimeRoots].map((path) =>
+						realpathSync(path),
+					),
+					writable: options.sandbox.writable.map((path) => realpathSync(path)),
+					env: { ...options.sandbox.env, ...env, RAGA_RESTRICTED: "1" },
+				})
+			: { command: python.python, args, cwd: options.cwd, env: { ...process.env, ...env } };
+		this.child = spawn(launch.command, launch.args, {
+			cwd: launch.cwd,
+			env: launch.env,
 			stdio: "pipe",
 			detached: process.platform !== "win32",
 			windowsHide: true,
@@ -351,6 +374,10 @@ export class Kernel {
 		let python: PythonEnv;
 		try {
 			python = await this.envPromise;
+			if (this.options.sandbox) {
+				const isolation = await checkSandbox();
+				if (!isolation.available) throw new Error(`Restricted execution is unavailable: ${isolation.reason}`);
+			}
 		} catch (error) {
 			this.envPromise = undefined;
 			throw error;

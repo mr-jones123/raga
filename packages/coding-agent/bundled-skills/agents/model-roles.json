@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "code": null,
+  "judgment": null,
+  "verification": null,
+  "rules": "Null inherits the current model. Set real provider/model selectors in a candidate revision. Same-family seats are not model diversity.",
+  "feature, refactoring": null,
+  "bug-fix": null,
+  "perf-issue": null,
+  "hillclimb": null,
+  "hardest tasks": null,
+  "judgment and prose": null,
+  "how explorer": null,
+  "how explainer": null,
+  "why investigator": null,
+  "why synthesizer": null,
+  "teach explainer": null,
+  "swarm workers": null,
+  "arena cross-judge": null,
+  "reflect synthesizer": null,
+  "architect runners": [
+    null,
+    null
+  ],
+  "arena runners": [
+    null,
+    null
+  ],
+  "arena cross-judge pool": [
+    null,
+    null
+  ],
+  "interrogate reviewers": [
+    null,
+    null
+  ],
+  "reflect reviewers": [
+    null,
+    null
+  ]
+}

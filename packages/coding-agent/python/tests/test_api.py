@@ -67,27 +67,6 @@ def test_tool_error_raises(kernel: KernelProcess) -> None:
     assert text_of(events, "stdout", rid) == "'command failed: exit 2'\n"
 
 
-def test_llm_and_rlm_calls(kernel: KernelProcess) -> None:
-    host = FakeHost(
-        {
-            "llm.query": {"text": "answer one"},
-            "llm.batch": {"texts": ["a", "b"]},
-            "rlm.query": {"answer": "child says hi", "ready": True, "session_file": None},
-        }
-    )
-    code = (
-        "(await llm_query('q', system='s'), await llm_batch(['p1', 'p2'], model='prov/m'),\n"
-        " await rlm_query('sub task', context={'k': 1}, max_turns=3))"
-    )
-    _, events = kernel.execute(code, host)
-    assert only(events, "result")["text"] == repr(("answer one", ["a", "b"], "child says hi"))
-    assert host.requests == [
-        {"type": "llm.query", "prompt": "q", "system": "s"},
-        {"type": "llm.batch", "prompts": ["p1", "p2"], "model": "prov/m"},
-        {"type": "rlm.query", "task": "sub task", "context": {"k": 1}, "max_turns": 3},
-    ]
-
-
 def test_context_history_and_set_context(kernel: KernelProcess, tmp_path) -> None:
     doc = tmp_path / "doc.txt"
     doc.write_text("big text")

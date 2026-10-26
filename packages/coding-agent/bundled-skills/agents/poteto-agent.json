@@ -1,0 +1,9 @@
+{
+  "name": "poteto-agent",
+  "instructions": "agents/poteto-agent.md",
+  "modelRole": "code",
+  "skills": [
+    "raga-runtime",
+    "poteto-mode"
+  ]
+}

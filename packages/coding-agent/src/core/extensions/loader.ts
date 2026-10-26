@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import type { Provider } from "@earendil-works/pi-ai";
 import type { KeyId } from "@earendil-works/pi-tui";
 import type { createJiti } from "jiti";
-import { CONFIG_DIR_NAME, getAgentDir, isBunBinary, isBundledNode } from "../../config.ts";
+import { getAgentDir, isBunBinary, isBundledNode, PROJECT_CONFIG_DIR_NAME } from "../../config.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { createEventBus, type EventBus } from "../event-bus.ts";
 import type { ExecOptions } from "../exec.ts";
@@ -791,7 +791,7 @@ function resolveExtensionEntries(dir: string): string[] | null {
  *
  * No recursion beyond one level. Complex packages must use package.json manifest.
  */
-function discoverExtensionsInDir(dir: string): string[] {
+export function discoverExtensionsInDir(dir: string): string[] {
 	if (!fs.existsSync(dir)) {
 		return [];
 	}
@@ -849,8 +849,8 @@ export async function discoverAndLoadExtensions(
 		}
 	};
 
-	// 1. Project-local extensions: cwd/${CONFIG_DIR_NAME}/extensions/
-	const localExtDir = path.join(resolvedCwd, CONFIG_DIR_NAME, "extensions");
+	// 1. Project-local extensions: cwd/${PROJECT_CONFIG_DIR_NAME}/extensions/
+	const localExtDir = path.join(resolvedCwd, PROJECT_CONFIG_DIR_NAME, "extensions");
 	addPaths(discoverExtensionsInDir(localExtDir));
 
 	// 2. Global extensions: agentDir/extensions/

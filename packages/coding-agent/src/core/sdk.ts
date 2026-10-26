@@ -10,6 +10,14 @@ import { CacheWarmer } from "./cache-warmer.ts";
 import { getClientIdentity } from "./client-identity.ts";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.ts";
 import type { ExtensionRunner, LoadExtensionsResult, SessionStartEvent, ToolDefinition } from "./extensions/index.ts";
+import {
+	instanceResources,
+	instanceSandbox,
+	instanceSettings,
+	recordInstancePin,
+	resolveInstancePin,
+} from "./instances/session.ts";
+import type { HarnessPin, SandboxPolicy } from "./instances/types.ts";
 import { createToolNameMatcher } from "./mcp-servers.ts";
 import { convertToLlm } from "./messages.ts";
 import { findInitialModel } from "./model-resolver.ts";
@@ -120,6 +128,12 @@ export interface CreateAgentSessionOptions {
 	rlmDepth?: number;
 	/** RLM mode: the tree's child slots. A root session creates them; `rlm_query` passes them to the child. */
 	rlmChildSlots?: RlmChildSlots;
+	/** Instance identity or an already pinned internal execution revision. */
+	instance?: string | HarnessPin;
+	/** Disable live memory when a trusted evaluator supplies a frozen context. Propagates to children. */
+	instanceMemory?: boolean;
+	/** Explicit execution boundary for trusted callers such as candidate evaluators. */
+	sandbox?: SandboxPolicy;
 }
 
 /** Result from createAgentSession */
@@ -208,18 +222,36 @@ function getDefaultAgentDir(): string {
 export async function createAgentSession(options: CreateAgentSessionOptions = {}): Promise<CreateAgentSessionResult> {
 	const cwd = resolvePath(options.cwd ?? options.sessionManager?.getCwd() ?? process.cwd());
 	const agentDir = options.agentDir ? resolvePath(options.agentDir) : getDefaultAgentDir();
+	const instance = await resolveInstancePin(cwd, options.instance, options.sessionManager);
 	let resourceLoader = options.resourceLoader;
 
-	const authPath = options.agentDir ? join(agentDir, "auth.json") : undefined;
-	const modelsPath = options.agentDir ? join(agentDir, "models.json") : undefined;
+	const authPath = options.agentDir && !instance ? join(agentDir, "auth.json") : undefined;
+	const modelsPath = options.agentDir && !instance ? join(agentDir, "models.json") : undefined;
 	const modelRuntime = options.modelRuntime ?? (await ModelRuntime.create({ authPath, modelsPath }));
 
-	const settingsManager = options.settingsManager ?? SettingsManager.create(cwd, agentDir);
-	const sessionManager = options.sessionManager ?? SessionManager.create(cwd, getDefaultSessionDir(cwd, agentDir));
+	const settingsManager = instance
+		? (options.settingsManager ?? instanceSettings(instance))
+		: (options.settingsManager ?? SettingsManager.create(cwd, agentDir));
+	const sessionManager =
+		options.sessionManager ??
+		SessionManager.create(cwd, instance ? join(instance.stateRoot, "sessions") : getDefaultSessionDir(cwd, agentDir));
+	if (instance) recordInstancePin(instance, sessionManager);
+	const sandbox =
+		options.sandbox ?? (instance ? instanceSandbox(instance, cwd, sessionManager, instance.projectRoot) : undefined);
 
 	if (!resourceLoader) {
-		resourceLoader = new DefaultResourceLoader({ cwd, agentDir, settingsManager });
-		await resourceLoader.reload();
+		if (instance) {
+			resourceLoader = await instanceResources(
+				instance,
+				settingsManager,
+				undefined,
+				options.instanceMemory !== false,
+				modelRuntime,
+			);
+		} else {
+			resourceLoader = new DefaultResourceLoader({ cwd, agentDir, settingsManager });
+			await resourceLoader.reload();
+		}
 		time("resourceLoader.reload");
 	}
 
@@ -309,7 +341,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	const excludedToolNames = options.excludeTools;
 	const isExcludedTool = excludedToolNames ? createToolNameMatcher(excludedToolNames) : undefined;
 	const initialActiveToolNames = (selectedToolNames ?? defaultToolNames).filter((name) => !isExcludedTool?.(name));
-	const rlm = options.rlm ?? settingsManager.getRlmSettings().enabled;
+	const rlm = instance ? true : (options.rlm ?? settingsManager.getRlmSettings().enabled);
 
 	// Create convertToLlm wrapper that filters images if blockImages is enabled (defense-in-depth)
 	const convertToLlmWithBlockImages = (messages: AgentMessage[]): Message[] => {
@@ -478,15 +510,23 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		customTools: options.customTools,
 		modelRuntime,
 		cacheWarmer,
-		initialActiveToolNames: rlm ? [...RLM_ACTIVE_TOOL_NAMES] : initialActiveToolNames,
+		initialActiveToolNames: sandbox ? ["python"] : rlm ? [...RLM_ACTIVE_TOOL_NAMES] : initialActiveToolNames,
 		usesDefaultTools: !rlm && (options.tools === undefined || toolModifiers !== undefined) && !options.noTools,
 		defaultToolModifiers: rlm ? undefined : toolModifiers,
-		allowedToolNames: rlm ? undefined : allowedToolNames,
-		excludedToolNames,
+		allowedToolNames: sandbox ? (options.noTools ? [] : ["python"]) : rlm ? undefined : allowedToolNames,
+		excludedToolNames: sandbox ? [...(excludedToolNames ?? []), "mcp__*"] : excludedToolNames,
+		baseToolsOverride: sandbox ? {} : undefined,
 		extensionRunnerRef,
 		sessionStartEvent: options.sessionStartEvent,
 		rlm: rlm
-			? { inputs: options.rlmInputs ?? {}, data: options.rlmData, childSlots: options.rlmChildSlots }
+			? {
+					inputs: options.rlmInputs ?? {},
+					data: options.rlmData,
+					childSlots: options.rlmChildSlots,
+					instance,
+					sandbox,
+					instanceMemory: options.instanceMemory,
+				}
 			: undefined,
 		rlmDepth: options.rlmDepth,
 	});

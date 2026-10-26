@@ -41,19 +41,20 @@ describe("ProjectTrustStore", () => {
 		process.env.HOME = tempDir;
 		try {
 			mkdirSync(join(tempDir, ".pi", "agent"), { recursive: true });
+			mkdirSync(join(tempDir, ".raga"), { recursive: true });
 			mkdirSync(join(tempDir, ".agents", "skills"), { recursive: true });
 			expect(hasTrustRequiringProjectResources(tempDir)).toBe(false);
 			expect(hasTrustRequiringProjectResources(cwd)).toBe(false);
 
-			writeFileSync(join(tempDir, ".pi", "settings.json"), "{}");
+			writeFileSync(join(tempDir, ".raga", "settings.json"), "{}");
 			expect(hasTrustRequiringProjectResources(tempDir)).toBe(true);
-			rmSync(join(tempDir, ".pi", "settings.json"), { force: true });
+			rmSync(join(tempDir, ".raga", "settings.json"), { force: true });
 
-			mkdirSync(join(cwd, ".pi"), { recursive: true });
-			writeFileSync(join(cwd, ".pi", "settings.json"), "{}");
+			mkdirSync(join(cwd, ".raga"), { recursive: true });
+			writeFileSync(join(cwd, ".raga", "settings.json"), "{}");
 			expect(hasTrustRequiringProjectResources(cwd)).toBe(true);
 
-			rmSync(join(cwd, ".pi"), { recursive: true, force: true });
+			rmSync(join(cwd, ".raga"), { recursive: true, force: true });
 			mkdirSync(join(cwd, ".agents", "skills"), { recursive: true });
 			expect(hasTrustRequiringProjectResources(cwd)).toBe(true);
 		} finally {

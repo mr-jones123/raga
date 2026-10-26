@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type CredentialStore, createModels, type Provider } from "@earendil-works/pi-ai";
@@ -21,7 +21,8 @@ describe("AuthStorage", () => {
 	});
 
 	function writeAuthJson(data: Record<string, unknown>): void {
-		writeFileSync(authJsonPath, JSON.stringify(data));
+		writeFileSync(`${authJsonPath}.new`, JSON.stringify(data));
+		renameSync(`${authJsonPath}.new`, authJsonPath);
 	}
 
 	test("reads and resolves stored API-key credentials", async () => {

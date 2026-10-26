@@ -87,12 +87,16 @@ process.exit(0);
 		let stderr = "";
 		let exitCode: number;
 		try {
-			_stdout = execFileSync(process.execPath, [scriptPath], {
-				timeout: 10000,
-				encoding: "utf-8",
-				env: { ...process.env, PI_CODING_AGENT_DIR: agentDir },
-				stdio: ["pipe", "pipe", "pipe"],
-			});
+			_stdout = execFileSync(
+				process.execPath,
+				["--import", join(__dirname, "../../../src/experimental/source-resolver.ts"), scriptPath],
+				{
+					timeout: 10000,
+					encoding: "utf-8",
+					env: { ...process.env, PI_CODING_AGENT_DIR: agentDir },
+					stdio: ["pipe", "pipe", "pipe"],
+				},
+			);
 			exitCode = 0;
 		} catch (err: unknown) {
 			const e = err as { status: number; stdout: string; stderr: string };

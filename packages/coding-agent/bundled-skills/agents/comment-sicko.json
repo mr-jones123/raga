@@ -1,0 +1,9 @@
+{
+  "name": "comment-sicko",
+  "instructions": "agents/comment-sicko.md",
+  "modelRole": "judgment",
+  "skills": [
+    "raga-runtime",
+    "poteto-mode"
+  ]
+}

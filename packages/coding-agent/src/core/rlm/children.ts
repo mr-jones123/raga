@@ -2,9 +2,23 @@
  * Child sessions for `rlm_query`: the `rlm.query` host request runs a task in an in-process child
  * `AgentSession` in RLM mode and returns the child's `answer`. See docs/RLM.md "Host requests".
  */
+
+import { randomUUID } from "node:crypto";
+import { realpathSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
+import { join, relative, sep } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { createExtensionRuntime } from "../extensions/loader.ts";
+import { instanceSandbox } from "../instances/session.ts";
+import type { ChildChange, ChildWorkspace, HarnessPin, SandboxPolicy } from "../instances/types.ts";
+import {
+	collectChildChange,
+	createChildWorkspace,
+	listChildWorkspaces,
+	snapshotChildWorkspace,
+	snapshotProject,
+} from "../instances/workspaces.ts";
 import type { ModelRuntime } from "../model-runtime.ts";
 import type { ResourceLoader } from "../resource-loader.ts";
 import { createAgentSession } from "../sdk.ts";
@@ -25,6 +39,8 @@ export interface RlmQueryResult {
 	ready: boolean;
 	/** The child's session file, or null when the parent session is not persisted. */
 	session_file: string | null;
+	workspace?: ChildWorkspace;
+	change?: ChildChange;
 }
 
 /** The child counter of one session. */
@@ -128,6 +144,9 @@ export class RlmChildSlots {
 /** What a child shares with its parent session. */
 export interface RlmChildHost {
 	cwd: string;
+	instance?: HarnessPin;
+	instanceMemory?: boolean;
+	sandbox?: SandboxPolicy;
 	/** Depth of the parent session: 0 for a root session. */
 	depth: number;
 	settingsManager: SettingsManager;
@@ -158,6 +177,8 @@ export function createRlmQueryHandler(
 		if (modelRef !== undefined && modelRef !== null && typeof modelRef !== "string") {
 			throw new Error('"model" must be a string');
 		}
+		if (data.read_only !== undefined && typeof data.read_only !== "boolean")
+			throw new Error('"read_only" must be boolean');
 		const maxTurnsValue = data.max_turns ?? RLM_CHILD_DEFAULT_MAX_TURNS;
 		if (typeof maxTurnsValue !== "number" || !Number.isSafeInteger(maxTurnsValue) || maxTurnsValue < 1) {
 			throw new Error('"max_turns" must be a positive integer');
@@ -169,7 +190,11 @@ export function createRlmQueryHandler(
 
 		if (signal.aborted) throw new Error("rlm_query was aborted");
 		return host.childSlots.run(parent, depth, maxDepth, signal, () =>
-			runChild(host, { task, data: data.context, model, depth, maxTurns: maxTurnsValue }, signal),
+			runChild(
+				host,
+				{ task, data: data.context, model, depth, maxTurns: maxTurnsValue, readOnly: data.read_only === true },
+				signal,
+			),
 		);
 	};
 }
@@ -202,19 +227,54 @@ function childResourceLoader(parent: ResourceLoader): ResourceLoader {
 
 async function runChild(
 	host: RlmChildHost,
-	options: { task: string; data: unknown; model: Model<Api>; depth: number; maxTurns: number },
+	options: { task: string; data: unknown; model: Model<Api>; depth: number; maxTurns: number; readOnly: boolean },
 	signal: AbortSignal,
 ): Promise<RlmQueryResult> {
 	const parent = host.sessionManager;
 	const parentSession = parent.getSessionFile();
+	const parentCwd = realpathSync(host.cwd);
+	const existingWorkspace =
+		host.instance && !options.readOnly
+			? (await listChildWorkspaces(host.instance.projectRoot)).find(
+					(entry) => parentCwd === entry.path || parentCwd.startsWith(`${entry.path}${sep}`),
+				)
+			: undefined;
+	if (host.instance && !options.readOnly)
+		await mkdir(join(host.instance.stateRoot, "children"), { recursive: true, mode: 0o700 });
+	const workspace =
+		host.instance && !options.readOnly
+			? await createChildWorkspace(
+					existingWorkspace
+						? await snapshotChildWorkspace(existingWorkspace)
+						: await snapshotProject(host.instance.projectRoot),
+					join(host.instance.stateRoot, "children", randomUUID()),
+				)
+			: undefined;
+	if (workspace) parent.appendCustomEntry("raga-child-workspace", { workspace });
+	const sourceRoot = existingWorkspace?.path ?? host.instance?.projectRoot ?? host.cwd;
+	const cwd = workspace ? join(workspace.path, relative(realpathSync(sourceRoot), parentCwd)) : host.cwd;
+	if (workspace) await mkdir(cwd, { recursive: true, mode: 0o700 });
 	const sessionManager = parent.isPersisted()
-		? SessionManager.create(host.cwd, parent.getSessionDir(), { parentSession })
-		: SessionManager.inMemory(host.cwd, { parentSession });
+		? SessionManager.create(cwd, parent.getSessionDir(), { parentSession })
+		: SessionManager.inMemory(cwd, { parentSession });
+	const baseSandbox = host.instance
+		? instanceSandbox(host.instance, cwd, sessionManager, workspace?.path ?? host.sandbox?.workspace ?? cwd)
+		: host.sandbox;
+	const sandbox = baseSandbox && options.readOnly ? { ...baseSandbox, workspaceReadOnly: true } : baseSandbox;
+	let change: ChildChange | undefined;
+	const captureChange = async () => {
+		if (!workspace || change) return;
+		change = await collectChildChange(workspace);
+		parent.appendCustomEntry("raga-child-change", { workspace, change });
+	};
 	const { session: child } = await createAgentSession({
-		cwd: host.cwd,
+		cwd,
+		instance: host.instance,
+		instanceMemory: host.instanceMemory,
+		sandbox,
 		modelRuntime: host.modelRuntime,
-		settingsManager: host.settingsManager,
-		resourceLoader: childResourceLoader(host.resourceLoader),
+		settingsManager: host.instance ? undefined : host.settingsManager,
+		resourceLoader: host.instance ? undefined : childResourceLoader(host.resourceLoader),
 		sessionManager,
 		model: options.model,
 		thinkingLevel: host.getThinkingLevel(),
@@ -222,6 +282,9 @@ async function runChild(
 		rlmDepth: options.depth,
 		rlmData: options.data,
 		rlmChildSlots: host.childSlots,
+	}).catch(async (error) => {
+		await captureChange();
+		throw error;
 	});
 	try {
 		if (signal.aborted) throw new Error("rlm_query was aborted");
@@ -248,13 +311,23 @@ async function runChild(
 		if (usage) host.addUsage(usage);
 		if (signal.aborted) throw new Error("rlm_query was aborted");
 		const answer = await child.getRlmAnswer();
-		if (answer.ready) return { answer: answer.content, ready: true, session_file: child.sessionFile ?? null };
+		child.dispose();
+		await captureChange();
+		const artifact = { workspace, change };
+		if (answer.ready)
+			return { answer: answer.content, ready: true, session_file: child.sessionFile ?? null, ...artifact };
 		const last = child.messages.findLast((message) => message.role === "assistant");
 		if (last?.role === "assistant" && last.stopReason === "error") {
 			throw new Error(`The child session failed: ${last.errorMessage ?? "unknown error"}`);
 		}
-		return { answer: child.getLastAssistantText() ?? "", ready: false, session_file: child.sessionFile ?? null };
+		return {
+			answer: child.getLastAssistantText() ?? "",
+			ready: false,
+			session_file: child.sessionFile ?? null,
+			...artifact,
+		};
 	} finally {
 		child.dispose();
+		await captureChange();
 	}
 }

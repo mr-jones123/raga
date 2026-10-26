@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { basename, dirname, join, resolve, sep } from "path";
-import { CONFIG_DIR_NAME } from "../config.ts";
+import { PROJECT_CONFIG_DIR_NAME } from "../config.ts";
 import { parseFrontmatter } from "../utils/frontmatter.ts";
 import { resolvePath } from "../utils/paths.ts";
 import type { ResourceDiagnostic } from "./diagnostics.ts";
@@ -221,7 +221,7 @@ export interface LoadPromptTemplatesResult {
 /**
  * Load all prompt templates from:
  * 1. Global: agentDir/prompts/
- * 2. Project: cwd/{CONFIG_DIR_NAME}/prompts/
+ * 2. Project: cwd/{PROJECT_CONFIG_DIR_NAME}/prompts/
  * 3. Explicit prompt paths
  */
 export function loadPromptTemplates(options: LoadPromptTemplatesOptions): LoadPromptTemplatesResult {
@@ -238,7 +238,7 @@ export function loadPromptTemplates(options: LoadPromptTemplatesOptions): LoadPr
 	};
 
 	const globalPromptsDir = join(resolvedAgentDir, "prompts");
-	const projectPromptsDir = resolve(resolvedCwd, CONFIG_DIR_NAME, "prompts");
+	const projectPromptsDir = resolve(resolvedCwd, PROJECT_CONFIG_DIR_NAME, "prompts");
 
 	const isUnderPath = (target: string, root: string): boolean => {
 		const normalizedRoot = resolve(root);

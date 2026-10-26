@@ -86,9 +86,23 @@ Every `host_request` has `data.type`. The host replies with `{"status":"ok","res
 | `llm.query` | `{"prompt":str,"system"?:str,"model"?:str}` | `{"text":str}` | M4 |
 | `llm.batch` | `{"prompts":[str],"system"?:str,"model"?:str}` | `{"texts":[str]}` | M4 |
 | `context.history` | `{"offset"?:int,"limit"?:int}` | `{"messages":[{"role":str,"text":str}],"total":int}` | M5 |
-| `rlm.query` | `{"task":str,"context"?:any,"model"?:str,"max_turns"?:int}` | `{"answer":str,"ready":bool,"session_file":str\|null}` | M6 |
+| `rlm.query` | `{"task":str,"context"?:any,"model"?:str,"max_turns"?:int,"read_only"?:bool}` | `{"answer":str,"ready":bool,"session_file":str\|null,"workspace"?:object,"change"?:object}` | M6, M11 |
+| `memory.search` | `{"query":str,"task_type"?:str,"max_chars"?:int,"limit"?:int}` | A `MemoryRetrieval` | M13 |
+| `memory.get` | `{"id":str}` | The current `MemoryEntry` of the session's project scope | M13 |
+| `memory.observe` | `{"text":str,"evidence":[str]}` | The new `MemoryEntry`, always an `unreviewed` `hypothesis` | M12 |
+| `instance.info` | `{}` | `{"instanceId","revision","projectRoot","harnessPath"}` | M10 |
+| `instance.child_patch` | `{"workspace_id":str}` | `{"workspace","change","patch"}` for a child this session collected | M11 |
+| `instance.integrate` | `{"workspace_ids":[str],"command":str,"args"?:[str],"timeout_ms"?:int}` | `{"accepted":true,"workspace","change","patch"}`, or the first rejected merge or check | M11 |
+| `instance.candidate.create` | `{}` | A new candidate checkout that this session owns | M10 |
+| `instance.candidate.read`, `instance.candidate.write` | `{"id":str,"path":str,"content"?:str}` | File text, or `{"path","bytes"}` | M10 |
+| `instance.candidate.commit` | `{"id":str,"message":str}` | The candidate with its `revision` | M10 |
+| `instance.no_mistakes` | `{"action":"inspect"\|"status"\|"run","options"?:{"intent":str}}` | The backend result | M9a |
+
+The `memory.*` and `instance.*` requests exist only in instance sessions, and the `memory.*` requests are removed when the session runs with `instanceMemory: false`. Candidate paths must be `AGENTS.md` or lie under `skills/`, `lessons/`, `agents/`, or `prompts/`, and hidden paths fail. A session can read, write, and commit only candidates it created. `instance.integrate` accepts 1 to 16 child IDs and a timeout of at most 3,600,000 ms, with 120,000 ms as the default. `instance.no_mistakes` allows `inspect` and `status`, allows `run` only after the operator has enabled the repository, and refuses every other action.
 
 `args` for `tool.call` match the parameter schemas of pi's built-in tools in `src/core/tools/`. `bash` takes `{command, timeout?}`. `edit` takes `{path, edits: [{oldText, newText}]}`. `write` takes `{path, content}`. Any other `name` is an error. The host runs the tool through `runToolCall` with the session's `beforeToolCall` and `afterToolCall` hooks, so extensions see a `tool_call` and `tool_result` event whose `parentToolCallId` is the `python` call. `text` is the tool result's text content joined with newlines.
+
+In a session with a sandbox policy, which every instance session has, `tool.call` accepts only `bash`. The host runs `/bin/bash --noprofile --norc -c <command>` in a fresh bubblewrap sandbox with the session's policy, a timeout of at most 3,600 seconds (default 120), and 64 KiB of output per stream, without tool hooks. The Python `edit` and `write` functions then change files inside the kernel instead of calling the host.
 
 `model` is `"provider/id"`. Without it, `llm.*` uses the `rlm.subModel` setting, then the session model. Each call is `ModelRuntime.completeSimple` with the prompt as the only user message, `system` as the system prompt, no tools, a fresh session id, and the session's `before_provider_request` and `after_provider_response` hooks, so extensions that rewrite requests for their providers apply. A call that ends with `stopReason` `error` or `aborted` fails with its error message, so Python raises `HostError`. `llm.batch` runs at most 8 calls at once, and its first failure aborts the calls still running.
 
@@ -101,7 +115,7 @@ Usage from `llm.*` and `rlm.query` during a cell adds up on the `python` tool re
 `src/core/rlm/children.ts` answers `rlm.query`. It runs `task` in a child `AgentSession` in the same process and returns the child's answer.
 
 1. Depth. A root session has depth 0, and a child has its parent's depth + 1 (`AgentSessionConfig.rlmDepth`). When the child's depth would exceed `rlm.maxDepth`, the request fails with `RLM recursion depth limit reached (depth D, max M)`, where D is the child's depth, and no session is created. The `rlm` prompt section of a child starts with "You are a sub-agent at depth D. Put your final answer in answer['content'] and set answer['ready'] = True." A session at the maximum depth is not told about `rlm_query`.
-2. Session. The child comes from `createAgentSession` with RLM mode on and shares the parent's `ModelRuntime`, `SettingsManager`, and resource loader. Its model is the payload's `model`, then `rlm.subModel`, then the parent's model; its thinking level is the parent's. When the parent is persisted, the child is `SessionManager.create(cwd, parentSessionDir, { parentSession: parentSessionFile })`, so its header names the parent's file. Otherwise it is in memory.
+2. Session. The child comes from `createAgentSession` with RLM mode on and shares the parent's `ModelRuntime`. Outside an instance it also shares the parent's `SettingsManager` and resource loader. In an instance session it opens the parent's harness pin itself, so it gets the same pinned settings and resources without the parent's loaders. Its model is the payload's `model`, then `rlm.subModel`, then the parent's model; its thinking level is the parent's. When the parent is persisted, the child is `SessionManager.create(cwd, parentSessionDir, { parentSession: parentSessionFile })`, so its header names the parent's file. Otherwise it is in memory.
 3. Context. The child's first user message is `task`, so its `context.task` is `task`. Its `context.data` is the payload's `context`.
 4. Answer. After the child's `prompt()` settles, the host sends `get_answer` to the child's kernel. When `answer["ready"]` is true, the result is `answer["content"]` with `ready: true`. Otherwise it is the child's last assistant text with `ready: false`. A child whose last response ended with `stopReason: "error"` and no ready answer fails the request with that error. `session_file` is the child's session file, or `null` for an in-memory child.
 5. Budget and abort. The child is aborted after `max_turns` `turn_end` events (default 30). The abort signal of the parent's cell aborts the child, so aborting the parent session interrupts the child's running cell. The child is disposed after it answers.
@@ -120,10 +134,12 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 | `write` | `await write(path, content) -> str` | Runs pi's `write` tool. |
 | `llm_query` | `await llm_query(prompt, system=None, model=None) -> str` | One sub-LLM call with no tools. |
 | `llm_batch` | `await llm_batch(prompts, system=None, model=None) -> list[str]` | Parallel sub-LLM calls. The host limits concurrency to 8. |
-| `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None) -> str` | Runs a child RLM session on `task` and returns its answer (see "Child sessions"). `context` is any JSON value and becomes the child's `context.data`. Run several children at once with `await asyncio.gather(rlm_query(a), rlm_query(b))`. |
+| `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None, *, read_only=False, details=False) -> str \| dict` | Runs a child RLM session on `task` and returns its answer (see "Child sessions"). `context` is any JSON value and becomes the child's `context.data`. Run several children at once with `await asyncio.gather(rlm_query(a), rlm_query(b))`. In an instance session a writing child works in its own checkout, and `read_only=True` mounts the parent's workspace read-only instead. `details=True` returns the whole `rlm.query` result, including `workspace` and `change`. |
 | `context` | object | `context.task` is the first user prompt. `context.inputs` maps input names to file contents; each file is read the first time its key is read, then cached, and `context.inputs.path(name)` returns the path. `context.data` is the `context` argument of the parent's `rlm_query`, or `None`. `await context.history(offset=0, limit=None)` returns the session's messages as `{"role","text"}` dicts. |
 | `answer` | `{"content": "", "ready": False}` | A child session returns `answer["content"]` when `answer["ready"]` is true. |
 | `cells` | `list[dict]` | One entry per finished cell: `{"id","code","stdout","stderr","result","error"}`. `error` is the formatted traceback string, or `None`. The newest entries keep their full `stdout` and `stderr` up to 32 Mi characters in total, and the newest entry always keeps its own. In older entries each non-empty `stdout` and `stderr` becomes `"[output dropped to bound memory: N characters]"`, where N is its length; `code`, `result`, and `error` stay. |
+| `memory` | object | Instance sessions only. `await memory.search(query, *, task_type=None, max_chars=4000, limit=5)`, `await memory.get(entry_id)`, and `await memory.observe(text, evidence)` send the `memory.*` host requests. |
+| `instance` | object | Instance sessions only. `await instance.info()`, `child_patch(workspace_id)`, `integrate(workspace_ids, command, args=None, *, timeout_ms=120000)`, `candidate_create()`, `candidate_read(candidate_id, path)`, `candidate_write(candidate_id, path, content)`, `candidate_commit(candidate_id, message)`, and `no_mistakes(action, **options)` send the `instance.*` host requests. None of them activates a revision. |
 
 ## The python tool
 
@@ -150,11 +166,21 @@ Each kernel is a separate process. An idle kernel uses about 21 MiB of RSS. A tr
 
 The kernel namespace survives a resume and a fork through a `dill` snapshot.
 
-1. File. A persisted session snapshots to `<sessionDir>/<sessionId>.rlm/kernel.dill`, and an in-memory session to `<os.tmpdir()>/raga-rlm/<sessionId>/kernel.dill`.
+1. File. A persisted session snapshots to `<sessionDir>/<sessionId>.rlm/kernel.dill`, and an in-memory session to `<os.tmpdir()>/raga-rlm/<sessionId>/kernel.dill`. An instance session snapshots to `.raga/state/kernels/<sessionId>/kernel.dill`. When it restores a snapshot recorded by another session, such as a fork's parent, it copies the file into its own directory first and refuses a file outside `.raga/state/kernels/`.
 2. Schedule. One second after a cell that ends `ok`, the host sends `snapshot`. A new cell restarts the wait, so a run of quick cells snapshots once. `AgentSession.flushRlmSnapshot()` writes a scheduled snapshot at once and waits for it. `AgentSessionRuntime` calls it before it disposes a session (new, resume, fork, import, quit), and before a fork or resume reads the session file. `AgentSession.dispose()` alone drops a scheduled snapshot, so a child session never writes one after it answers.
 3. Entry. The first successful snapshot of a session file appends a custom entry `rlm-kernel-snapshot` with `{path}`.
 4. Restore. Before the first cell, the host finds the newest `rlm-kernel-snapshot` entry on the current branch and, when its file exists, sends `restore`. The first `python` result then starts with `[kernel restored N variables: a, b, c]`, listing at most 20 names, followed by `; K failed: ...` when some names fail to load. A resumed session finds its own entry. A forked session finds its parent's entry, because a fork copies the branch, and restores the parent's file; its own snapshots go to its own path with its own entry, so it never writes the parent's file.
 5. Failures. A failed snapshot (no `dill`, a write error) or names that the snapshot leaves out (unpicklable values, values over the size caps) never fail a cell. Each distinct problem appears once, as a line at the start of the next `python` result.
+
+## Instance sessions
+
+A session pinned to an instance revision changes the runtime as follows. [INSTANCE-PLAN.md](INSTANCE-PLAN.md) describes instances and the `pi instance` commands.
+
+1. Mode. RLM mode is always on, whatever `rlm.enabled` says. `python` is the only active tool, and MCP tools are excluded. Settings come from the pinned `settings.json`.
+2. Sandbox. The kernel runs inside bubblewrap (`src/core/instances/sandbox.ts`) with no network and no inherited host environment. The pinned harness and the interpreter's runtime directories are read-only. The workspace is writable: the project checkout for the root session, or the child's own checkout. The kernel snapshot directory is also writable. `.git` and `.raga` are masked under every mounted root. The kernel gets `RAGA_RESTRICTED=1`, `RAGA_HARNESS`, and `RAGA_INSTANCE_ID`. If the bubblewrap probe fails, the kernel does not start, and the first `python` result reports `Restricted execution is unavailable`.
+3. Tools. `bash()` runs in a fresh sandbox (see "Host requests"). `edit()` and `write()` change files inside the kernel, relative to the session cwd. `edit()` requires each `oldText` to match exactly once.
+4. Memory. Before each user prompt, the host retrieves up to five entries and 4,000 characters for the prompt and adds the selected text as a hidden `raga-memory-context` message. After a cell fails with a new error, the host retrieves again for the task and the error and appends the text to the `python` result. Each retrieval is recorded as a `raga-memory-retrieval` entry. `instanceMemory: false` turns both off and removes the `memory.*` requests.
+5. Children. A writing child gets a checkout of a project snapshot under `.raga/state/children/`, or of its parent's checkout when the parent is itself a writer. The host appends `raga-child-workspace` when the child starts and `raga-child-change` when its files are collected, which also happens when the child fails. Writing children need a Git repository with a commit at `HEAD`. Read-only children do not.
 
 ## Settings and flags
 
@@ -168,6 +194,8 @@ The kernel namespace survives a resume and a fork through a `dill` snapshot.
 
 In RLM mode the session's active tools are `python` plus `bash`, `edit`, and `write` as hidden declarations. Hidden tools stay callable from the host and do not reach the model. The `defaultTools` setting, `--tools`, `--no-tools`, and `--no-builtin-tools` do not apply; `--exclude-tools` still removes tools, and extension tools that activate on registration stay declared next to `python`. The system prompt gets an `rlm` section that describes the kernel and its names.
 
+In an instance session the only allowed tool is `python`, with no hidden built-in declarations. `--no-tools` removes `python` as well, `--exclude-tools` still applies, and MCP tools are always excluded.
+
 ## Python interpreter
 
 `python-env.ts` picks the interpreter in this order:
@@ -178,3 +206,5 @@ In RLM mode the session's active tools are `python` plus `bash`, `edit`, and `wr
 4. `python3` on `PATH`. Snapshots fail with `dill not installed` if `dill` is missing.
 
 The interpreter must be Python 3.11 or newer. The kernel starts with `PYTHONPATH` set to `packages/coding-agent/python`.
+
+For a sandboxed kernel, the host also mounts the interpreter's `sys.prefix`, `sys.base_prefix`, and site-packages directories read-only and adds the site-packages directories to `PYTHONPATH`.

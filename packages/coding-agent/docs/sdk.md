@@ -104,6 +104,7 @@ Each boundary can be supplied explicitly:
 - `sessionManager` supplies persistent or in-memory conversation history.
 - `resourceLoader` supplies extensions, skills, prompt templates, themes, and context files.
 - `tools`, `noTools`, `excludeTools`, and `customTools` control the active tool set.
+- `instance` names a raga instance root (`.raga/` directory) or an opened `HarnessPin`. Without it, `createAgentSession` uses `RAGA_INSTANCE_ROOT` or the nearest `.raga/instance.json` above `cwd`. Unless you pass `settingsManager` or `resourceLoader`, an instance session loads settings and resources only from its pinned revision. It stores sessions under `.raga/state/sessions/`, runs in RLM mode with a bubblewrap-sandboxed kernel, and reads credentials and models from the default user agent directory even when `agentDir` is set. A session manager that already records a pin reopens that revision. `instanceMemory: false` turns live memory retrieval off. `sandbox` supplies an explicit sandbox policy for trusted callers such as evaluators. See [raga instances](../../../docs/INSTANCE-PLAN.md).
 
 Use `DefaultResourceLoader` when you want standard discovery with selected overrides. Supply a custom `ResourceLoader` when the host owns resource storage and discovery completely.
 

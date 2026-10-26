@@ -1,0 +1,1 @@
+Read the pinned native runtime adapter. Follow the assignment and its permissions. Preserve unrelated changes. Return concrete evidence, assumptions, and unresolved blockers. Do not promote revisions, publish, or control an outer no-mistakes gate.

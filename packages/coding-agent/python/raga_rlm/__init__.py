@@ -13,6 +13,7 @@ from typing import Any
 
 # The kernel starts in the session cwd; `read` resolves relative paths against it even after a cell chdirs.
 _SESSION_CWD = os.getcwd()
+_RESTRICTED = os.environ.get("RAGA_RESTRICTED") == "1"
 
 __all__ = [
     "BOOTSTRAP_NAMES",
@@ -30,6 +31,8 @@ __all__ = [
     "host_request",
     "llm_batch",
     "llm_query",
+    "memory",
+    "instance",
     "read",
     "record_cell",
     "rlm_query",
@@ -71,7 +74,7 @@ def _drop_none(**fields: Any) -> dict[str, Any]:
 
 
 async def bash(command: str, timeout: float | None = None) -> str:
-    """Run pi's bash tool and return its output."""
+    """Run a shell command under the session's execution policy and return its output."""
     return await _tool("bash", _drop_none(command=command, timeout=timeout))
 
 
@@ -88,7 +91,7 @@ async def read(path: str, offset: int | None = None, limit: int | None = None) -
 
 
 async def edit(path: str, edits: list[Any]) -> str:
-    """Run pi's edit tool. `edits` holds (old, new) tuples or {"oldText","newText"} dicts."""
+    """Apply exact replacements. `edits` holds (old, new) tuples or {"oldText","newText"} dicts."""
     normalized: list[dict[str, str]] = []
     for item in edits:
         if isinstance(item, dict):
@@ -99,11 +102,31 @@ async def edit(path: str, edits: list[Any]) -> str:
             normalized.append({"oldText": item[0], "newText": item[1]})
         else:
             raise TypeError("each edit must be an (old, new) tuple or an oldText/newText dict")
+    if _RESTRICTED:
+        target = os.path.join(_SESSION_CWD, os.path.expanduser(path))
+        with open(target, encoding="utf-8", newline="") as fh:
+            content = fh.read()
+        for item in normalized:
+            old, new = item["oldText"], item["newText"]
+            if not isinstance(old, str) or not isinstance(new, str) or not old:
+                raise ValueError("edits need nonempty oldText and string newText")
+            if content.count(old) != 1:
+                raise ToolError("Each edit must match exactly one occurrence")
+            content = content.replace(old, new, 1)
+        with open(target, "w", encoding="utf-8", newline="") as fh:
+            fh.write(content)
+        return f"Edited {path}"
     return await _tool("edit", {"path": path, "edits": normalized})
 
 
 async def write(path: str, content: str) -> str:
-    """Run pi's write tool and return its output."""
+    """Write UTF-8 content under the session's filesystem policy."""
+    if _RESTRICTED:
+        target = os.path.join(_SESSION_CWD, os.path.expanduser(path))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "w", encoding="utf-8", newline="") as fh:
+            fh.write(content)
+        return f"Wrote {path}"
     return await _tool("write", {"path": path, "content": content})
 
 
@@ -120,11 +143,19 @@ async def llm_batch(prompts: list[str], system: str | None = None, model: str | 
     return list(result["texts"])
 
 
-async def rlm_query(task: str, context: Any = None, model: str | None = None, max_turns: int | None = None) -> str:
-    """Run a child RLM session and return its answer."""
-    payload = _drop_none(task=task, context=context, model=model, max_turns=max_turns)
+async def rlm_query(
+    task: str,
+    context: Any = None,
+    model: str | None = None,
+    max_turns: int | None = None,
+    *,
+    read_only: bool = False,
+    details: bool = False,
+) -> str | dict[str, Any]:
+    """Run a child. Instance writers get isolated checkouts; details includes the change artifact."""
+    payload = _drop_none(task=task, context=context, model=model, max_turns=max_turns, read_only=read_only)
     result = await host_request({"type": "rlm.query", **payload})
-    return result["answer"]
+    return result if details else result["answer"]
 
 
 class Inputs(Mapping[str, str]):
@@ -174,6 +205,62 @@ class Context:
         )
 
 
+class Memory:
+    """Scoped retrieval and unreviewed observations. Entries never grant permissions."""
+
+    async def search(self, query: str, *, task_type: str | None = None, max_chars: int = 4000, limit: int = 5) -> dict[str, Any]:
+        return await host_request({
+            "type": "memory.search",
+            **_drop_none(query=query, task_type=task_type, max_chars=max_chars, limit=limit),
+        })
+
+    async def get(self, entry_id: str) -> dict[str, Any]:
+        return await host_request({"type": "memory.get", "id": entry_id})
+
+    async def observe(self, text: str, evidence: list[str]) -> dict[str, Any]:
+        return await host_request({"type": "memory.observe", "text": text, "evidence": evidence})
+
+
+class Instance:
+    """Inspect the pinned harness and propose changes without activating them."""
+
+    async def info(self) -> dict[str, Any]:
+        return await host_request({"type": "instance.info"})
+
+    async def child_patch(self, workspace_id: str) -> dict[str, Any]:
+        return await host_request({"type": "instance.child_patch", "workspace_id": workspace_id})
+
+    async def integrate(
+        self, workspace_ids: list[str], command: str, args: list[str] | None = None, *, timeout_ms: int = 120000
+    ) -> dict[str, Any]:
+        return await host_request({
+            "type": "instance.integrate",
+            "workspace_ids": workspace_ids,
+            "command": command,
+            "args": args or [],
+            "timeout_ms": timeout_ms,
+        })
+
+    async def candidate_create(self) -> dict[str, Any]:
+        return await host_request({"type": "instance.candidate.create"})
+
+    async def candidate_read(self, candidate_id: str, path: str) -> str:
+        return await host_request({"type": "instance.candidate.read", "id": candidate_id, "path": path})
+
+    async def candidate_write(self, candidate_id: str, path: str, content: str) -> dict[str, Any]:
+        return await host_request({"type": "instance.candidate.write", "id": candidate_id, "path": path, "content": content})
+
+    async def candidate_commit(self, candidate_id: str, message: str) -> dict[str, Any]:
+        return await host_request({"type": "instance.candidate.commit", "id": candidate_id, "message": message})
+
+    async def no_mistakes(self, action: str, **options: Any) -> Any:
+        return await host_request({"type": "instance.no_mistakes", "action": action, "options": options})
+
+
+memory = Memory()
+instance = Instance()
+
+
 context = Context()
 answer: dict[str, Any] = {"content": "", "ready": False}
 cells: list[dict[str, Any]] = []
@@ -190,6 +277,8 @@ BOOTSTRAP_NAMES = frozenset(
         "llm_query",
         "llm_batch",
         "rlm_query",
+        "memory",
+        "instance",
         "context",
         "answer",
         "cells",

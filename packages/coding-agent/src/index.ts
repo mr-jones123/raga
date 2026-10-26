@@ -10,6 +10,7 @@ export {
 	getExamplesPath,
 	getPackageDir,
 	getReadmePath,
+	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "./config.ts";
 export {
@@ -217,6 +218,39 @@ export {
 } from "./core/extensions/index.ts";
 // Footer data provider (git branch + extension statuses - data not otherwise available to extensions)
 export type { ReadonlyFooterDataProvider } from "./core/footer-data-provider.ts";
+export { getBundledHarnessPath, inspectBundledSkills } from "./core/instances/bundle.ts";
+export { runModelCheckpoint } from "./core/instances/checkpoint.ts";
+export {
+	InstanceMemory,
+	type MemoryEntry,
+	type MemoryInput,
+	type MemoryQuery,
+	type MemoryRetrieval,
+} from "./core/instances/memory.ts";
+export { migrateProjectConfig, type ProjectMigrationResult } from "./core/instances/migration.ts";
+export {
+	type ModelRefinementOptions,
+	type ModelRefinementResult,
+	runModelRefinement,
+} from "./core/instances/model-refinement.ts";
+export { getNoMistakesBackend, NoMistakesBackend } from "./core/instances/no-mistakes.ts";
+export { type RefinementOptions, type RefinementResult, refineInstance } from "./core/instances/refinement.ts";
+export { checkSandbox, sandboxCommand } from "./core/instances/sandbox.ts";
+export { proposeSkill, validateSkill, verifySkillRevision } from "./core/instances/skills.ts";
+export {
+	activateRevision,
+	commitCandidate,
+	createCandidate,
+	getCandidate,
+	initializeInstance,
+	inspectCandidate,
+	instancePaths,
+	listRevisions,
+	openInstance,
+	readInstance,
+	rollbackInstance,
+} from "./core/instances/store.ts";
+export type { HarnessPin, InstanceManifest, SandboxPolicy } from "./core/instances/types.ts";
 export type { RegisteredMcpServer } from "./core/mcp-servers.ts";
 export { convertToLlm } from "./core/messages.ts";
 export { ModelRegistry } from "./core/model-registry.ts";

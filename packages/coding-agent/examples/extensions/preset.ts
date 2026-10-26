@@ -7,7 +7,7 @@
  *
  * Config files (merged, project takes precedence):
  * - ~/.pi/agent/presets.json (global)
- * - <cwd>/.pi/presets.json (project-local)
+ * - <cwd>/.raga/presets.json (project-local)
  *
  * Example presets.json:
  * ```json
@@ -42,7 +42,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Api, Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { CONFIG_DIR_NAME, DynamicBorder, getAgentDir } from "@earendil-works/pi-coding-agent";
+import { DynamicBorder, getAgentDir, PROJECT_CONFIG_DIR_NAME } from "@earendil-works/pi-coding-agent";
 import { Container, Key, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
 
 // Preset configuration
@@ -69,7 +69,7 @@ interface PresetsConfig {
  */
 function loadPresets(cwd: string): PresetsConfig {
 	const globalPath = join(getAgentDir(), "presets.json");
-	const projectPath = join(cwd, CONFIG_DIR_NAME, "presets.json");
+	const projectPath = join(cwd, PROJECT_CONFIG_DIR_NAME, "presets.json");
 
 	let globalPresets: PresetsConfig = {};
 	let projectPresets: PresetsConfig = {};
@@ -201,7 +201,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 
 		if (presetNames.length === 0) {
 			ctx.ui.notify(
-				`No presets defined. Add presets to ${join(getAgentDir(), "presets.json")} or ${join(ctx.cwd, CONFIG_DIR_NAME, "presets.json")}`,
+				`No presets defined. Add presets to ${join(getAgentDir(), "presets.json")} or ${join(ctx.cwd, PROJECT_CONFIG_DIR_NAME, "presets.json")}`,
 				"warning",
 			);
 			return;
@@ -312,7 +312,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 		const presetNames = getPresetOrder();
 		if (presetNames.length === 0) {
 			ctx.ui.notify(
-				`No presets defined. Add presets to ${join(getAgentDir(), "presets.json")} or ${join(ctx.cwd, CONFIG_DIR_NAME, "presets.json")}`,
+				`No presets defined. Add presets to ${join(getAgentDir(), "presets.json")} or ${join(ctx.cwd, PROJECT_CONFIG_DIR_NAME, "presets.json")}`,
 				"warning",
 			);
 			return;

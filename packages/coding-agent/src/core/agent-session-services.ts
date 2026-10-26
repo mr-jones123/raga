@@ -4,6 +4,8 @@ import type { Model } from "@earendil-works/pi-ai";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import type { SessionStartEvent, ToolDefinition } from "./extensions/index.ts";
+import { instanceResources, instanceSettings, resolveInstancePin } from "./instances/session.ts";
+import type { HarnessPin } from "./instances/types.ts";
 import { ModelRuntime } from "./model-runtime.ts";
 import {
 	DefaultResourceLoader,
@@ -37,6 +39,8 @@ export interface AgentSessionRuntimeDiagnostic {
 export interface CreateAgentSessionServicesOptions {
 	cwd: string;
 	agentDir?: string;
+	instance?: HarnessPin | string;
+	sessionManager?: SessionManager;
 	settingsManager?: SettingsManager;
 	modelRuntime?: ModelRuntime;
 	modelRuntimeSignal?: AbortSignal;
@@ -75,6 +79,7 @@ export interface CreateAgentSessionFromServicesOptions {
 export interface AgentSessionServices {
 	cwd: string;
 	agentDir: string;
+	instance?: HarnessPin;
 	modelRuntime: ModelRuntime;
 	settingsManager: SettingsManager;
 	resourceLoader: ResourceLoader;
@@ -139,6 +144,7 @@ export async function createAgentSessionServices(
 ): Promise<AgentSessionServices> {
 	const cwd = resolvePath(options.cwd);
 	const agentDir = options.agentDir ? resolvePath(options.agentDir) : getAgentDir();
+	const instance = await resolveInstancePin(cwd, options.instance, options.sessionManager);
 	const modelRuntime =
 		options.modelRuntime ??
 		(await ModelRuntime.create({
@@ -146,14 +152,24 @@ export async function createAgentSessionServices(
 			modelsPath: join(agentDir, "models.json"),
 			signal: options.modelRuntimeSignal,
 		}));
-	const settingsManager = options.settingsManager ?? SettingsManager.create(cwd, agentDir);
-	const resourceLoader = new DefaultResourceLoader({
-		...(options.resourceLoaderOptions ?? {}),
-		cwd,
-		agentDir,
-		settingsManager,
-	});
-	await resourceLoader.reload(options.resourceLoaderReloadOptions);
+	const settingsManager = instance
+		? instanceSettings(instance)
+		: (options.settingsManager ?? SettingsManager.create(cwd, agentDir));
+	const resourceLoader = instance
+		? await instanceResources(
+				instance,
+				settingsManager,
+				options.resourceLoaderOptions?.extensionFactories,
+				true,
+				modelRuntime,
+			)
+		: new DefaultResourceLoader({
+				...(options.resourceLoaderOptions ?? {}),
+				cwd,
+				agentDir,
+				settingsManager,
+			});
+	if (!instance) await resourceLoader.reload(options.resourceLoaderReloadOptions);
 
 	const diagnostics: AgentSessionRuntimeDiagnostic[] = [];
 	const extensionsResult = resourceLoader.getExtensions();
@@ -199,6 +215,7 @@ export async function createAgentSessionServices(
 	return {
 		cwd,
 		agentDir,
+		instance,
 		modelRuntime,
 		settingsManager,
 		resourceLoader,
@@ -219,6 +236,7 @@ export async function createAgentSessionFromServices(
 	return createAgentSession({
 		cwd: options.services.cwd,
 		agentDir: options.services.agentDir,
+		instance: options.services.instance,
 		modelRuntime: options.services.modelRuntime,
 		settingsManager: options.services.settingsManager,
 		resourceLoader: options.services.resourceLoader,

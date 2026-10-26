@@ -1,0 +1,8 @@
+{
+  "name": "worker",
+  "instructions": "agents/worker.md",
+  "modelRole": "code",
+  "skills": [
+    "raga-runtime"
+  ]
+}

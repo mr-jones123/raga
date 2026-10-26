@@ -806,7 +806,7 @@ Response:
         "description": "Fix failing tests",
         "source": "prompt",
         "sourceInfo": {
-          "path": "/home/user/myproject/.pi/agent/prompts/fix-tests.md",
+          "path": "/home/user/myproject/.raga/prompts/fix-tests.md",
           "source": "local",
           "scope": "project",
           "origin": "top-level"

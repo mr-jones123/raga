@@ -15,7 +15,7 @@ import {
 	truncateToWidth,
 	visibleWidth,
 } from "@earendil-works/pi-tui";
-import { CONFIG_DIR_NAME } from "../../../config.ts";
+import { CONFIG_DIR_NAME, PROJECT_CONFIG_DIR_NAME } from "../../../config.ts";
 import type { PathMetadata, ResolvedPaths, ResolvedResource } from "../../../core/package-manager.ts";
 import type { PackageSource, SettingsManager } from "../../../core/settings-manager.ts";
 import { BUILTIN_PATH_PREFIX } from "../../../core/source-info.ts";
@@ -95,7 +95,7 @@ function getGroupLabel(metadata: PathMetadata, agentDir: string): string {
 				? `User (${formatBaseDir(metadata.baseDir)})`
 				: `Project (${formatBaseDir(metadata.baseDir)})`;
 		}
-		return metadata.scope === "user" ? `User (${formatBaseDir(agentDir)})` : `Project (${CONFIG_DIR_NAME}/)`;
+		return metadata.scope === "user" ? `User (${formatBaseDir(agentDir)})` : `Project (${PROJECT_CONFIG_DIR_NAME}/)`;
 	}
 	return metadata.scope === "user" ? "User settings" : "Project settings";
 }
@@ -215,7 +215,7 @@ class ConfigSelectorHeader implements Component {
 		const spacing = Math.max(1, width - visibleWidth(title) - visibleWidth(hint));
 		const scopeHint =
 			this.writeScope === "project"
-				? theme.fg("muted", `${CONFIG_DIR_NAME}/settings.json · inherited global resources are dimmed`)
+				? theme.fg("muted", `${PROJECT_CONFIG_DIR_NAME}/settings.json · inherited global resources are dimmed`)
 				: theme.fg("muted", `~/${CONFIG_DIR_NAME}/agent/settings.json`);
 
 		return [
@@ -856,7 +856,7 @@ class ResourceList implements Component, Focusable {
 	}
 
 	private getTopLevelBaseDir(scope: "user" | "project"): string {
-		return scope === "project" ? join(this.cwd, CONFIG_DIR_NAME) : this.agentDir;
+		return scope === "project" ? join(this.cwd, PROJECT_CONFIG_DIR_NAME) : this.agentDir;
 	}
 
 	private getResourcePattern(item: ResourceItem): string {

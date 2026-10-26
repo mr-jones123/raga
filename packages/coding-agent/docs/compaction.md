@@ -32,7 +32,7 @@ Auto-compaction triggers when:
 contextTokens > contextWindow - reserveTokens
 ```
 
-By default, `reserveTokens` is 16384 tokens (configurable in `~/.pi/agent/settings.json` or `<project-dir>/.pi/settings.json`). It only decides when compaction starts. Summary requests use the model's output limit, reduced when needed so input and output fit the context window.
+By default, `reserveTokens` is 16384 tokens (configurable in `~/.pi/agent/settings.json` or `<project-dir>/.raga/settings.json`). It only decides when compaction starts. Summary requests use the model's output limit, reduced when needed so input and output fit the context window.
 
 During a multi-turn agent run, Pi checks the canonical projected context after tools finish and their results are appended, before starting the next assistant response. If the threshold is crossed, Pi compacts during `prepareNextTurn`, then performs the existing catch-up steering poll before `turn_start`. It skips this between-turn check when the completed tool batch terminates the run and no queued message requires another response. Pi also checks before a new user prompt and performs final-attempt overflow recovery after the low-level run ends.
 
@@ -42,7 +42,7 @@ You can also trigger manually with `/compact [instructions]`, where optional ins
 
 ### How It Works
 
-1. **Find cut point**: Walk backwards through the finalized session projection, accumulating token estimates until `keepRecentTokens` (default 20k, configurable in `~/.pi/agent/settings.json` or `<project-dir>/.pi/settings.json`) is reached
+1. **Find cut point**: Walk backwards through the finalized session projection, accumulating token estimates until `keepRecentTokens` (default 20k, configurable in `~/.pi/agent/settings.json` or `<project-dir>/.raga/settings.json`) is reached
 2. **Extract messages**: Collect projected messages from the previous kept boundary (or session start) up to the cut point
 3. **Generate summary**: Call LLM to summarize with structured format, passing the previous summary as iterative context when present
 4. **Append entry**: Save `CompactionEntry` with summary and `firstKeptEntryId`
@@ -416,7 +416,7 @@ See `SessionBeforeTreeEvent` and `TreePreparation` in the types file.
 
 ## Settings
 
-Configure compaction in `~/.pi/agent/settings.json` or `<project-dir>/.pi/settings.json`:
+Configure compaction in `~/.pi/agent/settings.json` or `<project-dir>/.raga/settings.json`:
 
 ```json
 {

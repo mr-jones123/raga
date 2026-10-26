@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { detectCapabilities, getTerminalColorMode, type TerminalColorMode } from "@earendil-works/pi-tui";
 import chalk from "chalk";
-import { CONFIG_DIR_NAME } from "../config.ts";
+import { PROJECT_CONFIG_DIR_NAME } from "../config.ts";
 import { loadThemeFromPath, type Theme } from "../modes/interactive/theme/theme.ts";
 import type { ResourceDiagnostic } from "./diagnostics.ts";
 
@@ -994,10 +994,10 @@ export class DefaultResourceLoader implements ResourceLoader {
 			join(this.agentDir, "extensions"),
 		];
 		const projectRoots = [
-			join(this.cwd, CONFIG_DIR_NAME, "skills"),
-			join(this.cwd, CONFIG_DIR_NAME, "prompts"),
-			join(this.cwd, CONFIG_DIR_NAME, "themes"),
-			join(this.cwd, CONFIG_DIR_NAME, "extensions"),
+			join(this.cwd, PROJECT_CONFIG_DIR_NAME, "skills"),
+			join(this.cwd, PROJECT_CONFIG_DIR_NAME, "prompts"),
+			join(this.cwd, PROJECT_CONFIG_DIR_NAME, "themes"),
+			join(this.cwd, PROJECT_CONFIG_DIR_NAME, "extensions"),
 		];
 
 		for (const root of agentRoots) {
@@ -1051,7 +1051,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const themes: Theme[] = [];
 		const diagnostics: ResourceDiagnostic[] = [];
 		if (includeDefaults) {
-			const defaultDirs = [join(this.agentDir, "themes"), join(this.cwd, CONFIG_DIR_NAME, "themes")];
+			const defaultDirs = [join(this.agentDir, "themes"), join(this.cwd, PROJECT_CONFIG_DIR_NAME, "themes")];
 
 			for (const dir of defaultDirs) {
 				this.loadThemesFromDir(dir, themes, diagnostics, colorMode);
@@ -1211,7 +1211,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 	}
 
 	private discoverSystemPromptFile(): string | undefined {
-		const projectPath = join(this.cwd, CONFIG_DIR_NAME, "SYSTEM.md");
+		const projectPath = join(this.cwd, PROJECT_CONFIG_DIR_NAME, "SYSTEM.md");
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
 		}
@@ -1225,7 +1225,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 	}
 
 	private discoverAppendSystemPromptFile(): string | undefined {
-		const projectPath = join(this.cwd, CONFIG_DIR_NAME, "APPEND_SYSTEM.md");
+		const projectPath = join(this.cwd, PROJECT_CONFIG_DIR_NAME, "APPEND_SYSTEM.md");
 		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
 			return projectPath;
 		}

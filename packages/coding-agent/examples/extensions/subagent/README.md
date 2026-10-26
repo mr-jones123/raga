@@ -56,7 +56,7 @@ done
 
 This tool executes a separate `pi` subprocess with a delegated system prompt and tool/model configuration.
 
-**Project-local agents** (`.pi/agents/*.md`) are repo-controlled prompts that can instruct the model to read files, run bash commands, etc.
+**Project-local agents** (`.raga/agents/*.md`) are repo-controlled prompts that can instruct the model to read files and run bash commands.
 
 **Default behavior:** Only loads **user-level agents** from `~/.pi/agent/agents`.
 
@@ -141,7 +141,7 @@ When `model` is omitted, the subagent inherits the dispatching session's active 
 
 **Locations:**
 - `~/.pi/agent/agents/*.md` - User-level (always loaded)
-- `.pi/agents/*.md` - Project-level (only with `agentScope: "project"` or `"both"`)
+- `.raga/agents/*.md` - Project-level (only with `agentScope: "project"` or `"both"`)
 
 Project agents override user agents with the same name when `agentScope: "both"`.
 

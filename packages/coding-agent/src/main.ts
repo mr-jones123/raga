@@ -5,6 +5,7 @@
  * createAgentSession() options. The SDK does the heavy lifting.
  */
 
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { type ImageContent, modelsAreEqual } from "@earendil-works/pi-ai";
 import { setCapabilityOverrides } from "@earendil-works/pi-tui";
@@ -29,6 +30,7 @@ import {
 import { resolveCredentialForPrint } from "./cli/credential-print.ts";
 import { processFileArguments } from "./cli/file-processor.ts";
 import { buildInitialMessage } from "./cli/initial-message.ts";
+import { handleInstanceCommand } from "./cli/instance-command.ts";
 import { listModels } from "./cli/list-models.ts";
 import { createProjectTrustContext } from "./cli/project-trust.ts";
 import { selectSession } from "./cli/session-picker.ts";
@@ -45,6 +47,7 @@ import { AuthStorage, ReadOnlyAuthStorage } from "./core/auth-storage.ts";
 import { exportFromFile } from "./core/export-html/index.ts";
 import type { InlineExtension } from "./core/extensions/types.ts";
 import { applyHttpProxySettings, configureHttpDispatcher } from "./core/http-dispatcher.ts";
+import { instanceSettings, resolveInstancePin } from "./core/instances/session.ts";
 import { resolveCliModel, resolveModelScope, type ScopedModel } from "./core/model-resolver.ts";
 import { ModelRuntime } from "./core/model-runtime.ts";
 import { restoreStdout, takeOverStdout } from "./core/output-guard.ts";
@@ -575,6 +578,7 @@ export async function main(args: string[], options?: MainOptions) {
 	resetTimings();
 	// Commands and startup selectors can load user-authored themes before runtime creation.
 	setThemeJsonValidator(validateThemeJson);
+	if (await handleInstanceCommand(args)) return;
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
 	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);
 	if (offlineMode) {
@@ -669,12 +673,21 @@ export async function main(args: string[], options?: MainOptions) {
 	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(cwd);
 	time("runMigrations");
 
-	const startupSettingsManager = SettingsManager.create(cwd, agentDir);
+	const startupInstance = await resolveInstancePin(cwd, undefined);
+	const startupSettingsManager = startupInstance
+		? instanceSettings(startupInstance)
+		: SettingsManager.create(cwd, agentDir);
 	const startupSettingsDiagnostics = collectSettingsDiagnostics(startupSettingsManager);
 
 	// Experimental first-time setup: theme choice and analytics opt-in.
 	// Runs before any runtime services are created so the chosen settings apply everywhere.
-	if (appMode === "interactive" && !parsed.help && parsed.listModels === undefined && shouldRunFirstTimeSetup()) {
+	if (
+		!startupInstance &&
+		appMode === "interactive" &&
+		!parsed.help &&
+		parsed.listModels === undefined &&
+		shouldRunFirstTimeSetup()
+	) {
 		await showFirstTimeSetup(startupSettingsManager);
 		time("firstTimeSetup");
 	}
@@ -690,6 +703,7 @@ export async function main(args: string[], options?: MainOptions) {
 	// sessionDir lookup during session selection.
 	const envSessionDir = process.env[ENV_SESSION_DIR];
 	const sessionDir =
+		(startupInstance ? join(startupInstance.stateRoot, "sessions") : undefined) ??
 		(parsed.sessionDir ? normalizePath(parsed.sessionDir) : undefined) ??
 		(envSessionDir ? expandTildePath(envSessionDir) : undefined) ??
 		startupSettingsManager.getSessionDir();
@@ -755,6 +769,7 @@ export async function main(args: string[], options?: MainOptions) {
 		const services = await createAgentSessionServices({
 			cwd,
 			agentDir,
+			sessionManager,
 			settingsManager: runtimeSettingsManager,
 			modelRuntimeSignal: AbortSignal.timeout(15_000),
 			extensionFlagValues: parsed.unknownFlags,

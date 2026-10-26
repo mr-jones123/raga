@@ -1,10 +1,11 @@
-import { defineConfig, mergeConfig } from "vitest/config";
+import { configDefaults, defineConfig, mergeConfig } from "vitest/config";
 import baseConfig, { workspaceSourcePaths } from "../../vitest.base.ts";
 
 export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
+			exclude: [...configDefaults.exclude, "bundled-skills/**"],
 			globals: true,
 			environment: "node",
 			testTimeout: 30000,

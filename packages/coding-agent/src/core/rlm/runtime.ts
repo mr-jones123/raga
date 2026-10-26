@@ -3,9 +3,9 @@
  * host requests, sums the sub-LLM and child usage of each cell, snapshots and restores the kernel
  * namespace, and provides the `python` tool. See docs/RLM.md.
  */
-import { existsSync } from "node:fs";
+import { copyFileSync, existsSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import type {
 	AgentMessage,
 	AgentToolResult,
@@ -16,6 +16,10 @@ import { contentText, type ModelsSimpleStreamOptions, uuidv7 } from "@earendil-w
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { type Static, Type } from "typebox";
 import type { ToolDefinition } from "../extensions/types.ts";
+import { instanceHostHandlers } from "../instances/host-api.ts";
+import { InstanceMemory } from "../instances/memory.ts";
+import { sandboxCommand } from "../instances/sandbox.ts";
+import type { HarnessPin, SandboxPolicy } from "../instances/types.ts";
 import { bashExecutionToText } from "../messages.ts";
 import type { ModelRuntime } from "../model-runtime.ts";
 import type { ResourceLoader } from "../resource-loader.ts";
@@ -49,6 +53,9 @@ export interface RlmSessionOptions {
 	data?: unknown;
 	/** The tree's child slots. Omitted for a root session, which creates them. */
 	childSlots?: RlmChildSlots;
+	instance?: HarnessPin;
+	instanceMemory?: boolean;
+	sandbox?: SandboxPolicy;
 }
 
 export interface RlmHost {
@@ -59,6 +66,9 @@ export interface RlmHost {
 	depth: number;
 	/** The tree's child slots; a root session passes none and gets new ones. */
 	childSlots?: RlmChildSlots;
+	instance?: HarnessPin;
+	instanceMemory?: boolean;
+	sandbox?: SandboxPolicy;
 	settingsManager: SettingsManager;
 	modelRuntime: ModelRuntime;
 	/** Shared with `rlm_query` children. */
@@ -224,6 +234,7 @@ export class RlmRuntime {
 	/** Snapshot problems for the next python result, each reported once. */
 	private pendingNotes: string[] = [];
 	private readonly reportedNotes = new Set<string>();
+	private lastMemoryFailure?: string;
 
 	constructor(host: RlmHost) {
 		this.host = host;
@@ -238,6 +249,9 @@ export class RlmRuntime {
 			resolveModel: (ref) => this.resolveModel(ref),
 			addUsage: (usage) => this.addCellUsage(usage),
 			childSlots: host.childSlots ?? new RlmChildSlots(),
+			instance: host.instance,
+			instanceMemory: host.instanceMemory,
+			sandbox: host.sandbox,
 		});
 		const handlers = new Map<string, HostHandler>([
 			["tool.call", (data, ctx) => this.handleToolCall(data, ctx.signal)],
@@ -246,11 +260,27 @@ export class RlmRuntime {
 			["context.history", async (data) => this.handleHistory(data)],
 			["rlm.query", (data, ctx) => rlmQuery(data, ctx.signal)],
 		]);
+		if (host.instance) {
+			for (const [name, handler] of instanceHostHandlers(
+				host.instance,
+				host.sessionManager,
+				host.appendCustomEntry,
+				host.cwd,
+			)) {
+				if (host.instanceMemory !== false || !name.startsWith("memory.")) handlers.set(name, handler);
+			}
+		}
 		this.memoryLimitMb = host.settingsManager.getRlmSettings().memoryLimitMb;
 		this.kernel = new Kernel({
 			cwd: host.cwd,
-			env: { RAGA_RLM_MEMORY_LIMIT_MB: String(this.memoryLimitMb) },
+			env: {
+				RAGA_RLM_MEMORY_LIMIT_MB: String(this.memoryLimitMb),
+				...(host.instance
+					? { RAGA_HARNESS: host.instance.resourceRoot, RAGA_INSTANCE_ID: host.instance.instanceId }
+					: {}),
+			},
 			handlers,
+			sandbox: host.sandbox,
 		});
 		this.startFailure = this.kernel.start().then(
 			() => undefined,
@@ -342,6 +372,25 @@ export class RlmRuntime {
 		} catch (error) {
 			return this.failure(`The Python kernel is unavailable: ${errorMessage(error)}`);
 		}
+		if (this.host.instance && this.host.instanceMemory !== false && output.error) {
+			const failure = `${output.error.ename}: ${output.error.evalue}`.slice(0, 1000);
+			if (failure !== this.lastMemoryFailure) {
+				this.lastMemoryFailure = failure;
+				try {
+					const retrieved = await new InstanceMemory(this.host.instance.instanceRoot).retrieve({
+						query: `${this.getTask()}\n${failure}`,
+						scope: this.host.instance.projectRoot,
+						harnessRevision: this.host.instance.revision,
+						maxChars: 4000,
+						limit: 5,
+					});
+					this.host.appendCustomEntry("raga-memory-retrieval", { trigger: "failure", ...retrieved });
+					if (retrieved.text) notices.push(retrieved.text);
+				} catch (error) {
+					notices.push(`[Memory retrieval failed: ${errorMessage(error)}]`);
+				}
+			}
+		}
 		restarted ||= output.restarted;
 		this.lastCellPid = this.kernel.pid;
 		const usage = this.cellUsage;
@@ -398,6 +447,7 @@ export class RlmRuntime {
 	private snapshotPath(): string {
 		const sessionManager = this.host.sessionManager;
 		const sessionId = sessionManager.getSessionId();
+		if (this.host.instance) return join(this.host.instance.stateRoot, "kernels", sessionId, "kernel.dill");
 		return sessionManager.isPersisted()
 			? join(sessionManager.getSessionDir(), `${sessionId}.rlm`, "kernel.dill")
 			: join(tmpdir(), "raga-rlm", sessionId, "kernel.dill");
@@ -446,6 +496,18 @@ export class RlmRuntime {
 		for (const entry of this.host.sessionManager.getBranch()) path = snapshotEntryPath(entry) ?? path;
 		if (!path || !existsSync(path)) return undefined;
 		try {
+			if (this.host.instance && path !== this.snapshotPath()) {
+				const source = realpathSync(path);
+				const snapshots = realpathSync(join(this.host.instance.stateRoot, "kernels"));
+				const rel = relative(snapshots, source);
+				if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+					throw new Error("An instance cannot restore a snapshot from outside its own state");
+				}
+				const destination = this.snapshotPath();
+				copyFileSync(source, destination);
+				this.host.appendCustomEntry(RLM_SNAPSHOT_ENTRY_TYPE, { path: destination, inheritedFrom: source });
+				path = destination;
+			}
 			const { restored, failed } = await this.kernel.restore(path);
 			const restoredText = restored.length > 0 ? `: ${listNames(restored)}` : "";
 			const failedText = failed.length > 0 ? `; ${failed.length} failed: ${listNames(failed)}` : "";
@@ -461,6 +523,25 @@ export class RlmRuntime {
 		if (typeof name !== "string") throw new Error('tool.call needs a string "name"');
 		if (typeof args !== "object" || args === null || Array.isArray(args)) {
 			throw new Error('tool.call needs an object "args"');
+		}
+		if (this.host.sandbox) {
+			if (name !== "bash") throw new Error("Restricted file edits run inside the Python kernel, not the host");
+			if (!("command" in args) || typeof args.command !== "string") throw new Error("bash requires a command");
+			const timeout = "timeout" in args && typeof args.timeout === "number" ? args.timeout : 120;
+			if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 3600)
+				throw new Error("bash timeout must be between 0 and 3600 seconds");
+			const result = await sandboxCommand({
+				command: "/bin/bash",
+				args: ["--noprofile", "--norc", "-c", args.command],
+				policy: this.host.sandbox,
+				timeoutMs: timeout * 1000,
+				signal,
+				maxOutputBytes: 64 * 1024,
+			});
+			return {
+				text: `${result.stdout}${result.stderr}`,
+				is_error: result.exitCode !== 0 || result.timedOut || result.aborted,
+			};
 		}
 		if (!this.currentToolCallId) throw new Error("tool.call outside a python call");
 		return this.host.runTool(this.currentToolCallId, name, args as Record<string, unknown>, signal);
