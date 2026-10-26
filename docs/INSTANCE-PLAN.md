@@ -164,6 +164,21 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 
 	For a custom provider or credential setup, add `--agent-config /absolute/path/agent.json` to `enable`. The file contains `{"executable":"/absolute/path/to/approved-wrapper","version":"1.4.0","args":[]}`. Use the version printed by that executable. The wrapper supplies any explicitly authorized provider configuration. Raga validates the adapter with real model calls and persists its executable, hash, arguments, and version. It does not copy ambient credentials or accept environment values in this configuration file. The wrapper and backend run as trusted external processes, not as sandboxed instance children.
 
+11. Optionally require proofs before activation.
+
+	Verification is off by default, and none of it belongs to the harness.
+
+	```bash
+	mkdir -p .raga/verification
+	$EDITOR .raga/verification/LAWS.bend      # you write the laws
+	$EDITOR .raga/verification/PROOF.bend     # proofs can be drafted, but you review them
+	pi instance verify install --approved --network
+	pi instance verify enable --approved
+	pi instance verify run --revision REV
+	```
+
+	`verify suggest` asks the configured agent for draft laws. Drafts land in `.raga/verification/suggestions/`, are marked unverified, and never become active on their own. A law proves only the Bend code it imports; for other languages, treat a pass as evidence about the model.
+
 ## Decisions
 
 1. Use `.raga` for project instance storage. Provide an explicit migration from project `.pi`. Do not silently merge both directories or keep an automatic legacy fallback. Package and executable branding is a separate migration.
@@ -341,6 +356,16 @@ Each probe replay builds a fresh project workspace from one snapshot, runs a rea
 `src/core/instances/automation.ts` implements opt-in checkpoint refinement with a minimum interval, daily run, call, and wall-time caps, a stop after repeated runs without progress, and a lock that holds across processes. `src/core/instances/checkpoint.ts` runs one bounded model refinement per admitted call. Policy promotion requires a held-out report outside the project, and its digest is rechecked at each decision.
 
 **Acceptance.** A two-project scenario shows independent evolution, pinned running children, deliberate sharing, and rollback. Held-out comparisons separate the benefit of learning from additional inference spending. Do not claim an adaptive quality gain unless the measured evidence supports it. A negative result keeps automatic promotion disabled.
+
+### Optional verification with Bend
+
+**Delivered.** An instance can require a proof before a harness revision becomes active. The layer stays off unless the operator creates `.raga/verification.json` with `enabled: true` and writes `.raga/verification/LAWS.bend` and `PROOF.bend`. None of those files belong to a harness revision, forks do not copy them, and the sandbox masks `.raga`. Agents therefore cannot enable the layer, weaken a law, or supply their own proof. `pi instance verify enable --approved` writes configuration only and refuses while either file is missing.
+
+`pi instance verify install --approved --network` downloads Bend 2.0.39 for the current platform, checks the pinned SHA-256, keeps the release tree, and records the executable hash. `pi instance verify run [--revision REV]` copies the user's files into a private workspace and runs `bend PROOF.bend` under bubblewrap with no network. A pass requires exit code 0 and `ALL PROOFS CHECK`. The record binds the instance, revision, law digest, proof digest, and tool digest. `activateRevision` refuses a revision with no passing record, or with a record invalidated by an edited law, proof, or tool. `--verdict` is not used because it needs a Lean kernel; run it yourself for that second check.
+
+`pi instance verify suggest` asks the configured agent for law drafts and writes them under `.raga/verification/suggestions/` with `verified: false`. Suggestions carry no proof, never reach the active directory, and cannot satisfy the gate. A human decides what to promote.
+
+**Limits.** A law proves only the Bend code it imports. For a TypeScript or Go project the agent must model the rule in Bend, so a pass is evidence about the model, not about the application. The gate runs on demand and at activation; it is not a commit hook, and it does not run inside every child.
 
 ## Dependency order and parallel work
 

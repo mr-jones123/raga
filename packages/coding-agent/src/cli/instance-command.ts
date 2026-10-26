@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import { open } from "node:fs/promises";
+import { mkdir, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { APP_NAME, isBunBinary, VERSION } from "../config.ts";
 import {
@@ -31,6 +31,13 @@ import {
 	rollbackInstance,
 } from "../core/instances/store.ts";
 import type { HarnessPin } from "../core/instances/types.ts";
+import {
+	installBend,
+	runVerification,
+	setVerificationEnabled,
+	verificationPaths,
+	verificationStatus,
+} from "../core/instances/verification.ts";
 import { loadSkillsFromDir } from "../core/skills.ts";
 
 class UsageError extends Error {}
@@ -125,6 +132,16 @@ const COMMANDS: Record<string, CommandSpec> = {
 		values: ["goal", "check", "evaluator", "model"],
 		required: ["goal", "check", "evaluator"],
 	},
+	"verify status": { usage: "verify status [--revision REV]", values: ["revision"] },
+	"verify enable": { usage: "verify enable --approved", flags: ["approved"], required: ["approved"] },
+	"verify disable": { usage: "verify disable --approved", flags: ["approved"], required: ["approved"] },
+	"verify install": {
+		usage: "verify install --approved --network",
+		flags: ["approved", "network"],
+		required: ["approved", "network"],
+	},
+	"verify run": { usage: "verify run [--revision REV]", values: ["revision"] },
+	"verify suggest": { usage: "verify suggest" },
 	"no-mistakes inspect": { usage: "no-mistakes inspect" },
 	"no-mistakes provision": { usage: "no-mistakes provision --approved", flags: ["approved"], required: ["approved"] },
 	"no-mistakes enable": {
@@ -186,7 +203,8 @@ function parse(args: string[]): ParsedCommand {
 	const operands: string[] = [];
 	let index = 2;
 	let name = args[1];
-	if (["candidate", "memory", "skill", "no-mistakes", "automation"].includes(name)) name += ` ${args[index++] ?? ""}`;
+	if (["candidate", "memory", "skill", "no-mistakes", "automation", "verify"].includes(name))
+		name += ` ${args[index++] ?? ""}`;
 	const spec = COMMANDS[name];
 	if (!spec) throw new UsageError(`Unknown instance command ${JSON.stringify(name)}. Use --help.`);
 	let trailing: string[] = [];
@@ -323,6 +341,94 @@ function agentCommand(): { executable: string; args: string[]; version: string }
 		args: isBunBinary ? [] : [...runtimeArgs, resolve(process.argv[1])],
 		version: VERSION,
 	};
+}
+
+/**
+ * Draft laws with a read-only agent run. The result is a suggestion: it has no proof,
+ * never reaches the active directory, and cannot satisfy the activation gate.
+ */
+async function suggestVerificationLaws(
+	instanceRoot: string,
+	projectRoot: string,
+): Promise<{ directory: string; files: string[]; verified: false; note: string }> {
+	const paths = verificationPaths(instanceRoot);
+	await mkdir(paths.records, { recursive: true, mode: 0o700 });
+	const work = await mkdtemp(join(paths.records, "suggest-"));
+	const agent = agentCommand();
+	const prompt = [
+		"You are drafting Bend laws for a human to review.",
+		`Read the project at ${projectRoot} and propose at most six laws for behavior that must never break.`,
+		"Each law must be precise enough to prove in Bend, and you must say what it does not cover.",
+		"Return one fenced ```bend block containing a LAWS.bend draft, then a short list of limits.",
+		"Do not write files, do not run builds, and never claim a law is proven.",
+	].join("\n");
+	let stdout = "";
+	let stderr = "";
+	let timedOut = false;
+	try {
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		const child = spawn(
+			agent.executable,
+			[
+				...agent.args,
+				"--print",
+				"--no-extensions",
+				"--no-skills",
+				"--no-context-files",
+				"--no-prompt-templates",
+				"--no-mcp",
+				"--tools",
+				"read,grep,glob,ls",
+				prompt,
+			],
+			{ cwd: projectRoot, env: { ...process.env }, stdio: ["ignore", "pipe", "pipe"] },
+		);
+		const timer = setTimeout(() => {
+			timedOut = true;
+			child.kill("SIGKILL");
+		}, 10 * 60_000);
+		child.stdout.on("data", (chunk: Buffer) => {
+			if (stdout.length < 1_000_000) stdout += chunk.toString("utf8");
+		});
+		child.stderr.on("data", (chunk: Buffer) => {
+			if (stderr.length < 100_000) stderr += chunk.toString("utf8");
+		});
+		child.once("error", (error) => {
+			clearTimeout(timer);
+			reject(error);
+		});
+		child.once("close", (code) => {
+			clearTimeout(timer);
+			if (timedOut) reject(new Error("Law suggestion timed out after 10 minutes"));
+			else if (code !== 0) reject(new Error(`Law suggestion exited ${code}: ${stderr.trim()}`));
+			else resolve();
+		});
+		await promise;
+		const blocks = [...stdout.matchAll(/```bend\s*\n([\s\S]*?)```/g)];
+		const draft = blocks.at(-1)?.[1]?.trim();
+		const directory = join(paths.suggestions, new Date().toISOString().replace(/[:.]/g, "-"));
+		await mkdir(directory, { recursive: true, mode: 0o700 });
+		const files = ["LAWS.suggested.bend", "NOTES.md", "meta.json"];
+		await writeFile(
+			join(directory, "LAWS.suggested.bend"),
+			`${draft ?? "// The agent returned no Bend block. Review NOTES.md.\n"}\n`,
+			{ mode: 0o600 },
+		);
+		await writeFile(join(directory, "NOTES.md"), `${stdout.slice(0, 64_000).trim()}\n`, { mode: 0o600 });
+		await writeFile(
+			join(directory, "meta.json"),
+			`${JSON.stringify({ schemaVersion: 1, verified: false, hasDraft: draft !== undefined, createdAt: new Date().toISOString(), note: "Suggestion only: no proof exists, and nothing here is active." }, null, 2)}\n`,
+			{ mode: 0o600 },
+		);
+		return {
+			directory,
+			files,
+			verified: false,
+			note: "Review, edit, and copy the laws into verification/LAWS.bend yourself.",
+		};
+	} finally {
+		await rm(work, { recursive: true, force: true });
+	}
 }
 
 async function run(pin: HarnessPin, args: string[]): Promise<void> {
@@ -505,6 +611,24 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 					values.has("scope") ? { scope: value("scope") } : undefined,
 				);
 			}
+		}
+	}
+	if (name.startsWith("verify ")) {
+		const manifest = await readInstance(root);
+		const revision = values.get("revision") ?? manifest.activeRevision;
+		switch (name) {
+			case "verify status":
+				return verificationStatus(root, revision);
+			case "verify enable":
+				return setVerificationEnabled(root, { approved: true, enabled: true });
+			case "verify disable":
+				return setVerificationEnabled(root, { approved: true, enabled: false });
+			case "verify install":
+				return installBend(root, { approved: true, network: true });
+			case "verify run":
+				return runVerification(root, { instanceId: manifest.id, revision });
+			case "verify suggest":
+				return suggestVerificationLaws(root, manifest.projectRoot);
 		}
 	}
 	if (name.startsWith("no-mistakes ")) {

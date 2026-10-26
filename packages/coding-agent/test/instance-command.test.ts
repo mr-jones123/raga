@@ -69,6 +69,8 @@ describe("instance command", () => {
 		["skill", "verify"],
 		["skill", "verify", "--directory", "skill", "--revision", "rev", "--skill", "name"],
 		["no-mistakes", "enable", "--approved"],
+		["verify", "enable"],
+		["verify", "install", "--approved"],
 		["no-mistakes", "provision"],
 		["no-mistakes", "respond", "--action", "publish", "--approved"],
 		["no-mistakes", "run", "--intent-file", "intent", "--network", "--yes"],

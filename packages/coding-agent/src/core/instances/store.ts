@@ -23,6 +23,7 @@ import { Compile } from "typebox/compile";
 import type { TLocalizedValidationError } from "typebox/error";
 import { PROJECT_CONFIG_DIR_NAME } from "../../config.ts";
 import type { HarnessCandidate, HarnessPin, InstanceManifest, InstancePaths, RevisionEvidence } from "./types.ts";
+import { verificationActivationProblems } from "./verification.ts";
 
 export type InstanceStoreErrorCode =
 	| "invalid-argument"
@@ -37,6 +38,7 @@ export type InstanceStoreErrorCode =
 	| "unknown-candidate"
 	| "revision-conflict"
 	| "invalid-evidence"
+	| "verification-required"
 	| "approval-required"
 	| "git-failed";
 
@@ -615,6 +617,14 @@ export async function activateRevision(
 				"invalid-evidence",
 				`Evidence ${evidence.id} does not support activation`,
 				problems,
+			);
+		}
+		const verificationProblems = await verificationActivationProblems(root, { instanceId: manifest.id, revision });
+		if (verificationProblems.length > 0) {
+			throw new InstanceStoreError(
+				"verification-required",
+				`Verification does not support activating ${revision}`,
+				verificationProblems,
 			);
 		}
 		const entries = await validateRevisionTree(paths.harness, revision);
