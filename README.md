@@ -48,7 +48,7 @@ npm run build
 ./raga-test.sh
 ```
 
-Every session loads the pstack pack and the `no-mistakes` skill. `/skill:peak` starts the pstack poteto-mode workflow; `/skill:no-mistakes` covers the validation backend.
+Every session loads the pstack pack and the `no-mistakes` skill. `/skill:peak` starts the pstack engineering playbooks; `/skill:no-mistakes` covers the validation backend.
 
 `./raga-test.sh` runs the TypeScript sources through the resolver, so edits apply without a build. Module loading costs about a second more, because Node strips and resolves the whole source graph on every start. Use it while changing the code, and `./raga` otherwise.
 

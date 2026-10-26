@@ -10,7 +10,7 @@ Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this
 
 Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Each spawn below names a role line in the `model-roles.json` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
+Each spawn below names a role line in the `model-roles.json` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **peak** skill.
 
 Every spawn is `worker` with `read_only=False, details=True` (agent mode). **Do not use readonly/Ask mode.** It strips MCP access, which disables the MCP-backed investigators and the synthesizer's citation spot-checks. Investigators still shouldn't write anything.
 

@@ -246,7 +246,7 @@ These 56 upstream pstack skills are included after adaptation:
 
 | Group | Included skills |
 |---|---|
-| Entry and setup | `poteto-mode`, `poteto-help`, `setup-pstack` |
+| Entry and setup | `peak`, `poteto-help`, `setup-pstack` |
 | Understanding | `how`, `why`, `teach`, `recall` |
 | Design | `architect`, `arena`, `figure-it-out`, `sharpen`, `statechart` |
 | Delegation and review | `swarm`, `interrogate`, `no-comments`, `blast-radius`, `reflect` |

@@ -123,7 +123,7 @@ describe("instance command", () => {
 		expect(status.pin.revision).toBe(initialized.activeRevision);
 		expect(status.pin.projectRoot).toBe(project);
 		expect(status.skills.map((skill) => skill.name)).toEqual(
-			expect.arrayContaining(["poteto-mode", "architect", "no-mistakes"]),
+			expect.arrayContaining(["peak", "architect", "no-mistakes"]),
 		);
 		expect(typeof status.capabilities.sandbox.available).toBe("boolean");
 		expect(typeof status.capabilities.noMistakes.installed).toBe("boolean");

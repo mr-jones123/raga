@@ -20,7 +20,7 @@ Use await context.history() to read this session. Pass the relevant messages and
 
 One message, three `run_child` calls, `spec: worker`, agent mode (`read_only=False, details=True`). Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and read_only controls workspace writes.
 
-Each reviewer and the synthesizer name a role line in the `model-roles.json` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
+Each reviewer and the synthesizer name a role line in the `model-roles.json` rule and a default. Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **peak** skill.
 
 | Lens | Role line | Default `model` | Prompt template |
 |---|---|---|---|

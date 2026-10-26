@@ -71,7 +71,6 @@ import {
 import { assertValidSessionId, SessionManager } from "./core/session-manager.ts";
 import { collectSettingsDiagnostics, deduplicateDiagnostics } from "./core/settings-diagnostics.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
-import type { Skill } from "./core/skills.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
@@ -580,17 +579,6 @@ async function promptForMissingSessionCwd(
 	]);
 }
 
-/**
- * `/skill:peak` is the short name for the pstack poteto-mode workflow. The alias
- * shares the original file, so edits to the skill apply to both commands.
- */
-export function withPeakAlias(skills: Skill[]): Skill[] {
-	if (skills.some((skill) => skill.name === "peak")) return skills;
-	const poteto = skills.find((skill) => skill.name === "poteto-mode");
-	if (!poteto) return skills;
-	return [...skills, { ...poteto, name: "peak", description: `Alias for ${poteto.name}. ${poteto.description}` }];
-}
-
 export interface MainOptions {
 	extensionFactories?: InlineExtension[];
 }
@@ -843,7 +831,6 @@ export async function main(args: string[], options?: MainOptions) {
 			resourceLoaderOptions: {
 				additionalExtensionPaths: resolvedExtensionPaths,
 				additionalSkillPaths: resolvedSkillPaths,
-				skillsOverride: IS_RAGA_CLI ? (base) => ({ ...base, skills: withPeakAlias(base.skills) }) : undefined,
 				additionalPromptTemplatePaths: resolvedPromptTemplatePaths,
 				additionalThemePaths: resolvedThemePaths,
 				noExtensions: parsed.noExtensions,

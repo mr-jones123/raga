@@ -5,6 +5,9 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const commit = "eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10";
+/** Raga calls the pstack engineering workflow "peak"; the old name must not ship. */
+const RENAMED_SKILLS = new Map([["poteto-mode", "peak"]]);
+const renameSkill = (name) => RENAMED_SKILLS.get(name) ?? name;
 const nmCommit = "4822244e763fd4c3d7f48be6433f92df10bb5b33";
 const [source, noMistakes, commander] = process.argv.slice(2).map((path) => resolve(path));
 if (!source || !noMistakes || !commander) throw new Error("Usage: node scripts/raga-sync-skills.mjs <pinned cursor/plugins tree> <pinned no-mistakes tree> <commander 14.0.0 package tree>");
@@ -138,13 +141,18 @@ function adapt(text) {
   text = text.replace(/The system prompt names the workspace's `state\/sessions\/` directory\. Use only that path\. Don't glob across `the current instance state\/sessions\/`\.[^\n]*/g, "Use await context.history() for this session. For previous work, use await memory.search(query), then await memory.get(id). Only mine earlier transcripts explicitly supplied by the supervisor.");
   text = text.replace(/a git worktree where possible, otherwise `\/tmp\/arena-<slug>\/candidate-<n>\/`/g, "a supervisor-owned child workspace for code, or an independent returned artifact for a read-only design");
   text = text.replace(/Work in a worktree off main\. Commit and open a PR\. Don't push to main directly\./g, "Write the skill through instance.candidate_write and commit through instance.candidate_commit. Return the candidate and evidence for explicit operator promotion. Do not open an application PR for an instance-only proposal.");
+  text = text.replaceAll("poteto-mode", "peak");
+  text = text.replaceAll("Poteto mode", "Peak");
+  text = text.replaceAll("poteto mode", "peak");
+  text = text.replaceAll("poteto's agent style", "peak's agent style");
+  text = text.replaceAll("Use for poteto,", "Use for peak,");
   text = text.replace(/Step 4 edits the existing file in place\./g, "Step 4 edits only the supervisor-created candidate.");
   text = text.replace(/Skill changes affect every future agent in the org\./g, "Promoted skill changes affect future sessions of this instance.");
   return text;
 }
 function copyTree(from, to, sourceLabel, transform = true) {
   for (const path of walk(from)) {
-    const destination = join(to, relative(from, path)).replaceAll("bugbot", "reviewer");
+    const destination = join(to, relative(from, path)).replaceAll("bugbot", "reviewer").replaceAll("poteto-mode", "peak");
     if (/\/(?:bootstrap\.ts|bun\.lock|package\.json)$/.test(destination)) continue;
     const original = readFileSync(path);
     let output = original;
@@ -156,8 +164,9 @@ const upstreamSkills = join(source, "pstack/skills");
 const names = readdirSync(upstreamSkills).filter((name) => name !== "make-bot-ui" && existsSync(join(upstreamSkills, name, "SKILL.md"))).sort();
 if (names.length !== 56 || names.filter((name) => name.startsWith("principle-")).length !== 24) throw new Error("Source is not the pinned 56-skill portable inventory");
 for (const name of names) {
-  copyTree(join(upstreamSkills, name), `skills/${name}`, `pstack/skills/${name}`);
-  manifest.skills.push({ name, path: `skills/${name}/SKILL.md`, source: "pstack" });
+  const shipped = renameSkill(name);
+  copyTree(join(upstreamSkills, name), `skills/${shipped}`, `pstack/skills/${name}`);
+  manifest.skills.push({ name: shipped, path: `skills/${shipped}/SKILL.md`, source: "pstack" });
 }
 for (const name of ["deslop", "control-cli", "control-ui", "verify-this"]) {
   copyTree(join(source, "cursor-team-kit/skills", name), `skills/${name}`, `cursor-team-kit/skills/${name}`);
@@ -169,13 +178,13 @@ emit("licenses/no-mistakes", readFileSync(join(noMistakes, "LICENSE")), "no-mist
 if (JSON.parse(readFileSync(join(commander, "package.json"))).version !== "14.0.0") throw new Error("Commander source version mismatch");
 for (const path of walk(commander)) {
   const name = relative(commander, path);
-  if (name === "LICENSE" || /\.(?:js|mjs|ts|mts)$/.test(name)) emit(`skills/poteto-mode/scripts/vendor/commander/${name}`, readFileSync(path), `commander@14.0.0/${name}`);
+  if (name === "LICENSE" || /\.(?:js|mjs|ts|mts)$/.test(name)) emit(`skills/peak/scripts/vendor/commander/${name}`, readFileSync(path), `commander@14.0.0/${name}`);
 }
-emit("skills/poteto-mode/scripts/vendor/commander/package.json", JSON.stringify({ name: "commander", version: "14.0.0", type: "commonjs", main: "index.js" }), "raga adaptation of commander package metadata");
+emit("skills/peak/scripts/vendor/commander/package.json", JSON.stringify({ name: "commander", version: "14.0.0", type: "commonjs", main: "index.js" }), "raga adaptation of commander package metadata");
 emit("licenses/commander", readFileSync(join(commander, "LICENSE")), "commander@14.0.0/LICENSE");
 
 // Native helper executables do not install dependencies or download browser packages.
-for (const path of ["skills/poteto-mode/scripts/orch/orch.ts", "skills/poteto-mode/scripts/watch-pr/cli.ts", "skills/poteto-mode/scripts/watch-pr/watch-pr"]) {
+for (const path of ["skills/peak/scripts/orch/orch.ts", "skills/peak/scripts/watch-pr/cli.ts", "skills/peak/scripts/watch-pr/watch-pr"]) {
   const original = files.get(path);
   if (!original) continue;
   const text = original.toString().replace("#!/usr/bin/env bun", "#!/usr/bin/env node")
@@ -187,7 +196,7 @@ for (const path of ["skills/poteto-mode/scripts/orch/orch.ts", "skills/poteto-mo
     .replaceAll("Command: CommanderCommand", "Command as CommanderCommand");
   emit(path, text, `raga native Node adaptation of ${path}`, original);
 }
-const storePath = "skills/poteto-mode/scripts/orch/store.ts";
+const storePath = "skills/peak/scripts/orch/store.ts";
 const store = files.get(storePath);
 emit(storePath, store.toString().replace(
   `export class NotFoundError extends UserError {
@@ -328,7 +337,7 @@ for (const name of ["poteto-agent", "comment-sicko"]) {
   const original = readFileSync(join(source, "pstack/agents", `${name}.md`));
   const native = original.toString().replace(/Use the absolute path your parent gave you[\s\S]*?If no such file exists, stop and tell your parent\./, "The native helper supplies the pinned resource root and the complete required skill bodies. Resolve every additional leaf from that root. Never search a global plugin installation.");
   emit(`agents/${name}.md`, adapt(native.replace(/^---\n[\s\S]*?\n---\n/, "")), `pstack/agents/${name}.md`, original);
-  emit(`agents/${name}.json`, JSON.stringify({ name, instructions: `agents/${name}.md`, modelRole: name === "poteto-agent" ? "code" : "judgment", skills: ["raga-runtime", "poteto-mode"] }, null, 2), "raga native child specification");
+  emit(`agents/${name}.json`, JSON.stringify({ name, instructions: `agents/${name}.md`, modelRole: name === "poteto-agent" ? "code" : "judgment", skills: ["raga-runtime", "peak"] }, null, 2), "raga native child specification");
 }
 emit("agents/worker.md", "Read the pinned native runtime adapter. Follow the assignment and its permissions. Preserve unrelated changes. Return concrete evidence, assumptions, and unresolved blockers. Do not promote revisions, publish, or control an outer no-mistakes gate.\n", "raga child instructions");
 emit("agents/worker.json", JSON.stringify({ name: "worker", instructions: "agents/worker.md", modelRole: "code", skills: ["raga-runtime"] }, null, 2), "raga native child specification");
@@ -370,8 +379,8 @@ const cleanup = `### Worktree cleanup
 3. Ask the supervisor to remove only its own stopped child workspace through the managed lifecycle. Never run git worktree remove --force or delete a user's unknown directory.
 4. Report what was removed and what remains, with owner and reason. Destructive removal of user data needs explicit operator approval.
 `;
-emit("skills/poteto-mode/playbooks/worktree-cleanup.md", cleanup, "raga ownership-aware cleanup adaptation");
-emit("skills/poteto-mode/scripts/worktree-audit.sh", `#!/bin/sh
+emit("skills/peak/playbooks/worktree-cleanup.md", cleanup, "raga ownership-aware cleanup adaptation");
+emit("skills/peak/scripts/worktree-audit.sh", `#!/bin/sh
 set -eu
 printf '%s\\n' 'Use the supervisor workspace ownership records and git worktree list --porcelain. Unknown ownership means keep the worktree.'
 git worktree list --porcelain
@@ -392,7 +401,7 @@ Read agents/model-roles.json from the pinned resource root. Null inherits the se
 Use the candidate authoring workflow to propose the model-role JSON. The supervisor validates selectors against its registry. Commit the candidate and request explicit promotion. This does not change a running session's pinned configuration.
 `;
 emit("skills/setup-pstack/SKILL.md", setup, "raga native role setup");
-emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/setup-pstack/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:poteto-mode and a goal with observable acceptance criteria.\n", "raga native setup guide");
+emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/setup-pstack/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
 emit("skills/poteto-help/SKILL.md", `---
 name: poteto-help
 description: Find the bundled engineering skill or playbook for understanding, design, implementation, verification, and communication.
@@ -400,7 +409,7 @@ description: Find the bundled engineering skill or playbook for understanding, d
 
 # Find an engineering workflow
 
-Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [poteto-mode](../poteto-mode/SKILL.md). Its playbooks select the workflow.
+Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../peak/SKILL.md). Its playbooks select the workflow.
 
 Understanding uses [how](../how/SKILL.md), [why](../why/SKILL.md), [teach](../teach/SKILL.md), and [recall](../recall/SKILL.md). Design uses [architect](../architect/SKILL.md), [arena](../arena/SKILL.md), and [statechart](../statechart/SKILL.md). Parallel execution uses [swarm](../swarm/SKILL.md). Review uses [interrogate](../interrogate/SKILL.md) and [no-comments](../no-comments/SKILL.md).
 
@@ -494,7 +503,7 @@ for (const entry of manifest.skills.filter((entry) => entry.source === "pstack" 
   if (!front) throw new Error(`Missing skill frontmatter ${entry.path}`);
   emit(entry.path, text.slice(0, front[0].length) + "\nRead [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Authoring targets candidate revisions. Children use run_child, not an external agent service.\n" + text.slice(front[0].length), `raga execution adaptation of ${entry.path}`, original);
 }
-for (const path of ["skills/reflect/SKILL.md", "skills/poteto-mode/playbooks/session-pickup.md", "skills/poteto-mode/playbooks/eval.md", "skills/show-me-your-work/SKILL.md"]) {
+for (const path of ["skills/reflect/SKILL.md", "skills/peak/playbooks/session-pickup.md", "skills/peak/playbooks/eval.md", "skills/show-me-your-work/SKILL.md"]) {
   const original = files.get(path);
   let text = original.toString();
   if (path === "skills/reflect/SKILL.md") {
@@ -508,7 +517,7 @@ for (const path of ["skills/reflect/SKILL.md", "skills/poteto-mode/playbooks/ses
   }
   emit(path, text, `raga scoped-history adaptation of ${path}`, original);
 }
-const potetoPath = "skills/poteto-mode/SKILL.md";
+const potetoPath = "skills/peak/SKILL.md";
 const potetoOriginal = files.get(potetoPath);
 emit(potetoPath, potetoOriginal.toString()
   .replace(/^\*\*Defaults for every `run_child` call\.\*\*.*$/m, "**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models from agents/model-roles.json. Null inherits the parent. Same-family seats are not model-diverse.")

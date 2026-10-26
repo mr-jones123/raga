@@ -7,7 +7,7 @@ Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this
 
 # Find an engineering workflow
 
-Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [poteto-mode](../poteto-mode/SKILL.md). Its playbooks select the workflow.
+Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../peak/SKILL.md). Its playbooks select the workflow.
 
 Understanding uses [how](../how/SKILL.md), [why](../why/SKILL.md), [teach](../teach/SKILL.md), and [recall](../recall/SKILL.md). Design uses [architect](../architect/SKILL.md), [arena](../arena/SKILL.md), and [statechart](../statechart/SKILL.md). Parallel execution uses [swarm](../swarm/SKILL.md). Review uses [interrogate](../interrogate/SKILL.md) and [no-comments](../no-comments/SKILL.md).
 

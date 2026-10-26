@@ -134,13 +134,13 @@
       "source": "no-mistakes"
     },
     {
-      "name": "poteto-help",
-      "path": "skills/poteto-help/SKILL.md",
+      "name": "peak",
+      "path": "skills/peak/SKILL.md",
       "source": "pstack"
     },
     {
-      "name": "poteto-mode",
-      "path": "skills/poteto-mode/SKILL.md",
+      "name": "poteto-help",
+      "path": "skills/poteto-help/SKILL.md",
       "source": "pstack"
     },
     {
@@ -349,9 +349,9 @@
     },
     {
       "path": "agents/comment-sicko.json",
-      "sha256": "eafb13a8e1080cf63bc12c2094b044fea78bc9582319da5e7d4b7030cf70c817",
+      "sha256": "1cf339bfd4294cb8033916a1d3d8f0b2134c27925ede35e8a86c564b515cff33",
       "source": "raga native child specification",
-      "sourceSha256": "eafb13a8e1080cf63bc12c2094b044fea78bc9582319da5e7d4b7030cf70c817",
+      "sourceSha256": "1cf339bfd4294cb8033916a1d3d8f0b2134c27925ede35e8a86c564b515cff33",
       "adaptation": "raga native child specification"
     },
     {
@@ -370,14 +370,14 @@
     },
     {
       "path": "agents/poteto-agent.json",
-      "sha256": "b56e5b94cb8c3fc0e2a8f4fe7a1aa55f18bef68e76769ec156c8be266ec78f2f",
+      "sha256": "566a910e8d89cb1407fbf44086502c03161b92d3bfc7e7e3df8a64ef14b13ced",
       "source": "raga native child specification",
-      "sourceSha256": "b56e5b94cb8c3fc0e2a8f4fe7a1aa55f18bef68e76769ec156c8be266ec78f2f",
+      "sourceSha256": "566a910e8d89cb1407fbf44086502c03161b92d3bfc7e7e3df8a64ef14b13ced",
       "adaptation": "raga native child specification"
     },
     {
       "path": "agents/poteto-agent.md",
-      "sha256": "2ccc6751737b8d92dc39f5ea8d5598f97cb58cf9f4d4a9d7bc3c9a0e5b1837d8",
+      "sha256": "84da32a4a1dfd0cff1721dec53f90676f765326ac5b2d123dacfd945e20547ab",
       "source": "pstack/agents/poteto-agent.md",
       "sourceSha256": "979f18abd000d185a0b4c41a2a4111c0910596a7f5c81cbb571885bc721b2bf7",
       "adaptation": "pstack/agents/poteto-agent.md"
@@ -405,70 +405,70 @@
     },
     {
       "path": "docs/guide/01-setup.md",
-      "sha256": "782032b35c2272f0e04c4e2a9139084026d9781e19561e436cfb9be251084087",
+      "sha256": "098083cc44e7835e74f679695bd99b0a9244884f6eb3e987993d7382d76e6935",
       "source": "pstack/docs/guide/01-setup.md",
       "sourceSha256": "384655bdecc713122ca69a485723c58462002a1d512415e94e48597d0dce2fa5",
       "adaptation": "raga native setup guide"
     },
     {
-      "path": "docs/guide/02-poteto-mode.md",
-      "sha256": "3b44f1ca3ac008771c53121050570ec89f20cad6b1b25d31c83fc36c3adf98f3",
+      "path": "docs/guide/02-peak.md",
+      "sha256": "fc25a765b07ad83a23b95aacaa411f2ee4056bf64f2af97de8a189f464b27254",
       "source": "pstack/docs/guide/02-poteto-mode.md",
       "sourceSha256": "d168829def6c410b1afd87d1a6eb297df385f89faa9b31260684074e9e4eb52a",
       "adaptation": "pstack/docs/guide/02-poteto-mode.md"
     },
     {
       "path": "docs/guide/03-understand.md",
-      "sha256": "1ac97cbad51c15c18b3aade8634d81c8bbe50d2b3135c75c113ddb2a6dcb7af0",
+      "sha256": "9b75a90b06dfe08989dde9bf1c14cb997e5d4235e5e4e66d57c1e5948370d67f",
       "source": "pstack/docs/guide/03-understand.md",
       "sourceSha256": "1ac97cbad51c15c18b3aade8634d81c8bbe50d2b3135c75c113ddb2a6dcb7af0",
       "adaptation": "pstack/docs/guide/03-understand.md"
     },
     {
       "path": "docs/guide/04-design.md",
-      "sha256": "cff616278303b533e617c5c4408af6d28895edbb8687d6ce99bb5dd1f6644a6c",
+      "sha256": "38590b11ec1dcf0b1986ffb2d6fc5a4117c6ffa9fd0c3a2d889ce43f9fc9c158",
       "source": "pstack/docs/guide/04-design.md",
       "sourceSha256": "cff616278303b533e617c5c4408af6d28895edbb8687d6ce99bb5dd1f6644a6c",
       "adaptation": "pstack/docs/guide/04-design.md"
     },
     {
       "path": "docs/guide/05-build-and-clean.md",
-      "sha256": "1284e80595ae4f214dfa7c5c5f7758ff90a47b3273aa7b8142e51e574f5c5290",
+      "sha256": "4d8de668b3ec7441054bbaa780ea4bcc8dc3e6e15345df104de0d6334f564066",
       "source": "pstack/docs/guide/05-build-and-clean.md",
       "sourceSha256": "1284e80595ae4f214dfa7c5c5f7758ff90a47b3273aa7b8142e51e574f5c5290",
       "adaptation": "pstack/docs/guide/05-build-and-clean.md"
     },
     {
       "path": "docs/guide/06-verify-and-ship.md",
-      "sha256": "ee507990a8bdacb1bb2ce38b28244adf7cf80f013a055c90f42f70d2fb680bc4",
+      "sha256": "5fa770b3b7665664c33fc51a9dd4116b94ce9cc29fe36bdb75304d05c35f2ac0",
       "source": "pstack/docs/guide/06-verify-and-ship.md",
       "sourceSha256": "9276f7a20f72c115536e0a12f08aa2e9699fcd7498c217d9a02a7149c7d3a4a8",
       "adaptation": "pstack/docs/guide/06-verify-and-ship.md"
     },
     {
       "path": "docs/guide/07-overnight.md",
-      "sha256": "6aa978bb2cf23e3abbe6fda9436af2ea988d57fe0344d3e507f16c9210921ad9",
+      "sha256": "db74752292e243bd1a5c6d022dd9f100ef36f2803ee0fe41d62f471b666f3d7b",
       "source": "pstack/docs/guide/07-overnight.md",
       "sourceSha256": "b767a5dc5d7257efdb5cc8cfac92acfbb18fe8e023a3438339f4b45ce4a9264a",
       "adaptation": "pstack/docs/guide/07-overnight.md"
     },
     {
       "path": "docs/guide/08-principles.md",
-      "sha256": "0b26b85292f0c09768abe727c9e92987dbf81f5b439a4871034c2fd1c4cb1723",
+      "sha256": "e6b312cdc97f7d3cebcf854e4f61d5896f078a4681b637c1d792653197af6b3e",
       "source": "pstack/docs/guide/08-principles.md",
       "sourceSha256": "0b26b85292f0c09768abe727c9e92987dbf81f5b439a4871034c2fd1c4cb1723",
       "adaptation": "pstack/docs/guide/08-principles.md"
     },
     {
       "path": "docs/guide/09-make-it-yours.md",
-      "sha256": "d2035acd33f6e3b32c5135c2e46f8ebb8599f78ce57fffef1949f08613b9637b",
+      "sha256": "2e3ecb8f1e67ce3bbac6c0c2ecc84768a50529a074e60b7db09468181ccb8c44",
       "source": "pstack/docs/guide/09-make-it-yours.md",
       "sourceSha256": "50642f7f894988f7c263700f46478e7aed7eb94a257683350d91a9a0d70dc141",
       "adaptation": "pstack/docs/guide/09-make-it-yours.md"
     },
     {
       "path": "docs/guide/10-recipes-and-pitfalls.md",
-      "sha256": "f7d2036416fba89e7dc4b20167679e916784bb095a4793e8fcafe9c0f05bff83",
+      "sha256": "4c0d89d139809d570cbf2d3c0e1c39ed268dd05ff81f1ee4f3ff19eb89096b93",
       "source": "pstack/docs/guide/10-recipes-and-pitfalls.md",
       "sourceSha256": "006d8282db567aeae57398d5de1f3a802af2e3ac1a1f564198c384183fca3f92",
       "adaptation": "pstack/docs/guide/10-recipes-and-pitfalls.md"
@@ -517,7 +517,7 @@
     },
     {
       "path": "docs/guide/README.md",
-      "sha256": "5c888d034d38f380789fad57c2c6fa7307ace803a0622cdde9e57fa2afe182de",
+      "sha256": "072276f805aacc0ab2c9d74513f30e19e82e66156ad5d51ad9a04e12dafa9c07",
       "source": "pstack/docs/guide/README.md",
       "sourceSha256": "5c888d034d38f380789fad57c2c6fa7307ace803a0622cdde9e57fa2afe182de",
       "adaptation": "pstack/docs/guide/README.md"
@@ -587,14 +587,14 @@
     },
     {
       "path": "skills/arena/SKILL.md",
-      "sha256": "06bb02d0b9e2dbdaa04990fde27939a560d2276569d81d245bb17604a2d8c0f7",
+      "sha256": "8d8c604bae007c01018cd7479ba232b728edfc3531633cda653376d6c7f9769b",
       "source": "pstack/skills/arena/SKILL.md",
       "sourceSha256": "ed72f6c132b1ce3974d949581d0adc5dade424fe20793ac3b4c4fae22ecb9354",
       "adaptation": "raga execution adaptation of skills/arena/SKILL.md"
     },
     {
       "path": "skills/automate-me/SKILL.md",
-      "sha256": "40a246e5c995ce892117896eb6b415c1612320b55095ddb3bd8e0501950ec324",
+      "sha256": "f3ef392cc5f029ebed0b4186fc55b00dcfaa56c7021e186038be5c66322119d0",
       "source": "pstack/skills/automate-me/SKILL.md",
       "sourceSha256": "30b35f3628c4fd8c11af0ada06d14cdc3b28901810caca2480f627d4d21acfbe",
       "adaptation": "raga execution adaptation of skills/automate-me/SKILL.md"
@@ -692,7 +692,7 @@
     },
     {
       "path": "skills/figure-it-out/SKILL.md",
-      "sha256": "e82e435de231f21a8927e21512eacfb6eb3a32af1e7587ba04e31af52b4b89c4",
+      "sha256": "52574f6d3eb03e60d67f57be14e861e584a382fb3b44cc916e13e208c1c16b96",
       "source": "pstack/skills/figure-it-out/SKILL.md",
       "sourceSha256": "bdb23cdbd82a1e6af094b495691c832a6f7f3ab9706ba9edbeb664ef51a726e1",
       "adaptation": "raga execution adaptation of skills/figure-it-out/SKILL.md"
@@ -713,7 +713,7 @@
     },
     {
       "path": "skills/how/SKILL.md",
-      "sha256": "6877659dd646dfa6eb700306f59ce469f9997b54000896d9452fd797e570fdf5",
+      "sha256": "82b9531198f39cadb3127cf0ca0d32fa7b1b0f130e149088efc2039804c41909",
       "source": "pstack/skills/how/SKILL.md",
       "sourceSha256": "08a00079bb15b4258874ac3ff62d4ca7e94350ffedb521d0fd296dc9dd21904e",
       "adaptation": "raga execution adaptation of skills/how/SKILL.md"
@@ -755,7 +755,7 @@
     },
     {
       "path": "skills/interrogate/SKILL.md",
-      "sha256": "07f00154062c5e6a0fa071fd0ad4db904a87f3ff7533301d131a8c4f580d4ee9",
+      "sha256": "c141749a382f667d6fff5e5e71e644704955bf66029774d277fef01ef63d8495",
       "source": "pstack/skills/interrogate/SKILL.md",
       "sourceSha256": "a16dfe179005abc22a4651b82f25b0c8ab953284276efe4e6dc341958fb63647",
       "adaptation": "raga execution adaptation of skills/interrogate/SKILL.md"
@@ -783,7 +783,7 @@
     },
     {
       "path": "skills/no-comments/SKILL.md",
-      "sha256": "099fd3f97d35edc2191557361da77eb56d9464f8142bd9b1b5f3627eaf528074",
+      "sha256": "116a469726d7352cc682987b985fcfe49a31a155774ea71ebc9e3ad75cc2b51b",
       "source": "pstack/skills/no-comments/SKILL.md",
       "sourceSha256": "078ecfe224eafbb017f6476870612838bf6dbe38c0b697e12f0c887d0313f17e",
       "adaptation": "raga execution adaptation of skills/no-comments/SKILL.md"
@@ -803,6 +803,391 @@
       "adaptation": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md"
     },
     {
+      "path": "skills/peak/playbooks/authoring-a-skill.md",
+      "sha256": "4b9b7de20a9456bb17c8646e92b6591408ad68567fe33ed16f3cb6f1b07f40bf",
+      "source": "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "sourceSha256": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md"
+    },
+    {
+      "path": "skills/peak/playbooks/autonomous-run.md",
+      "sha256": "37135386832f1497a70223ca25f5077d165f4d034ff9770f3f210840ce6adcfc",
+      "source": "pstack/skills/poteto-mode/playbooks/autonomous-run.md",
+      "sourceSha256": "6ac974fd2b09748add56493e89f578a35a6a9289e1026515878d81ef3cf129d1",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/autonomous-run.md"
+    },
+    {
+      "path": "skills/peak/playbooks/autopilot-full.md",
+      "sha256": "434f07ab75182a9923363001420e02b33f3403aaec2f325436dc7d2d36eba37f",
+      "source": "pstack/skills/poteto-mode/playbooks/autopilot-full.md",
+      "sourceSha256": "acf4f4a58c11045f9d3e8807d907a877e61ca6432b079f1087d7d30fc931566f",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/autopilot-full.md"
+    },
+    {
+      "path": "skills/peak/playbooks/autopilot-stack.md",
+      "sha256": "c6bcb18b2ce605e77a2a2225854590a4b9a687911f79331746d91a4fe9a52e60",
+      "source": "pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
+      "sourceSha256": "c6bcb18b2ce605e77a2a2225854590a4b9a687911f79331746d91a4fe9a52e60",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/autopilot-stack.md"
+    },
+    {
+      "path": "skills/peak/playbooks/babysit.md",
+      "sha256": "dab9fbc638c1f75c9b58e85815f1bda650e3161b709b9a722392010fb82115ef",
+      "source": "pstack/skills/poteto-mode/playbooks/babysit.md",
+      "sourceSha256": "e261c1ff5581e0f8fc6c686f34de4b535f87473e77beabea7dd8323021214610",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/babysit.md"
+    },
+    {
+      "path": "skills/peak/playbooks/bug-fix.md",
+      "sha256": "bdcdc8c9fdc4600cc420739edd7ec990351c0225a6cf928d39c587440099793e",
+      "source": "pstack/skills/poteto-mode/playbooks/bug-fix.md",
+      "sourceSha256": "66e26542dad131cfd7df80ac0cdf81ed4d85e7b5e3f0eb65b933888760c4831f",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/bug-fix.md"
+    },
+    {
+      "path": "skills/peak/playbooks/eval.md",
+      "sha256": "289c19e66f1894261da090dbfd58829f5289aec0cdcc6a5f27eba0f8d6276c4e",
+      "source": "pstack/skills/poteto-mode/playbooks/eval.md",
+      "sourceSha256": "a93d449a908236afa6645179651844094b1547dbab4e484cffcdda630e4b90bf",
+      "adaptation": "raga scoped-history adaptation of skills/peak/playbooks/eval.md"
+    },
+    {
+      "path": "skills/peak/playbooks/feature.md",
+      "sha256": "365867a0bc53ad57c371b4e59e5f56aa57104d46e276e09b4b1983a683b65b07",
+      "source": "pstack/skills/poteto-mode/playbooks/feature.md",
+      "sourceSha256": "af8ce700b99953741cb547e34308fde0cf6b98ce67e1652c800d0deedf53aba1",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/feature.md"
+    },
+    {
+      "path": "skills/peak/playbooks/hillclimb.md",
+      "sha256": "0781b808f5ba01c68e7a4e676d02fc16d4babb238cb414850f3958a5add56159",
+      "source": "pstack/skills/poteto-mode/playbooks/hillclimb.md",
+      "sourceSha256": "942c1565b75ad02a2cb6230dd7c1ebd87e19f59a00319ebac2b6616007bf018f",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/hillclimb.md"
+    },
+    {
+      "path": "skills/peak/playbooks/investigation.md",
+      "sha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
+      "source": "pstack/skills/poteto-mode/playbooks/investigation.md",
+      "sourceSha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/investigation.md"
+    },
+    {
+      "path": "skills/peak/playbooks/multi-phase-plan.md",
+      "sha256": "d52ea61e3b00d991d6323d1f3cd90fe8141054340b2c6f7a7b395f6b9f82dc62",
+      "source": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "sourceSha256": "5f239457bfdec3345c92caa06c59bf0257c662b89353f25a1c02ea942dcd00b1",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"
+    },
+    {
+      "path": "skills/peak/playbooks/opening-a-pr.md",
+      "sha256": "12598dd54f1ebe16659b8f335b5f914c380bd540b80f4eca884045c59b12506e",
+      "source": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
+      "sourceSha256": "a5aef646de8b651306c2d10974623650e4a013a245aec1c00525bbe0e31bfa76",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md"
+    },
+    {
+      "path": "skills/peak/playbooks/orchestrate.md",
+      "sha256": "d7bbdd94285e6eb02c091ba3bd4078d03314656fd5fd7b881f2f8ec0bb53fda1",
+      "source": "pstack/skills/poteto-mode/playbooks/orchestrate.md",
+      "sourceSha256": "08dce6c9e7be1d13bc6944ab9b51665f935c531437f5e088bc53d2a62099ef05",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/orchestrate.md"
+    },
+    {
+      "path": "skills/peak/playbooks/pause-safely.md",
+      "sha256": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d",
+      "source": "pstack/skills/poteto-mode/playbooks/pause-safely.md",
+      "sourceSha256": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/pause-safely.md"
+    },
+    {
+      "path": "skills/peak/playbooks/perf-issue.md",
+      "sha256": "62f3cd1a3be55d51f0659bd3865fdff3416dce8028e269485c4b315e800ccabf",
+      "source": "pstack/skills/poteto-mode/playbooks/perf-issue.md",
+      "sourceSha256": "c12aa2f82de7651a11676a3d5fea168f539b7f0faaa3a501d279255dd2a469c8",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/perf-issue.md"
+    },
+    {
+      "path": "skills/peak/playbooks/prototype.md",
+      "sha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+      "source": "pstack/skills/poteto-mode/playbooks/prototype.md",
+      "sourceSha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/prototype.md"
+    },
+    {
+      "path": "skills/peak/playbooks/refactoring.md",
+      "sha256": "2803c3efafe2a57e16f5093874b1527d0be9ee83ed2d6c46b4651066a0f2c449",
+      "source": "pstack/skills/poteto-mode/playbooks/refactoring.md",
+      "sourceSha256": "0f5dd38113379ea8cf61e2182eca0a7478eea9a869eb40c2dddab3335aeca197",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/refactoring.md"
+    },
+    {
+      "path": "skills/peak/playbooks/runtime-forensics.md",
+      "sha256": "3463372b578c28f27c236f2627f09b5c5b1e85e86db7399fb984f3892fb450f5",
+      "source": "pstack/skills/poteto-mode/playbooks/runtime-forensics.md",
+      "sourceSha256": "3463372b578c28f27c236f2627f09b5c5b1e85e86db7399fb984f3892fb450f5",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/runtime-forensics.md"
+    },
+    {
+      "path": "skills/peak/playbooks/session-pickup.md",
+      "sha256": "867708f52ce261df9925d8690c85cbd61fa45d1fa07df640368c3eafe7e6720d",
+      "source": "pstack/skills/poteto-mode/playbooks/session-pickup.md",
+      "sourceSha256": "d194f2a7ef392c1598ef3f0e3b561370ca25c2c7a78308007af4aa46ada8ee12",
+      "adaptation": "raga scoped-history adaptation of skills/peak/playbooks/session-pickup.md"
+    },
+    {
+      "path": "skills/peak/playbooks/shipping.md",
+      "sha256": "fa5cbe6b38b74391669fb5f81d48a7637c29b9b6b7eacbba9a87acdf59dc2dd8",
+      "source": "pstack/skills/poteto-mode/playbooks/shipping.md",
+      "sourceSha256": "bf56339bdf7e0223bcff5abf4e8599e3f5b547b3fcc3b4ce9475e6e7dda14a9f",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/shipping.md"
+    },
+    {
+      "path": "skills/peak/playbooks/trace-forensics.md",
+      "sha256": "ef0bbf79856a4ae1a8993d54c1a1da159cb97623941b652c0069cf75a017e0f5",
+      "source": "pstack/skills/poteto-mode/playbooks/trace-forensics.md",
+      "sourceSha256": "ef0bbf79856a4ae1a8993d54c1a1da159cb97623941b652c0069cf75a017e0f5",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/trace-forensics.md"
+    },
+    {
+      "path": "skills/peak/playbooks/visual-parity.md",
+      "sha256": "ab6554d0a2b52ec3e14a2c24846813d7475204ba7de0264b60b3b0f36b6aa373",
+      "source": "pstack/skills/poteto-mode/playbooks/visual-parity.md",
+      "sourceSha256": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
+      "adaptation": "pstack/skills/poteto-mode/playbooks/visual-parity.md"
+    },
+    {
+      "path": "skills/peak/playbooks/worktree-cleanup.md",
+      "sha256": "b3a2b086c1dc28366427d91f7e4aa04b5ceaaa7200e6f683a23c155b693d43b2",
+      "source": "pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "sourceSha256": "be04ae0afe19d4a4da5bcc4e94455f68dbebd1cda6eb0f456ca0d358ecf76c00",
+      "adaptation": "raga ownership-aware cleanup adaptation"
+    },
+    {
+      "path": "skills/peak/references/reviewer-triage.md",
+      "sha256": "3e289b74ab3af740a36fbffa1d5a27722b8cbe58f92d86876bf90f295b663f67",
+      "source": "pstack/skills/poteto-mode/references/bugbot-triage.md",
+      "sourceSha256": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
+      "adaptation": "pstack/skills/poteto-mode/references/bugbot-triage.md"
+    },
+    {
+      "path": "skills/peak/scripts/check-plan.mjs",
+      "sha256": "35b07c1679fb214fe8d467c0281b54d3d0269868c31e0c255188a55e9d7f86fc",
+      "source": "pstack/skills/poteto-mode/scripts/check-plan.mjs",
+      "sourceSha256": "e58c3d871b09d477be00628d69dd23ffa6c2e3a1728f5b867a841baa8e90278b",
+      "adaptation": "pstack/skills/poteto-mode/scripts/check-plan.mjs"
+    },
+    {
+      "path": "skills/peak/scripts/check-plan.test.ts",
+      "sha256": "601b6361c6924a02280245a11c97f47c98118a309f12b04ed4484f22bf31a64d",
+      "source": "pstack/skills/poteto-mode/scripts/check-plan.test.ts",
+      "sourceSha256": "c80f3ea043b81f219b92c4c8a3af6bdd4f8d32ea596ec15b5b9e0252645f2ae8",
+      "adaptation": "pstack/skills/poteto-mode/scripts/check-plan.test.ts"
+    },
+    {
+      "path": "skills/peak/scripts/orch/orch.test.ts",
+      "sha256": "5e80b416bdcd68e4067690ce857345852fd2e0db3dcf3e25607999cd55b963d2",
+      "source": "pstack/skills/poteto-mode/scripts/orch/orch.test.ts",
+      "sourceSha256": "5e80b416bdcd68e4067690ce857345852fd2e0db3dcf3e25607999cd55b963d2",
+      "adaptation": "pstack/skills/poteto-mode/scripts/orch/orch.test.ts"
+    },
+    {
+      "path": "skills/peak/scripts/orch/orch.ts",
+      "sha256": "40a10a63632b3b6195dba560857269e17710b105fe4d666bbc1d3c6d0de833e0",
+      "source": "pstack/skills/poteto-mode/scripts/orch/orch.ts",
+      "sourceSha256": "47c92c57e8276616d8de94665a126bd832e748036afa8d0ffdbacb7946decb5c",
+      "adaptation": "raga native Node adaptation of skills/peak/scripts/orch/orch.ts"
+    },
+    {
+      "path": "skills/peak/scripts/orch/store.ts",
+      "sha256": "f9781400685d607651525bdd3170542c54b9c773484b98971fd255407bd4a2b3",
+      "source": "pstack/skills/poteto-mode/scripts/orch/store.ts",
+      "sourceSha256": "558cfda533e1ebe7c8d7842604f07e0be7618759cf129b4c2397a8e29516ecea",
+      "adaptation": "raga Node erasable-syntax adaptation"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/esm.mjs",
+      "sha256": "19331de9ae2588143e74effe5a3072b67faf6c4ed4a00725399c6de477a86971",
+      "source": "commander@14.0.0/esm.mjs",
+      "sourceSha256": "19331de9ae2588143e74effe5a3072b67faf6c4ed4a00725399c6de477a86971",
+      "adaptation": "commander@14.0.0/esm.mjs"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/index.js",
+      "sha256": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
+      "source": "commander@14.0.0/index.js",
+      "sourceSha256": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
+      "adaptation": "commander@14.0.0/index.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/argument.js",
+      "sha256": "4248cfb984f6213a152d030b7f6f425ff7c3c892875bd45e941a74a4272db096",
+      "source": "commander@14.0.0/lib/argument.js",
+      "sourceSha256": "4248cfb984f6213a152d030b7f6f425ff7c3c892875bd45e941a74a4272db096",
+      "adaptation": "commander@14.0.0/lib/argument.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/command.js",
+      "sha256": "05db069897abde1e033fb185b2b12e685b4c80e0173f59d121d37d4737b99f17",
+      "source": "commander@14.0.0/lib/command.js",
+      "sourceSha256": "05db069897abde1e033fb185b2b12e685b4c80e0173f59d121d37d4737b99f17",
+      "adaptation": "commander@14.0.0/lib/command.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/error.js",
+      "sha256": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
+      "source": "commander@14.0.0/lib/error.js",
+      "sourceSha256": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
+      "adaptation": "commander@14.0.0/lib/error.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/help.js",
+      "sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+      "source": "commander@14.0.0/lib/help.js",
+      "sourceSha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+      "adaptation": "commander@14.0.0/lib/help.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/option.js",
+      "sha256": "406e191c306f7b0cc63c7f8a9b1217879c4372b5353580228a8c263a881194ed",
+      "source": "commander@14.0.0/lib/option.js",
+      "sourceSha256": "406e191c306f7b0cc63c7f8a9b1217879c4372b5353580228a8c263a881194ed",
+      "adaptation": "commander@14.0.0/lib/option.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/lib/suggestSimilar.js",
+      "sha256": "6a3a368ace1abd1cc6b551ae10bcbae18eda3fed0fb0cfd60c7960c6663dad58",
+      "source": "commander@14.0.0/lib/suggestSimilar.js",
+      "sourceSha256": "6a3a368ace1abd1cc6b551ae10bcbae18eda3fed0fb0cfd60c7960c6663dad58",
+      "adaptation": "commander@14.0.0/lib/suggestSimilar.js"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/LICENSE",
+      "sha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b",
+      "source": "commander@14.0.0/LICENSE",
+      "sourceSha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b",
+      "adaptation": "commander@14.0.0/LICENSE"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/package.json",
+      "sha256": "2786b39cf7c2b2bdf293bd39866b0a8f0bd9857e78b3c5956b8434fecdb066e1",
+      "source": "raga adaptation of commander package metadata",
+      "sourceSha256": "2786b39cf7c2b2bdf293bd39866b0a8f0bd9857e78b3c5956b8434fecdb066e1",
+      "adaptation": "raga adaptation of commander package metadata"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/typings/esm.d.mts",
+      "sha256": "b124c0624b15412ace7d54644ade38d7a69db7e25488a1a4d2a8df6e11696538",
+      "source": "commander@14.0.0/typings/esm.d.mts",
+      "sourceSha256": "b124c0624b15412ace7d54644ade38d7a69db7e25488a1a4d2a8df6e11696538",
+      "adaptation": "commander@14.0.0/typings/esm.d.mts"
+    },
+    {
+      "path": "skills/peak/scripts/vendor/commander/typings/index.d.ts",
+      "sha256": "1a2ae3df505891912038749a39e434643cf1f91a578475ae049f36e35c870c58",
+      "source": "commander@14.0.0/typings/index.d.ts",
+      "sourceSha256": "1a2ae3df505891912038749a39e434643cf1f91a578475ae049f36e35c870c58",
+      "adaptation": "commander@14.0.0/typings/index.d.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/cli.test.ts",
+      "sha256": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.test.ts",
+      "sourceSha256": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/cli.test.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/cli.ts",
+      "sha256": "520f1a0b98c29ff2222c710e2945740c9b4625676034d514499ce4d1135c0c23",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.ts",
+      "sourceSha256": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "adaptation": "raga native Node adaptation of skills/peak/scripts/watch-pr/cli.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/fakes.test-helper.ts",
+      "sha256": "44130f3586c0ac5720ddaee62aa94d972fc20f1a554e05713bbe84341141196b",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
+      "sourceSha256": "cf0c5ee61b4a73444c1b775cfb6c81a40d312e055dd21a1f5eae6276e54de13f",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/github.test.ts",
+      "sha256": "88c7d01e662815e46a4f8d248a3eab19151ffbd50b4d9e0640d31961d9612ab3",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts",
+      "sourceSha256": "70c9f03d8738228763846f2abdd8c7de7be68dba3035041482386a69cbf5639b",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/github.ts",
+      "sha256": "38020a8ee0f2abe879156d36743968e2f3d0335425a72428083fd6c2dc1c8690",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.ts",
+      "sourceSha256": "a605b8531468dbe4c07b93663c0993a9c11dc7e9179adde970f5c740396451d9",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/github.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/policy.test.ts",
+      "sha256": "146acabcfee9b6fa3342358eb0a9504aa65fd081bbc15b10adf9c1c5485067d2",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.test.ts",
+      "sourceSha256": "146acabcfee9b6fa3342358eb0a9504aa65fd081bbc15b10adf9c1c5485067d2",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/policy.test.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/policy.ts",
+      "sha256": "bf9013293b730903e817f4420d1f94dc7baaffcfec72d0582a15b15ca0a21891",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.ts",
+      "sourceSha256": "f2a3e31223d05edc05e5473cc3f8f3cb9bd20c202c30c6abe7f21f0f7aee8fbb",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/policy.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/render.ts",
+      "sha256": "39321c766c826ade27c243792f1893a32496d15a7fe97c4c3cf257593e1248ac",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/render.ts",
+      "sourceSha256": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/render.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/tsconfig.json",
+      "sha256": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/tsconfig.json",
+      "sourceSha256": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/tsconfig.json"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/types.compile.ts",
+      "sha256": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.compile.ts",
+      "sourceSha256": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/types.compile.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/types.ts",
+      "sha256": "b5f89d1622fa6789dd41b11d22401cbc6b007ee0402f3b99f8f857a82a1ebfc5",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.ts",
+      "sourceSha256": "0cac435294dc85ce1ba755e8e67f6c5ab163dfa252f2722d6e3a2d68c58fec59",
+      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/types.ts"
+    },
+    {
+      "path": "skills/peak/scripts/watch-pr/watch-pr",
+      "sha256": "b2c4ce2ec70a431f62fa851e0e27619d952d112fc05cd515c95532e60d761c71",
+      "source": "pstack/skills/poteto-mode/scripts/watch-pr/watch-pr",
+      "sourceSha256": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "adaptation": "raga native Node adaptation of skills/peak/scripts/watch-pr/watch-pr"
+    },
+    {
+      "path": "skills/peak/scripts/worktree-audit.sh",
+      "sha256": "e5d9eadec34a9229c9b64a67a243e9eac681adcce26fd498c2fcec03b7dacc7e",
+      "source": "pstack/skills/poteto-mode/scripts/worktree-audit.sh",
+      "sourceSha256": "e0a94e5e5b1ff60638916e440600e15851f7b79bc1a1d1f602fde05d465e2ec0",
+      "adaptation": "raga read-only workspace inventory"
+    },
+    {
+      "path": "skills/peak/SKILL.md",
+      "sha256": "2292f4415a5472de2548ac8db4761ce7d1cee5bc4eb4ed8f284c6716345342f9",
+      "source": "pstack/skills/poteto-mode/SKILL.md",
+      "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
+      "adaptation": "raga native delegation policy"
+    },
+    {
       "path": "skills/poteto-help/references/prompting.md",
       "sha256": "3cba686394d0f34c724cd41df1fb93f972c59c3eaa05541449d2bad527506b8f",
       "source": "pstack/skills/poteto-help/references/prompting.md",
@@ -811,402 +1196,17 @@
     },
     {
       "path": "skills/poteto-help/references/recipes.md",
-      "sha256": "95189d7158183d2396895ff463808ee3dd25b99d9cd455bde5be8aafd8674042",
+      "sha256": "32dee132ae627f7c44067f919a66da54e0ab0cdbf54a73cdeb3eb33f570d3473",
       "source": "pstack/skills/poteto-help/references/recipes.md",
       "sourceSha256": "f2d573014f72f7c798b1998b45f4360a8a83e7b8026c4ed9074e56c5a9d49338",
       "adaptation": "pstack/skills/poteto-help/references/recipes.md"
     },
     {
       "path": "skills/poteto-help/SKILL.md",
-      "sha256": "ab7627366707e316d1a7aeb805b0a0dc443e33159d279a434010679248d6b44c",
+      "sha256": "4b68cd93d3c09fb65a4ddf6f6d04f2dcc97548525419e66f4e2deac52624a1bf",
       "source": "pstack/skills/poteto-help/SKILL.md",
       "sourceSha256": "7022e2cd0d65d5964151444c4efa82a34792a6644210a0ba60d7d6cfa69c72b8",
       "adaptation": "raga execution adaptation of skills/poteto-help/SKILL.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/authoring-a-skill.md",
-      "sha256": "4b9b7de20a9456bb17c8646e92b6591408ad68567fe33ed16f3cb6f1b07f40bf",
-      "source": "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
-      "sourceSha256": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/authoring-a-skill.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/autonomous-run.md",
-      "sha256": "f28376e00b1d67b4ffb37211531b43a75ac6e5400b829a9dbb4f1ccb33aab115",
-      "source": "pstack/skills/poteto-mode/playbooks/autonomous-run.md",
-      "sourceSha256": "6ac974fd2b09748add56493e89f578a35a6a9289e1026515878d81ef3cf129d1",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/autonomous-run.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/autopilot-full.md",
-      "sha256": "434f07ab75182a9923363001420e02b33f3403aaec2f325436dc7d2d36eba37f",
-      "source": "pstack/skills/poteto-mode/playbooks/autopilot-full.md",
-      "sourceSha256": "acf4f4a58c11045f9d3e8807d907a877e61ca6432b079f1087d7d30fc931566f",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/autopilot-full.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/autopilot-stack.md",
-      "sha256": "c6bcb18b2ce605e77a2a2225854590a4b9a687911f79331746d91a4fe9a52e60",
-      "source": "pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
-      "sourceSha256": "c6bcb18b2ce605e77a2a2225854590a4b9a687911f79331746d91a4fe9a52e60",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/autopilot-stack.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/babysit.md",
-      "sha256": "dab9fbc638c1f75c9b58e85815f1bda650e3161b709b9a722392010fb82115ef",
-      "source": "pstack/skills/poteto-mode/playbooks/babysit.md",
-      "sourceSha256": "e261c1ff5581e0f8fc6c686f34de4b535f87473e77beabea7dd8323021214610",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/babysit.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/bug-fix.md",
-      "sha256": "bdcdc8c9fdc4600cc420739edd7ec990351c0225a6cf928d39c587440099793e",
-      "source": "pstack/skills/poteto-mode/playbooks/bug-fix.md",
-      "sourceSha256": "66e26542dad131cfd7df80ac0cdf81ed4d85e7b5e3f0eb65b933888760c4831f",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/bug-fix.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/eval.md",
-      "sha256": "289c19e66f1894261da090dbfd58829f5289aec0cdcc6a5f27eba0f8d6276c4e",
-      "source": "pstack/skills/poteto-mode/playbooks/eval.md",
-      "sourceSha256": "a93d449a908236afa6645179651844094b1547dbab4e484cffcdda630e4b90bf",
-      "adaptation": "raga scoped-history adaptation of skills/poteto-mode/playbooks/eval.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/feature.md",
-      "sha256": "365867a0bc53ad57c371b4e59e5f56aa57104d46e276e09b4b1983a683b65b07",
-      "source": "pstack/skills/poteto-mode/playbooks/feature.md",
-      "sourceSha256": "af8ce700b99953741cb547e34308fde0cf6b98ce67e1652c800d0deedf53aba1",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/feature.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/hillclimb.md",
-      "sha256": "0781b808f5ba01c68e7a4e676d02fc16d4babb238cb414850f3958a5add56159",
-      "source": "pstack/skills/poteto-mode/playbooks/hillclimb.md",
-      "sourceSha256": "942c1565b75ad02a2cb6230dd7c1ebd87e19f59a00319ebac2b6616007bf018f",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/hillclimb.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/investigation.md",
-      "sha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
-      "source": "pstack/skills/poteto-mode/playbooks/investigation.md",
-      "sourceSha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/investigation.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/multi-phase-plan.md",
-      "sha256": "9213b5f922867b80989046e521364148882327c093600ff97e8973ab7bfb6b12",
-      "source": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
-      "sourceSha256": "5f239457bfdec3345c92caa06c59bf0257c662b89353f25a1c02ea942dcd00b1",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/opening-a-pr.md",
-      "sha256": "1a5863b7e4d8b632d97bb268bab7be008e8d34e3881c54d652426a249a38e614",
-      "source": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
-      "sourceSha256": "a5aef646de8b651306c2d10974623650e4a013a245aec1c00525bbe0e31bfa76",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/opening-a-pr.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/orchestrate.md",
-      "sha256": "d7bbdd94285e6eb02c091ba3bd4078d03314656fd5fd7b881f2f8ec0bb53fda1",
-      "source": "pstack/skills/poteto-mode/playbooks/orchestrate.md",
-      "sourceSha256": "08dce6c9e7be1d13bc6944ab9b51665f935c531437f5e088bc53d2a62099ef05",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/orchestrate.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/pause-safely.md",
-      "sha256": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d",
-      "source": "pstack/skills/poteto-mode/playbooks/pause-safely.md",
-      "sourceSha256": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/pause-safely.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/perf-issue.md",
-      "sha256": "62f3cd1a3be55d51f0659bd3865fdff3416dce8028e269485c4b315e800ccabf",
-      "source": "pstack/skills/poteto-mode/playbooks/perf-issue.md",
-      "sourceSha256": "c12aa2f82de7651a11676a3d5fea168f539b7f0faaa3a501d279255dd2a469c8",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/perf-issue.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/prototype.md",
-      "sha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
-      "source": "pstack/skills/poteto-mode/playbooks/prototype.md",
-      "sourceSha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/prototype.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/refactoring.md",
-      "sha256": "2803c3efafe2a57e16f5093874b1527d0be9ee83ed2d6c46b4651066a0f2c449",
-      "source": "pstack/skills/poteto-mode/playbooks/refactoring.md",
-      "sourceSha256": "0f5dd38113379ea8cf61e2182eca0a7478eea9a869eb40c2dddab3335aeca197",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/refactoring.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/runtime-forensics.md",
-      "sha256": "3463372b578c28f27c236f2627f09b5c5b1e85e86db7399fb984f3892fb450f5",
-      "source": "pstack/skills/poteto-mode/playbooks/runtime-forensics.md",
-      "sourceSha256": "3463372b578c28f27c236f2627f09b5c5b1e85e86db7399fb984f3892fb450f5",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/runtime-forensics.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/session-pickup.md",
-      "sha256": "867708f52ce261df9925d8690c85cbd61fa45d1fa07df640368c3eafe7e6720d",
-      "source": "pstack/skills/poteto-mode/playbooks/session-pickup.md",
-      "sourceSha256": "d194f2a7ef392c1598ef3f0e3b561370ca25c2c7a78308007af4aa46ada8ee12",
-      "adaptation": "raga scoped-history adaptation of skills/poteto-mode/playbooks/session-pickup.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/shipping.md",
-      "sha256": "fa5cbe6b38b74391669fb5f81d48a7637c29b9b6b7eacbba9a87acdf59dc2dd8",
-      "source": "pstack/skills/poteto-mode/playbooks/shipping.md",
-      "sourceSha256": "bf56339bdf7e0223bcff5abf4e8599e3f5b547b3fcc3b4ce9475e6e7dda14a9f",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/shipping.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/trace-forensics.md",
-      "sha256": "ef0bbf79856a4ae1a8993d54c1a1da159cb97623941b652c0069cf75a017e0f5",
-      "source": "pstack/skills/poteto-mode/playbooks/trace-forensics.md",
-      "sourceSha256": "ef0bbf79856a4ae1a8993d54c1a1da159cb97623941b652c0069cf75a017e0f5",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/trace-forensics.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/visual-parity.md",
-      "sha256": "ab6554d0a2b52ec3e14a2c24846813d7475204ba7de0264b60b3b0f36b6aa373",
-      "source": "pstack/skills/poteto-mode/playbooks/visual-parity.md",
-      "sourceSha256": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
-      "adaptation": "pstack/skills/poteto-mode/playbooks/visual-parity.md"
-    },
-    {
-      "path": "skills/poteto-mode/playbooks/worktree-cleanup.md",
-      "sha256": "b3a2b086c1dc28366427d91f7e4aa04b5ceaaa7200e6f683a23c155b693d43b2",
-      "source": "pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
-      "sourceSha256": "be04ae0afe19d4a4da5bcc4e94455f68dbebd1cda6eb0f456ca0d358ecf76c00",
-      "adaptation": "raga ownership-aware cleanup adaptation"
-    },
-    {
-      "path": "skills/poteto-mode/references/reviewer-triage.md",
-      "sha256": "3e289b74ab3af740a36fbffa1d5a27722b8cbe58f92d86876bf90f295b663f67",
-      "source": "pstack/skills/poteto-mode/references/bugbot-triage.md",
-      "sourceSha256": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
-      "adaptation": "pstack/skills/poteto-mode/references/bugbot-triage.md"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/check-plan.mjs",
-      "sha256": "35b07c1679fb214fe8d467c0281b54d3d0269868c31e0c255188a55e9d7f86fc",
-      "source": "pstack/skills/poteto-mode/scripts/check-plan.mjs",
-      "sourceSha256": "e58c3d871b09d477be00628d69dd23ffa6c2e3a1728f5b867a841baa8e90278b",
-      "adaptation": "pstack/skills/poteto-mode/scripts/check-plan.mjs"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/check-plan.test.ts",
-      "sha256": "601b6361c6924a02280245a11c97f47c98118a309f12b04ed4484f22bf31a64d",
-      "source": "pstack/skills/poteto-mode/scripts/check-plan.test.ts",
-      "sourceSha256": "c80f3ea043b81f219b92c4c8a3af6bdd4f8d32ea596ec15b5b9e0252645f2ae8",
-      "adaptation": "pstack/skills/poteto-mode/scripts/check-plan.test.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/orch/orch.test.ts",
-      "sha256": "5e80b416bdcd68e4067690ce857345852fd2e0db3dcf3e25607999cd55b963d2",
-      "source": "pstack/skills/poteto-mode/scripts/orch/orch.test.ts",
-      "sourceSha256": "5e80b416bdcd68e4067690ce857345852fd2e0db3dcf3e25607999cd55b963d2",
-      "adaptation": "pstack/skills/poteto-mode/scripts/orch/orch.test.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/orch/orch.ts",
-      "sha256": "40a10a63632b3b6195dba560857269e17710b105fe4d666bbc1d3c6d0de833e0",
-      "source": "pstack/skills/poteto-mode/scripts/orch/orch.ts",
-      "sourceSha256": "47c92c57e8276616d8de94665a126bd832e748036afa8d0ffdbacb7946decb5c",
-      "adaptation": "raga native Node adaptation of skills/poteto-mode/scripts/orch/orch.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/orch/store.ts",
-      "sha256": "f9781400685d607651525bdd3170542c54b9c773484b98971fd255407bd4a2b3",
-      "source": "pstack/skills/poteto-mode/scripts/orch/store.ts",
-      "sourceSha256": "558cfda533e1ebe7c8d7842604f07e0be7618759cf129b4c2397a8e29516ecea",
-      "adaptation": "raga Node erasable-syntax adaptation"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/esm.mjs",
-      "sha256": "19331de9ae2588143e74effe5a3072b67faf6c4ed4a00725399c6de477a86971",
-      "source": "commander@14.0.0/esm.mjs",
-      "sourceSha256": "19331de9ae2588143e74effe5a3072b67faf6c4ed4a00725399c6de477a86971",
-      "adaptation": "commander@14.0.0/esm.mjs"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/index.js",
-      "sha256": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
-      "source": "commander@14.0.0/index.js",
-      "sourceSha256": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
-      "adaptation": "commander@14.0.0/index.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/argument.js",
-      "sha256": "4248cfb984f6213a152d030b7f6f425ff7c3c892875bd45e941a74a4272db096",
-      "source": "commander@14.0.0/lib/argument.js",
-      "sourceSha256": "4248cfb984f6213a152d030b7f6f425ff7c3c892875bd45e941a74a4272db096",
-      "adaptation": "commander@14.0.0/lib/argument.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/command.js",
-      "sha256": "05db069897abde1e033fb185b2b12e685b4c80e0173f59d121d37d4737b99f17",
-      "source": "commander@14.0.0/lib/command.js",
-      "sourceSha256": "05db069897abde1e033fb185b2b12e685b4c80e0173f59d121d37d4737b99f17",
-      "adaptation": "commander@14.0.0/lib/command.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/error.js",
-      "sha256": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
-      "source": "commander@14.0.0/lib/error.js",
-      "sourceSha256": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
-      "adaptation": "commander@14.0.0/lib/error.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/help.js",
-      "sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
-      "source": "commander@14.0.0/lib/help.js",
-      "sourceSha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
-      "adaptation": "commander@14.0.0/lib/help.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/option.js",
-      "sha256": "406e191c306f7b0cc63c7f8a9b1217879c4372b5353580228a8c263a881194ed",
-      "source": "commander@14.0.0/lib/option.js",
-      "sourceSha256": "406e191c306f7b0cc63c7f8a9b1217879c4372b5353580228a8c263a881194ed",
-      "adaptation": "commander@14.0.0/lib/option.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/lib/suggestSimilar.js",
-      "sha256": "6a3a368ace1abd1cc6b551ae10bcbae18eda3fed0fb0cfd60c7960c6663dad58",
-      "source": "commander@14.0.0/lib/suggestSimilar.js",
-      "sourceSha256": "6a3a368ace1abd1cc6b551ae10bcbae18eda3fed0fb0cfd60c7960c6663dad58",
-      "adaptation": "commander@14.0.0/lib/suggestSimilar.js"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/LICENSE",
-      "sha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b",
-      "source": "commander@14.0.0/LICENSE",
-      "sourceSha256": "04512a63dce4d2d506ad612dc0bd7681ccf6e3655f7b6eaef7dfac8323d1ec0b",
-      "adaptation": "commander@14.0.0/LICENSE"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/package.json",
-      "sha256": "2786b39cf7c2b2bdf293bd39866b0a8f0bd9857e78b3c5956b8434fecdb066e1",
-      "source": "raga adaptation of commander package metadata",
-      "sourceSha256": "2786b39cf7c2b2bdf293bd39866b0a8f0bd9857e78b3c5956b8434fecdb066e1",
-      "adaptation": "raga adaptation of commander package metadata"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/typings/esm.d.mts",
-      "sha256": "b124c0624b15412ace7d54644ade38d7a69db7e25488a1a4d2a8df6e11696538",
-      "source": "commander@14.0.0/typings/esm.d.mts",
-      "sourceSha256": "b124c0624b15412ace7d54644ade38d7a69db7e25488a1a4d2a8df6e11696538",
-      "adaptation": "commander@14.0.0/typings/esm.d.mts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/vendor/commander/typings/index.d.ts",
-      "sha256": "1a2ae3df505891912038749a39e434643cf1f91a578475ae049f36e35c870c58",
-      "source": "commander@14.0.0/typings/index.d.ts",
-      "sourceSha256": "1a2ae3df505891912038749a39e434643cf1f91a578475ae049f36e35c870c58",
-      "adaptation": "commander@14.0.0/typings/index.d.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/cli.test.ts",
-      "sha256": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.test.ts",
-      "sourceSha256": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/cli.test.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/cli.ts",
-      "sha256": "520f1a0b98c29ff2222c710e2945740c9b4625676034d514499ce4d1135c0c23",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/cli.ts",
-      "sourceSha256": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
-      "adaptation": "raga native Node adaptation of skills/poteto-mode/scripts/watch-pr/cli.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
-      "sha256": "44130f3586c0ac5720ddaee62aa94d972fc20f1a554e05713bbe84341141196b",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts",
-      "sourceSha256": "cf0c5ee61b4a73444c1b775cfb6c81a40d312e055dd21a1f5eae6276e54de13f",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/github.test.ts",
-      "sha256": "88c7d01e662815e46a4f8d248a3eab19151ffbd50b4d9e0640d31961d9612ab3",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts",
-      "sourceSha256": "70c9f03d8738228763846f2abdd8c7de7be68dba3035041482386a69cbf5639b",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/github.ts",
-      "sha256": "38020a8ee0f2abe879156d36743968e2f3d0335425a72428083fd6c2dc1c8690",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/github.ts",
-      "sourceSha256": "a605b8531468dbe4c07b93663c0993a9c11dc7e9179adde970f5c740396451d9",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/github.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/policy.test.ts",
-      "sha256": "146acabcfee9b6fa3342358eb0a9504aa65fd081bbc15b10adf9c1c5485067d2",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.test.ts",
-      "sourceSha256": "146acabcfee9b6fa3342358eb0a9504aa65fd081bbc15b10adf9c1c5485067d2",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/policy.test.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/policy.ts",
-      "sha256": "bf9013293b730903e817f4420d1f94dc7baaffcfec72d0582a15b15ca0a21891",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/policy.ts",
-      "sourceSha256": "f2a3e31223d05edc05e5473cc3f8f3cb9bd20c202c30c6abe7f21f0f7aee8fbb",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/policy.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/render.ts",
-      "sha256": "39321c766c826ade27c243792f1893a32496d15a7fe97c4c3cf257593e1248ac",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/render.ts",
-      "sourceSha256": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/render.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/tsconfig.json",
-      "sha256": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/tsconfig.json",
-      "sourceSha256": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/tsconfig.json"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/types.compile.ts",
-      "sha256": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.compile.ts",
-      "sourceSha256": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/types.compile.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/types.ts",
-      "sha256": "b5f89d1622fa6789dd41b11d22401cbc6b007ee0402f3b99f8f857a82a1ebfc5",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/types.ts",
-      "sourceSha256": "0cac435294dc85ce1ba755e8e67f6c5ab163dfa252f2722d6e3a2d68c58fec59",
-      "adaptation": "pstack/skills/poteto-mode/scripts/watch-pr/types.ts"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/watch-pr/watch-pr",
-      "sha256": "b2c4ce2ec70a431f62fa851e0e27619d952d112fc05cd515c95532e60d761c71",
-      "source": "pstack/skills/poteto-mode/scripts/watch-pr/watch-pr",
-      "sourceSha256": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
-      "adaptation": "raga native Node adaptation of skills/poteto-mode/scripts/watch-pr/watch-pr"
-    },
-    {
-      "path": "skills/poteto-mode/scripts/worktree-audit.sh",
-      "sha256": "e5d9eadec34a9229c9b64a67a243e9eac681adcce26fd498c2fcec03b7dacc7e",
-      "source": "pstack/skills/poteto-mode/scripts/worktree-audit.sh",
-      "sourceSha256": "e0a94e5e5b1ff60638916e440600e15851f7b79bc1a1d1f602fde05d465e2ec0",
-      "adaptation": "raga read-only workspace inventory"
-    },
-    {
-      "path": "skills/poteto-mode/SKILL.md",
-      "sha256": "81a5acce238774c935b5c818b2f1f488c0e4b5fd23030717b18c38b70d4e1e36",
-      "source": "pstack/skills/poteto-mode/SKILL.md",
-      "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
-      "adaptation": "raga native delegation policy"
     },
     {
       "path": "skills/principle-attack-the-premise/SKILL.md",
@@ -1399,7 +1399,7 @@
     },
     {
       "path": "skills/recall/SKILL.md",
-      "sha256": "9a611d24cc1026b0bc2dcfc37d73155b740482b2a6856f83c054f6587a15d414",
+      "sha256": "0072729f36058d0e8dbf38a10299985be5e40b4cd0ce364a74010ff83dad4ed6",
       "source": "pstack/skills/recall/SKILL.md",
       "sourceSha256": "b0ceb996259c3404532f61e4b010df4e3d80d7ddbed85b3c302895723eb62a89",
       "adaptation": "raga execution adaptation of skills/recall/SKILL.md"
@@ -1434,7 +1434,7 @@
     },
     {
       "path": "skills/reflect/SKILL.md",
-      "sha256": "57b9c0bb6ce3fa7308f4d33cd05fd2361a3fd8c4118c9589a471cf6ab0e25dc3",
+      "sha256": "731df5e6c71b91aa8665a273fac311aa31a77ef4df7634d80931e526fbb49676",
       "source": "pstack/skills/reflect/SKILL.md",
       "sourceSha256": "1f5a8c246cdee8251f8667d85bd5d97f6c2801f505843c26ddbd6c621632519b",
       "adaptation": "raga scoped-history adaptation of skills/reflect/SKILL.md"
@@ -1469,7 +1469,7 @@
     },
     {
       "path": "skills/show-me-your-work/SKILL.md",
-      "sha256": "d3dc0c1c253b7a2b2171c56880285d79514292816490a3cf0298b5c54480e0ed",
+      "sha256": "a716741518ff752532ab579144ef2705acecc8b48e6294e036572bd73603f287",
       "source": "pstack/skills/show-me-your-work/SKILL.md",
       "sourceSha256": "920a8217cbb62f92a2222fb81fc9eab17ecd554a0277e444a95a927195139bd1",
       "adaptation": "raga scoped-history adaptation of skills/show-me-your-work/SKILL.md"
@@ -1560,7 +1560,7 @@
     },
     {
       "path": "skills/swarm/SKILL.md",
-      "sha256": "463bb3e07eb80756f679a51937e3cf0a4f4c75d219ce9ad06e58c25f746b5373",
+      "sha256": "0e3c9f50cc5f1b7d5a6066e3f6267f462a9b5c74089ab80d3fb4b11a280b7054",
       "source": "pstack/skills/swarm/SKILL.md",
       "sourceSha256": "031657cb81e490f9aed5c75d6ff2a4fda35ccafbaf72be604e59481cc4080cdc",
       "adaptation": "raga execution adaptation of skills/swarm/SKILL.md"
@@ -1700,7 +1700,7 @@
     },
     {
       "path": "skills/why/SKILL.md",
-      "sha256": "15f8240d461f056cd0b3719aed0ae8a53d253dcd981a81365ae6263cef6e38a0",
+      "sha256": "da81f591547fa51f94b5ad25e16d408a8ea82832874e086441145e0c8f30834b",
       "source": "pstack/skills/why/SKILL.md",
       "sourceSha256": "144d42e7712723d763e607bc0a969e5f1cdf83ec7228519d87677cc534571bed",
       "adaptation": "raga execution adaptation of skills/why/SKILL.md"

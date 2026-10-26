@@ -10,7 +10,7 @@ Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Every spawn is a native raga child with `spec: worker` and `read_only=True`. Explorers use the `how explorer` line in the `model-roles.json` rule (default `None`), and every explainer uses the `how explainer` line (default `None`). Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **poteto-mode** skill.
+Every spawn is a native raga child with `spec: worker` and `read_only=True`. Explorers use the `how explorer` line in the `model-roles.json` rule (default `None`), and every explainer uses the `how explainer` line (default `None`). Set `model` to that line's value, or to the default if the rule or the line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If a configured model is rejected, report the unavailable selector and stop that seat. Do not silently substitute another model. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section of the **peak** skill.
 
 ## 1. Assess complexity
 

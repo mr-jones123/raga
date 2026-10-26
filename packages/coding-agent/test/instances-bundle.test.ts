@@ -22,7 +22,7 @@ describe("portable default harness", () => {
 		expect(skills.filter((skill) => skill.name.startsWith("principle-"))).toHaveLength(24);
 		expect(skills.map((skill) => skill.name)).toEqual(
 			expect.arrayContaining([
-				"poteto-mode",
+				"peak",
 				"how",
 				"architect",
 				"swarm",
@@ -93,7 +93,7 @@ describe("portable default harness", () => {
 		await writeFile(plan, "# Small plan\n\n## Goal\n\nComplete the parser migration.\n");
 		const result = spawnSync(
 			process.execPath,
-			[join(getBundledHarnessPath(), "skills", "poteto-mode", "scripts", "check-plan.mjs"), plan],
+			[join(getBundledHarnessPath(), "skills", "peak", "scripts", "check-plan.mjs"), plan],
 			{ encoding: "utf8", cwd: root },
 		);
 		expect(result.error).toBeUndefined();
@@ -103,7 +103,7 @@ describe("portable default harness", () => {
 	});
 
 	it("runs the vendored orchestration CLI and returns an actual help interface", () => {
-		const command = join(getBundledHarnessPath(), "skills", "poteto-mode", "scripts", "orch", "orch.ts");
+		const command = join(getBundledHarnessPath(), "skills", "peak", "scripts", "orch", "orch.ts");
 		const result = spawnSync(process.execPath, [command, "--help"], { encoding: "utf8" });
 		expect(result.status, result.stderr).toBe(0);
 		expect(result.stdout).toContain("Usage:");

@@ -1,6 +1,6 @@
 ---
-name: poteto-mode
-description: poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for poteto, /poteto-mode, or requests to work in this style.
+name: peak
+description: peak's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use for peak, /peak, or requests to work in this style.
 disable-model-invocation: true
 icon: crown
 color: yellow
@@ -8,7 +8,7 @@ color: yellow
 
 Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Authoring targets candidate revisions. Children use run_child, not an external agent service.
 
-# Poteto mode
+# Peak
 
 Bundled skills live at `../<name>/SKILL.md` from this file, so put this file's absolute path in every `poteto-agent` prompt.
 
@@ -92,7 +92,7 @@ Read the leaf skill in full for any principle you apply. Each entry names when i
 
 ## Subagents
 
-**Use `spec: "poteto-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). The chat that receives `/poteto-mode` runs the playbook. Never spawn a `poteto-agent` to run the playbook itself. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) choose a native specification and configured model for review. Respect what the skill prescribes, don't override to `poteto-agent`.
+**Use `spec: "poteto-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). The chat that receives `/peak` runs the playbook. Never spawn a `poteto-agent` to run the playbook itself. Routed workflow skills (`how`, `why`, `interrogate`, `reflect`, `swarm`) choose a native specification and configured model for review. Respect what the skill prescribes, don't override to `poteto-agent`.
 
 **Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models from agents/model-roles.json. Null inherits the parent. Same-family seats are not model-diverse.
 
