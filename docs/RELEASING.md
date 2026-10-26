@@ -47,7 +47,7 @@ Land raga work by rebase or squash. A merge commit from a raga branch makes the 
 
 The `post-commit` hook releases after every commit. The header picks the bump: `feat` raises the minor version, a breaking change raises the major version once past 1.0, and everything else, including `docs` and `chore`, raises the patch version. The hook writes the changelog entry, commits it as `chore(release): raga vX.Y.Z` with hooks skipped, and tags that commit. The generated commit does not release again.
 
-So one change produces two commits: your change, then its release. Tags stay local until you push them. Set `RAGA_NO_AUTO_RELEASE=1` for a commit that should not release, such as an amended checkpoint. The release commit only writes `CHANGELOG.md`, so skipping its hooks does not skip checks on the change itself.
+So one change produces two commits: your change, then its release. Tags stay local until you push them; the hook prints the push command for each release. Set `RAGA_NO_AUTO_RELEASE=1` for a commit that should not release, such as an amended checkpoint. The release commit only writes `CHANGELOG.md`, so skipping its hooks does not skip checks on the change itself.
 
 ## Manual release or recovery
 
