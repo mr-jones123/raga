@@ -96,11 +96,11 @@ import { configureHttpDispatcher, formatHttpIdleTimeoutMs } from "../../core/htt
 import {
 	checkBendFormal,
 	draftBendFormal,
+	existingBendFiles,
 	scaffoldBendFiles,
 	writeBendDraft,
 } from "../../core/instances/bend-formal.ts";
-import { instancePaths, readInstance } from "../../core/instances/store.ts";
-import type { InstanceManifest } from "../../core/instances/types.ts";
+import { resolveInstancePin } from "../../core/instances/session.ts";
 import { installedBend, readVerificationConfig } from "../../core/instances/verification.ts";
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.ts";
 import type { McpHttpServerConfig } from "../../core/mcp-servers.ts";
@@ -7087,14 +7087,12 @@ export class InteractiveMode {
 	 */
 	private async handleBendFormalCommand(): Promise<void> {
 		const cwd = this.sessionManager.getCwd();
-		const root = instancePaths(cwd).root;
-		let manifest: InstanceManifest;
-		try {
-			manifest = await readInstance(root);
-		} catch {
+		const pin = await resolveInstancePin(cwd, undefined, this.sessionManager);
+		if (!pin) {
 			this.showStatus("Bend formal needs a raga instance in this project. Run `raga init` first.");
 			return;
 		}
+		const root = pin.instanceRoot;
 		const choice = await this.showExtensionSelector("Bend formal verification", [
 			"Write the laws myself",
 			"Describe the rules and let the agent draft them",
@@ -7120,10 +7118,24 @@ export class InteractiveMode {
 				if (!rules?.trim()) return;
 				this.showStatus("Bend formal: drafting laws with the agent. This can take a few minutes.");
 				const draft = await draftBendFormal(agentCommand(), { projectRoot: cwd, request: rules });
-				const preview = `${draft.laws.slice(0, 1500)}\n\n--- proof ---\n${draft.proof.slice(0, 800)}`;
-				const save = await this.showExtensionConfirm("Save these laws?", preview);
-				if (!save) return;
-				const written = await writeBendDraft(root, draft, { approved: true, overwrite: true });
+				if (!draft.parsed) {
+					this.showStatus(`Bend formal: the agent returned no laws block.\n${draft.notes.slice(0, 1500)}`);
+					return;
+				}
+				const truncated = draft.laws.length > 1200 || draft.proof.length > 800;
+				const preview = `${draft.laws.slice(0, 1200)}\n\n--- proof ---\n${draft.proof.slice(0, 800)}${
+					truncated ? "\n\n(Preview truncated. The full draft will be written.)" : ""
+				}`;
+				if (!(await this.showExtensionConfirm("Save these laws?", preview))) return;
+				const existing = await existingBendFiles(root);
+				if (existing.length > 0) {
+					const replace = await this.showExtensionConfirm(
+						"Replace the existing law files?",
+						`${existing.join(" and ")} will be overwritten. Their current contents are not backed up.`,
+					);
+					if (!replace) return;
+				}
+				const written = await writeBendDraft(root, draft, { approved: true, overwrite: existing.length > 0 });
 				this.showStatus(`Bend formal: saved ${written.lawsPath} and ${written.proofPath}.`);
 			}
 			const tool = await installedBend(root);
@@ -7143,8 +7155,8 @@ export class InteractiveMode {
 			}
 			this.showStatus("Bend formal: checking proofs in the sandbox.");
 			const check = await checkBendFormal(root, {
-				instanceId: manifest.id,
-				revision: manifest.activeRevision,
+				instanceId: pin.instanceId,
+				revision: pin.revision,
 				install: !tool,
 				network: true,
 				enable: true,

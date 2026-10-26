@@ -591,7 +591,14 @@ export async function main(args: string[], options?: MainOptions) {
 			printInstanceHelp();
 			return;
 		}
-		if (args[0] && !args[0].startsWith("-") && isInstanceCommandName(args[0])) args = ["instance", ...args];
+		if (
+			process.env.RAGA_INSTANCE_CHILD !== "1" &&
+			args[0] &&
+			!args[0].startsWith("-") &&
+			isInstanceCommandName(args[0])
+		) {
+			args = ["instance", ...args];
+		}
 	}
 	if (await handleInstanceCommand(args)) return;
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];

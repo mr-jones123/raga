@@ -348,12 +348,20 @@ async function suggestVerificationLaws(
 	const directory = join(paths.suggestions, new Date().toISOString().replace(/[:.]/g, "-"));
 	await mkdir(directory, { recursive: true, mode: 0o700 });
 	const files = ["LAWS.suggested.bend", "PROOF.suggested.bend", "NOTES.md", "meta.json"];
-	await writeFile(join(directory, "LAWS.suggested.bend"), `${draft.laws.trim()}\n`, { mode: 0o600 });
-	await writeFile(join(directory, "PROOF.suggested.bend"), `${draft.proof.trim()}\n`, { mode: 0o600 });
+	await writeFile(
+		join(directory, "LAWS.suggested.bend"),
+		draft.parsed ? `${draft.laws.trim()}\n` : "// The agent returned no Bend laws block. Review NOTES.md.\n",
+		{ mode: 0o600 },
+	);
+	await writeFile(
+		join(directory, "PROOF.suggested.bend"),
+		draft.parsed ? `${draft.proof.trim()}\n` : "// No proof draft.\n",
+		{ mode: 0o600 },
+	);
 	await writeFile(join(directory, "NOTES.md"), `${draft.notes}\n`, { mode: 0o600 });
 	await writeFile(
 		join(directory, "meta.json"),
-		`${JSON.stringify({ schemaVersion: 1, verified: false, createdAt: new Date().toISOString(), note: "Suggestion only: no proof has been checked, and nothing here is active." }, null, 2)}\n`,
+		`${JSON.stringify({ schemaVersion: 1, verified: false, hasDraft: draft.parsed, createdAt: new Date().toISOString(), note: "Suggestion only: no proof has been checked, and nothing here is active." }, null, 2)}\n`,
 		{ mode: 0o600 },
 	);
 	return {
@@ -369,7 +377,12 @@ async function run(pin: HarnessPin, args: string[]): Promise<void> {
 	const detached = !process.stdin.isTTY && process.platform !== "win32";
 	const child = spawn(agent.executable, [...agent.args, ...args, "--session-dir", join(pin.stateRoot, "sessions")], {
 		cwd: pin.projectRoot,
-		env: { ...process.env, RAGA_INSTANCE_ROOT: pin.instanceRoot, RAGA_INSTANCE_REVISION: pin.revision },
+		env: {
+			...process.env,
+			RAGA_INSTANCE_ROOT: pin.instanceRoot,
+			RAGA_INSTANCE_REVISION: pin.revision,
+			RAGA_INSTANCE_CHILD: "1",
+		},
 		stdio: "inherit",
 		detached,
 	});

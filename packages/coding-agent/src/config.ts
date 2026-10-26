@@ -576,7 +576,7 @@ try {
 
 const piConfigName: string | undefined = pkg.piConfig?.name;
 /** The raga launcher is the same code under another name; branding changes, storage does not. */
-const launchedAsRaga = /(?:^|[\\/])raga(?:\.[a-z]+)?$/.test(process.argv[1] ?? "");
+const launchedAsRaga = /(?:^|[\\/])raga(?:\.[a-z]+)?$/.test(isBunBinary ? process.execPath : (process.argv[1] ?? ""));
 const ragaBrand: string | undefined = launchedAsRaga ? "raga" : undefined;
 export const PACKAGE_NAME: string = pkg.name || "@earendil-works/pi-coding-agent";
 export const APP_NAME: string = ragaBrand || piConfigName || "pi";

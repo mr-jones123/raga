@@ -11,6 +11,7 @@ import type { CommandResult } from "./types.ts";
 import {
 	installBend,
 	installedBend,
+	readVerificationConfig,
 	runVerification,
 	setVerificationEnabled,
 	type VerificationRecord,
@@ -39,6 +40,8 @@ export interface BendDraft {
 	laws: string;
 	proof: string;
 	notes: string;
+	/** False when the agent returned no parseable laws block; the raw notes are still kept. */
+	parsed: boolean;
 }
 
 export interface BendScaffold {
@@ -135,24 +138,43 @@ export function parseBendDraft(output: string): BendDraft {
 		if (label === "laws" || label === "proof") labeled.set(label, body);
 		else unlabeled.push(body);
 	}
-	const laws = labeled.get("laws") ?? unlabeled[0];
-	if (!laws) throw new Error("The agent returned no Bend laws block");
-	const proof =
-		labeled.get("proof") ??
-		unlabeled[1] ??
-		"import ./LAWS.bend as Laws\n\n# Prove each law below, or bend reports SOME PROOFS FAIL.\n";
+	const laws = labeled.get("laws") ?? unlabeled[0] ?? "";
+	const proof = labeled.get("proof") ?? unlabeled[1] ?? "";
 	if (laws.length + proof.length > MAX_DRAFT_CHARS) throw new Error("The drafted laws are too large");
-	return { laws, proof, notes: output.trim().slice(0, 64_000) };
+	return { laws, proof, notes: output.trim().slice(0, 64_000), parsed: Boolean(laws) };
+}
+
+/** Law and proof file names come from the instance config, so a custom pair works everywhere. */
+export async function bendFileNames(instanceRoot: string): Promise<{ laws: string; proof: string }> {
+	const config = await readVerificationConfig(instanceRoot);
+	return { laws: config?.laws ?? "LAWS.bend", proof: config?.proof ?? "PROOF.bend" };
+}
+
+/** Which configured law files already exist, so callers can ask before replacing them. */
+export async function existingBendFiles(instanceRoot: string): Promise<string[]> {
+	const names = await bendFileNames(instanceRoot);
+	const directory = verificationPaths(instanceRoot).directory;
+	const existing: string[] = [];
+	for (const name of [names.laws, names.proof]) {
+		try {
+			await readFile(join(directory, name));
+			existing.push(name);
+		} catch (error) {
+			if ((error as { code?: string }).code !== "ENOENT") throw error;
+		}
+	}
+	return existing;
 }
 
 /** Write the two template files if they are missing. Existing files are never touched. */
 export async function scaffoldBendFiles(instanceRoot: string): Promise<BendScaffold> {
 	const paths = verificationPaths(instanceRoot);
+	const names = await bendFileNames(instanceRoot);
 	await mkdir(paths.directory, { recursive: true, mode: 0o700 });
 	const created: string[] = [];
 	for (const [name, template] of [
-		["LAWS.bend", LAWS_TEMPLATE],
-		["PROOF.bend", PROOF_TEMPLATE],
+		[names.laws, LAWS_TEMPLATE],
+		[names.proof, PROOF_TEMPLATE],
 	] as const) {
 		const path = join(paths.directory, name);
 		try {
@@ -162,7 +184,7 @@ export async function scaffoldBendFiles(instanceRoot: string): Promise<BendScaff
 			if ((error as { code?: string }).code !== "EEXIST") throw error;
 		}
 	}
-	return { lawsPath: join(paths.directory, "LAWS.bend"), proofPath: join(paths.directory, "PROOF.bend"), created };
+	return { lawsPath: join(paths.directory, names.laws), proofPath: join(paths.directory, names.proof), created };
 }
 
 /** Save an agent draft into the active directory. Requires approval and explicit overwrite consent. */
@@ -173,9 +195,10 @@ export async function writeBendDraft(
 ): Promise<{ lawsPath: string; proofPath: string }> {
 	if (options.approved !== true) throw new Error("Saving drafted laws requires explicit approval");
 	const paths = verificationPaths(instanceRoot);
+	const names = await bendFileNames(instanceRoot);
 	await mkdir(paths.directory, { recursive: true, mode: 0o700 });
-	const lawsPath = join(paths.directory, "LAWS.bend");
-	const proofPath = join(paths.directory, "PROOF.bend");
+	const lawsPath = join(paths.directory, names.laws);
+	const proofPath = join(paths.directory, names.proof);
 	if (!options.overwrite) {
 		for (const path of [lawsPath, proofPath]) {
 			try {
@@ -186,8 +209,11 @@ export async function writeBendDraft(
 			}
 		}
 	}
+	const proof = /^\s*import\b/m.test(draft.proof)
+		? draft.proof.trim()
+		: `import ./${names.laws} as Laws\n\n${draft.proof.trim()}`;
 	await writeFile(lawsPath, `${draft.laws.trim()}\n`, { mode: 0o600 });
-	await writeFile(proofPath, `${draft.proof.trim()}\n`, { mode: 0o600 });
+	await writeFile(proofPath, `${proof}\n`, { mode: 0o600 });
 	return { lawsPath, proofPath };
 }
 

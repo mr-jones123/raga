@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	checkBendFormal,
+	existingBendFiles,
 	parseBendDraft,
 	scaffoldBendFiles,
 	writeBendDraft,
@@ -62,12 +63,20 @@ describe("bend formal", () => {
 		expect(labeled.proof).toContain("Laws");
 		const unlabeled = parseBendDraft(["```bend", "import Base", "```"].join("\n"));
 		expect(unlabeled.laws).toBe("import Base");
-		expect(unlabeled.proof).toContain("LAWS.bend");
-		expect(() => parseBendDraft("no code here")).toThrow(/no Bend laws block/);
+		expect(unlabeled.parsed).toBe(true);
+		const missing = parseBendDraft("no code here");
+		expect(missing.parsed).toBe(false);
+		expect(missing.laws).toBe("");
+		expect(missing.notes).toContain("no code here");
 	});
 
 	it("saves drafts only with approval, and refuses silent replacement", async () => {
-		const draft = { laws: "import Base\nlaw a:\n  {1n == 1n : Nat}", proof: "import ./LAWS.bend as Laws", notes: "" };
+		const draft = {
+			laws: "import Base\nlaw a:\n  {1n == 1n : Nat}",
+			proof: "import ./LAWS.bend as Laws",
+			notes: "",
+			parsed: true,
+		};
 		await expect(writeBendDraft(instanceRoot, draft, { approved: false, overwrite: true })).rejects.toThrow(
 			/explicit approval/,
 		);
@@ -78,6 +87,24 @@ describe("bend formal", () => {
 		await writeBendDraft(instanceRoot, { ...draft, laws: "import Base\n" }, { approved: true, overwrite: true });
 		const paths = verificationPaths(instanceRoot);
 		expect(await readFile(join(paths.directory, "LAWS.bend"), "utf8")).toContain("import Base");
+	});
+
+	it("uses the configured law file names and adds the missing import", async () => {
+		const paths = verificationPaths(instanceRoot);
+		await mkdir(paths.directory, { recursive: true });
+		await writeFile(
+			join(instanceRoot, "verification.json"),
+			JSON.stringify({ schemaVersion: 1, enabled: false, laws: "rules.bend", proof: "checks.bend" }),
+		);
+		const scaffold = await scaffoldBendFiles(instanceRoot);
+		expect(scaffold.created).toEqual(["rules.bend", "checks.bend"]);
+		await writeBendDraft(
+			instanceRoot,
+			{ laws: "import Base\nlaw a:\n  {1n == 1n : Nat}", proof: "{==}", notes: "", parsed: true },
+			{ approved: true, overwrite: true },
+		);
+		expect(await readFile(join(paths.directory, "checks.bend"), "utf8")).toContain("import ./rules.bend as Laws");
+		expect(await existingBendFiles(instanceRoot)).toEqual(["rules.bend", "checks.bend"]);
 	});
 
 	it("refuses to check before the pinned tool is installed", async () => {
