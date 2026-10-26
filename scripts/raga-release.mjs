@@ -73,7 +73,7 @@ export function parseCommit({ sha, subject, body = "" }) {
 }
 
 export function nextVersion(current, entries, syncs, target) {
-	if (entries.length + syncs.length === 0) throw new Error("nothing to release");
+	if (entries.length + syncs.length === 0 && !target) throw new Error("nothing to release");
 	const breaking = entries.some((entry) => entry.breaking);
 	const added = entries.some((entry) => entry.section === "added");
 	const bump = target ?? (breaking && current.major > 0 ? "major" : breaking || added ? "minor" : "patch");
@@ -100,6 +100,7 @@ export function renderSection({ next, date, entries, syncs }) {
 						});
 		if (lines.length) blocks.push(`### ${heading}\n\n${lines.join("\n")}`);
 	}
+	if (!entries.length && !syncs.length) blocks.push("_No user-visible changes._");
 	return `${blocks.join("\n\n")}\n`;
 }
 
@@ -392,7 +393,7 @@ export function main(
 		if (!plan) {
 			const range = readRange(cwd, current.tag, bounds, head);
 			if (range.problems.length) throw new Error(range.problems.join("\n"));
-			if (range.entries.length + range.syncs.length === 0) {
+			if (range.entries.length + range.syncs.length === 0 && !targets[0]) {
 				const total = Number(output(cwd, ["rev-list", "--first-parent", "--count", `${current.tag}..${head}`]));
 				const excluded = total - range.count;
 				throw new Error(
