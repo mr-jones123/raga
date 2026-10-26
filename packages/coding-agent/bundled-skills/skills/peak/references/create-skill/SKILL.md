@@ -7,7 +7,7 @@ description: Author or revise a portable Agent Skills workflow in a candidate ha
 
 Define the trigger, input data, observable result, dependencies, side effects, approval boundaries, and failure behavior. Read nearby skills before choosing a shape. Use the native adapter at [raga-runtime](../raga-runtime/SKILL.md).
 
-Request a candidate with `candidate = await instance.candidate_create()`. Read an existing resource with `await instance.candidate_read(candidate['id'], path)`. Write the proposed text with `await instance.candidate_write(candidate['id'], path, content)`. Never edit an accepted revision or a global skill installation. Use `skills/<name>/SKILL.md`, with lowercase hyphenated name and a description in YAML frontmatter. Keep references and helpers beside the skill. Resolve relative references from that directory.
+Request a candidate with `candidate = await instance.candidate_create()`. Read an existing resource with `await instance.candidate_read(candidate['id'], path)`. Write the proposed text with `await instance.candidate_write(candidate['id'], path, content)`. Never edit an accepted revision or a global skill installation. Use `skills/peak/references/<name>/SKILL.md`, with a lowercase hyphenated name and a description in YAML frontmatter. Keep helpers beside the reference. Resolve relative paths from that directory. Add the new reference to the index in `skills/peak/SKILL.md`.
 
 Exercise success, input variation, failure, and ambiguous cases with real input. Executable Python helpers must pass fresh sandboxed interpreter probes without session globals. Record dependencies and external effects. A source-text assertion does not prove behavior. An unsupported capability reports its setup prerequisites.
 

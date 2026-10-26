@@ -2,9 +2,9 @@
 
 New instances copy this pack into their first accepted revision. Each session reads its pinned copy. Updating package assets does not rewrite an existing instance.
 
-The pack contains 56 portable pstack skills, four companion skills, the native create-skill and raga-runtime adapters, and the managed no-mistakes skill. It excludes make-bot-ui and editor-only services. The original public no-mistakes skill stays unchanged under skills/no-mistakes/upstream.
+The pack installs one skill, peak. Its 62 references hold 55 portable pstack workflows, four companion workflows, the native create-skill and raga-runtime adapters, and the managed no-mistakes workflow. It excludes make-bot-ui and editor-only services. The original public no-mistakes text stays unchanged under skills/peak/references/no-mistakes/upstream.
 
-Read [the native runtime](skills/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for skill selection. Workers return supervisor-owned workspace changes rather than Git commits. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
+Read [peak](skills/peak/SKILL.md) to pick a reference. Read [the native runtime](skills/peak/references/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for the reference map. Workers return supervisor-owned workspace changes rather than Git commits. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
 
 ## Sources and regeneration
 

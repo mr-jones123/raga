@@ -14,26 +14,33 @@ afterEach(async () => {
 });
 
 describe("portable default harness", () => {
-	it("discovers the complete portable inventory with the native skill loader", async () => {
+	it("discovers peak as the only skill and keeps every workflow as a reference", async () => {
 		const skills = await inspectBundledSkills();
-		expect(skills).toHaveLength(63);
-		expect(skills.filter((skill) => skill.source === "pstack")).toHaveLength(56);
-		expect(skills.filter((skill) => skill.source === "cursor-team-kit")).toHaveLength(4);
-		expect(skills.filter((skill) => skill.name.startsWith("principle-"))).toHaveLength(24);
-		expect(skills.map((skill) => skill.name)).toEqual(
+		expect(skills).toHaveLength(1);
+		expect(skills[0]).toMatchObject({ name: "peak", source: "pstack" });
+		const manifest = JSON.parse(await readFile(join(getBundledHarnessPath(), "bundle.json"), "utf8")) as {
+			files: { path: string }[];
+		};
+		const references = manifest.files.filter((file) =>
+			/^skills\/peak\/references\/[^/]+\/SKILL\.md$/.test(file.path),
+		);
+		expect(references).toHaveLength(62);
+		expect(references.map((file) => file.path)).toEqual(
 			expect.arrayContaining([
-				"peak",
-				"how",
-				"architect",
-				"swarm",
-				"control-cli",
-				"control-ui",
-				"create-skill",
-				"no-mistakes",
-				"raga-runtime",
+				"skills/peak/references/how/SKILL.md",
+				"skills/peak/references/principle-model-the-domain/SKILL.md",
+				"skills/peak/references/control-cli/SKILL.md",
+				"skills/peak/references/create-skill/SKILL.md",
+				"skills/peak/references/no-mistakes/SKILL.md",
+				"skills/peak/references/raga-runtime/SKILL.md",
 			]),
 		);
-		expect(skills.some((skill) => skill.name === "make-bot-ui" || skill.name === "pstack-omp")).toBe(false);
+		expect(references.some((file) => file.path.includes("make-bot-ui"))).toBe(false);
+		const peak = await readFile(join(getBundledHarnessPath(), "skills", "peak", "SKILL.md"), "utf8");
+		for (const reference of references) {
+			const name = reference.path.split("/")[3];
+			expect(peak, `peak indexes ${name}`).toContain(`references/${name}/SKILL.md`);
+		}
 	});
 
 	it("loads copied package assets and rejects changed shipped bytes", async () => {
@@ -42,8 +49,11 @@ describe("portable default harness", () => {
 		temporary.push(root);
 		await cp(source, join(root, "bundled-skills"), { recursive: true });
 		process.env.PI_PACKAGE_DIR = root;
-		expect(await inspectBundledSkills()).toHaveLength(63);
-		await writeFile(join(root, "bundled-skills", "skills", "how", "SKILL.md"), "changed package bytes");
+		expect(await inspectBundledSkills()).toHaveLength(1);
+		await writeFile(
+			join(root, "bundled-skills", "skills", "peak", "references", "how", "SKILL.md"),
+			"changed package bytes",
+		);
 		await expect(inspectBundledSkills()).rejects.toThrow(/checksum mismatch/);
 	});
 
@@ -63,7 +73,7 @@ describe("portable default harness", () => {
 		process.env.PI_PACKAGE_DIR = root;
 		const path = join(root, "bundled-skills", "bundle.json");
 		const manifest = JSON.parse(await readFile(path, "utf8")) as { files: { path: string }[] };
-		manifest.files = manifest.files.filter((entry) => entry.path !== "skills/how/SKILL.md");
+		manifest.files = manifest.files.filter((entry) => entry.path !== "skills/peak/SKILL.md");
 		await writeFile(path, JSON.stringify(manifest));
 		await expect(inspectBundledSkills()).rejects.toThrow(/missing its asset checksum/);
 	});
@@ -114,7 +124,7 @@ describe("portable default harness", () => {
 		const script = `
 import asyncio
 from pathlib import Path
-exec(Path(${JSON.stringify(root)}, "skills/raga-runtime/raga_runtime.py").read_text(), globals())
+exec(Path(${JSON.stringify(root)}, "skills/peak/references/raga-runtime/raga_runtime.py").read_text(), globals())
 async def main():
     try:
         await run_child("worker", "Change the parser", ${JSON.stringify(root)}, read_only=False)

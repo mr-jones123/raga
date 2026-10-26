@@ -7,10 +7,10 @@ Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this
 
 # Find an engineering workflow
 
-Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../peak/SKILL.md). Its playbooks select the workflow.
+Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../../SKILL.md). Its reference index selects the workflow.
 
 Understanding uses [how](../how/SKILL.md), [why](../why/SKILL.md), [teach](../teach/SKILL.md), and [recall](../recall/SKILL.md). Design uses [architect](../architect/SKILL.md), [arena](../arena/SKILL.md), and [statechart](../statechart/SKILL.md). Parallel execution uses [swarm](../swarm/SKILL.md). Review uses [interrogate](../interrogate/SKILL.md) and [no-comments](../no-comments/SKILL.md).
 
 Use [control-cli](../control-cli/SKILL.md) for terminals and [control-ui](../control-ui/SKILL.md) for browser apps. Use [verify-this](../verify-this/SKILL.md) to attach evidence. Use [create-skill](../create-skill/SKILL.md) for candidate authoring and [no-mistakes](../no-mistakes/SKILL.md) for the explicitly enabled validation gate.
 
-The [guide](../../docs/guide/README.md) explains the portable workflows. The bundle includes all 24 principle leaf skills. Load only the bodies relevant to the task. User invocation is /skill:<name>. There is no editor automation service, global installation requirement, or persistent loop after process exit.
+The [guide](../../../../docs/guide/README.md) explains the portable workflows. The bundle keeps every workflow as a reference beside this file. Load only the ones relevant to the task. The only skill invocation is /skill:peak; pick a reference from its index. There is no editor automation service, global installation requirement, or persistent loop after process exit.

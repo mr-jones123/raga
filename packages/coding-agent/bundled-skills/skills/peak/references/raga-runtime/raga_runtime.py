@@ -16,7 +16,8 @@ async def run_child(spec, task, resource_root, context_data=None, model=None, ma
         raise ValueError("Child instructions must stay in the pinned resource root")
     instructions = await read(root + "/" + definition["instructions"])
     for name in definition["skills"]:
-        instructions += "\n\n" + await read(root + "/skills/" + name + "/SKILL.md")
+        path = root + ("/skills/peak/SKILL.md" if name == "peak" else "/skills/peak/references/" + name + "/SKILL.md")
+        instructions += "\n\n" + await read(path)
     roles = json.loads(await read(root + "/agents/model-roles.json"))
     if model is None:
         model = roles.get(definition["modelRole"])

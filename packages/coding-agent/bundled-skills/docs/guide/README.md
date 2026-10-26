@@ -1,6 +1,6 @@
 # The pstack guide
 
-pstack works best when you stop micromanaging the agent. You describe what you want and how you'll know it's done. `/peak` picks the playbook, runs the other skills as the steps need them, and shows you the evidence. This guide teaches that habit with realistic prompts.
+pstack works best when you stop micromanaging the agent. You describe what you want and how you'll know it's done. `/peak` picks the playbook, reads the references the steps need, and shows you the evidence. This guide teaches that habit with realistic prompts.
 
 Here's what you'll learn:
 
@@ -17,7 +17,7 @@ Here's what you'll learn:
 
 Read the pages in order the first time. After that, each page stands alone.
 
-When you're stuck, or can't tell which skill fits, type [`/poteto-help`](../../skills/poteto-help/SKILL.md) with your question:
+When you're stuck, or can't tell which skill fits, type [`/poteto-help`](../../skills/peak/references/poteto-help/SKILL.md) with your question:
 
 ```text
 /poteto-help which skill should i use to review this branch?
@@ -33,6 +33,6 @@ Give the agent a goal and a way to check it, in your own words:
 /peak the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-You don't need to name a playbook or list skills. "repro first" and a checkable outcome are all the routing signal `/peak` needs. It matches the Bug fix playbook, copies the steps into a todo list, and calls the right skills as each step fires.
+You don't need to name a playbook or list skills. "repro first" and a checkable outcome are all the routing signal `/peak` needs. It matches the Bug fix playbook, copies the steps into a todo list, and reads the right references as each step fires.
 
 Next: [Set up pstack](./01-setup.md).

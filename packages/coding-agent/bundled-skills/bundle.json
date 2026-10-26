@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "adaptationRevision": "raga-2",
+  "adaptationRevision": "raga-3",
   "sources": [
     {
       "repository": "https://github.com/cursor/plugins",
@@ -24,327 +24,17 @@
   ],
   "skills": [
     {
-      "name": "architect",
-      "path": "skills/architect/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "arena",
-      "path": "skills/arena/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "automate-me",
-      "path": "skills/automate-me/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "benchmark-checklist",
-      "path": "skills/benchmark-checklist/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "blast-radius",
-      "path": "skills/blast-radius/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "bro",
-      "path": "skills/bro/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "control-cli",
-      "path": "skills/control-cli/SKILL.md",
-      "source": "cursor-team-kit"
-    },
-    {
-      "name": "control-ui",
-      "path": "skills/control-ui/SKILL.md",
-      "source": "cursor-team-kit"
-    },
-    {
-      "name": "correct",
-      "path": "skills/correct/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "create-formal-verification-skill",
-      "path": "skills/create-formal-verification-skill/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "create-skill",
-      "path": "skills/create-skill/SKILL.md",
-      "source": "raga"
-    },
-    {
-      "name": "create-verification-skill",
-      "path": "skills/create-verification-skill/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "deslop",
-      "path": "skills/deslop/SKILL.md",
-      "source": "cursor-team-kit"
-    },
-    {
-      "name": "figure-it-out",
-      "path": "skills/figure-it-out/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "how",
-      "path": "skills/how/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "in-your-own-words",
-      "path": "skills/in-your-own-words/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "interrogate",
-      "path": "skills/interrogate/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "ketchup",
-      "path": "skills/ketchup/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "maintain-formal-verification-skill",
-      "path": "skills/maintain-formal-verification-skill/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "maintain-verification-skill",
-      "path": "skills/maintain-verification-skill/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "no-comments",
-      "path": "skills/no-comments/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "no-mistakes",
-      "path": "skills/no-mistakes/SKILL.md",
-      "source": "no-mistakes"
-    },
-    {
       "name": "peak",
       "path": "skills/peak/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "peak-setup",
-      "path": "skills/peak-setup/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "poteto-help",
-      "path": "skills/poteto-help/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-attack-the-premise",
-      "path": "skills/principle-attack-the-premise/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-boundary-discipline",
-      "path": "skills/principle-boundary-discipline/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-build-the-lever",
-      "path": "skills/principle-build-the-lever/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-encode-lessons-in-structure",
-      "path": "skills/principle-encode-lessons-in-structure/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-exhaust-the-design-space",
-      "path": "skills/principle-exhaust-the-design-space/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-experience-first",
-      "path": "skills/principle-experience-first/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-explain-the-number",
-      "path": "skills/principle-explain-the-number/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-fix-root-causes",
-      "path": "skills/principle-fix-root-causes/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-foundational-thinking",
-      "path": "skills/principle-foundational-thinking/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-guard-the-context-window",
-      "path": "skills/principle-guard-the-context-window/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-laziness-protocol",
-      "path": "skills/principle-laziness-protocol/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-make-operations-idempotent",
-      "path": "skills/principle-make-operations-idempotent/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-migrate-callers-then-delete-legacy-apis",
-      "path": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-minimize-reader-load",
-      "path": "skills/principle-minimize-reader-load/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-model-the-domain",
-      "path": "skills/principle-model-the-domain/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-never-block-on-the-human",
-      "path": "skills/principle-never-block-on-the-human/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-outcome-oriented-execution",
-      "path": "skills/principle-outcome-oriented-execution/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-prove-it-works",
-      "path": "skills/principle-prove-it-works/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-redesign-from-first-principles",
-      "path": "skills/principle-redesign-from-first-principles/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-separate-before-serializing-shared-state",
-      "path": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-sequence-verifiable-units",
-      "path": "skills/principle-sequence-verifiable-units/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-subtract-before-you-add",
-      "path": "skills/principle-subtract-before-you-add/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-test-behavior-not-implementation",
-      "path": "skills/principle-test-behavior-not-implementation/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "principle-type-system-discipline",
-      "path": "skills/principle-type-system-discipline/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "raga-runtime",
-      "path": "skills/raga-runtime/SKILL.md",
-      "source": "raga"
-    },
-    {
-      "name": "recall",
-      "path": "skills/recall/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "reflect",
-      "path": "skills/reflect/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "sharpen",
-      "path": "skills/sharpen/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "show-me-your-work",
-      "path": "skills/show-me-your-work/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "statechart",
-      "path": "skills/statechart/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "swarm",
-      "path": "skills/swarm/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "tdd",
-      "path": "skills/tdd/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "teach",
-      "path": "skills/teach/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "technical-writing",
-      "path": "skills/technical-writing/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "typescript-best-practices",
-      "path": "skills/typescript-best-practices/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "unslop",
-      "path": "skills/unslop/SKILL.md",
-      "source": "pstack"
-    },
-    {
-      "name": "verify-this",
-      "path": "skills/verify-this/SKILL.md",
-      "source": "cursor-team-kit"
-    },
-    {
-      "name": "why",
-      "path": "skills/why/SKILL.md",
       "source": "pstack"
     }
   ],
   "files": [
     {
       "path": "AGENTS.md",
-      "sha256": "befff0c11969925f85616223a5fdc643ac9ac566ecb9bea6994a6a02c2f2840e",
+      "sha256": "08ab9f3404495aa701e436222a9a24d23104d6223b7667a74e226df0bd74e06b",
       "source": "raga default instructions",
-      "sourceSha256": "befff0c11969925f85616223a5fdc643ac9ac566ecb9bea6994a6a02c2f2840e",
+      "sourceSha256": "08ab9f3404495aa701e436222a9a24d23104d6223b7667a74e226df0bd74e06b",
       "adaptation": "raga default instructions"
     },
     {
@@ -405,70 +95,70 @@
     },
     {
       "path": "docs/guide/01-setup.md",
-      "sha256": "dd276a5fd482afd597944dfcfd110362be561daa426937e064bdcaca160ce903",
+      "sha256": "56e67d324cc46c3bde1cc6c909e8b627ab11c6fdc31e0e9e8b38c38aad3f8037",
       "source": "pstack/docs/guide/01-setup.md",
       "sourceSha256": "384655bdecc713122ca69a485723c58462002a1d512415e94e48597d0dce2fa5",
       "adaptation": "raga native setup guide"
     },
     {
       "path": "docs/guide/02-peak.md",
-      "sha256": "fc25a765b07ad83a23b95aacaa411f2ee4056bf64f2af97de8a189f464b27254",
+      "sha256": "9dca076f0b584316433f702c4a78fa1c8249cf3b32d106f817295ed4401a986e",
       "source": "pstack/docs/guide/02-poteto-mode.md",
       "sourceSha256": "d168829def6c410b1afd87d1a6eb297df385f89faa9b31260684074e9e4eb52a",
       "adaptation": "pstack/docs/guide/02-poteto-mode.md"
     },
     {
       "path": "docs/guide/03-understand.md",
-      "sha256": "9b75a90b06dfe08989dde9bf1c14cb997e5d4235e5e4e66d57c1e5948370d67f",
+      "sha256": "ece98be1ca3561d41e0aa73a48eaf20f41036cacc3ac95fed54bd52b3f26e6cc",
       "source": "pstack/docs/guide/03-understand.md",
       "sourceSha256": "1ac97cbad51c15c18b3aade8634d81c8bbe50d2b3135c75c113ddb2a6dcb7af0",
       "adaptation": "pstack/docs/guide/03-understand.md"
     },
     {
       "path": "docs/guide/04-design.md",
-      "sha256": "224d2457d4bbcc17e9552a392b44a3efbae0dfbc1bdd20c2021f0de924990536",
+      "sha256": "6d7ec637e12604a3e0564bc64737cdf577655ac1d7926762609bee2df274ad93",
       "source": "pstack/docs/guide/04-design.md",
       "sourceSha256": "cff616278303b533e617c5c4408af6d28895edbb8687d6ce99bb5dd1f6644a6c",
       "adaptation": "pstack/docs/guide/04-design.md"
     },
     {
       "path": "docs/guide/05-build-and-clean.md",
-      "sha256": "4d8de668b3ec7441054bbaa780ea4bcc8dc3e6e15345df104de0d6334f564066",
+      "sha256": "11736d3c7a06cfdd7afa633e06792c211dc6456282dd952099da80605440e533",
       "source": "pstack/docs/guide/05-build-and-clean.md",
       "sourceSha256": "1284e80595ae4f214dfa7c5c5f7758ff90a47b3273aa7b8142e51e574f5c5290",
       "adaptation": "pstack/docs/guide/05-build-and-clean.md"
     },
     {
       "path": "docs/guide/06-verify-and-ship.md",
-      "sha256": "5fa770b3b7665664c33fc51a9dd4116b94ce9cc29fe36bdb75304d05c35f2ac0",
+      "sha256": "8cc4fbd0b305815e545e5e493f16952faa52a87436d92a9b487fe9ac21ed8002",
       "source": "pstack/docs/guide/06-verify-and-ship.md",
       "sourceSha256": "9276f7a20f72c115536e0a12f08aa2e9699fcd7498c217d9a02a7149c7d3a4a8",
       "adaptation": "pstack/docs/guide/06-verify-and-ship.md"
     },
     {
       "path": "docs/guide/07-overnight.md",
-      "sha256": "db74752292e243bd1a5c6d022dd9f100ef36f2803ee0fe41d62f471b666f3d7b",
+      "sha256": "2471a2433f854aacb40922f11b58c5824913e9a25e323b36535b012a36407406",
       "source": "pstack/docs/guide/07-overnight.md",
       "sourceSha256": "b767a5dc5d7257efdb5cc8cfac92acfbb18fe8e023a3438339f4b45ce4a9264a",
       "adaptation": "pstack/docs/guide/07-overnight.md"
     },
     {
       "path": "docs/guide/08-principles.md",
-      "sha256": "e6b312cdc97f7d3cebcf854e4f61d5896f078a4681b637c1d792653197af6b3e",
+      "sha256": "f762fe7b2aa030a1bd0a7d519c0bc1b6c9f1b5fb833b53c687bc019976587840",
       "source": "pstack/docs/guide/08-principles.md",
       "sourceSha256": "0b26b85292f0c09768abe727c9e92987dbf81f5b439a4871034c2fd1c4cb1723",
       "adaptation": "pstack/docs/guide/08-principles.md"
     },
     {
       "path": "docs/guide/09-make-it-yours.md",
-      "sha256": "2e3ecb8f1e67ce3bbac6c0c2ecc84768a50529a074e60b7db09468181ccb8c44",
+      "sha256": "7a51c60b60f3bff4426e4518279fc58bb73ef202d8f24b72249f9e4c04d3f9be",
       "source": "pstack/docs/guide/09-make-it-yours.md",
       "sourceSha256": "50642f7f894988f7c263700f46478e7aed7eb94a257683350d91a9a0d70dc141",
       "adaptation": "pstack/docs/guide/09-make-it-yours.md"
     },
     {
       "path": "docs/guide/10-recipes-and-pitfalls.md",
-      "sha256": "4c0d89d139809d570cbf2d3c0e1c39ed268dd05ff81f1ee4f3ff19eb89096b93",
+      "sha256": "c13d890a9995009dc386c11daaba8feed60a357f5f502cd5c07e332e772b6c91",
       "source": "pstack/docs/guide/10-recipes-and-pitfalls.md",
       "sourceSha256": "006d8282db567aeae57398d5de1f3a802af2e3ac1a1f564198c384183fca3f92",
       "adaptation": "pstack/docs/guide/10-recipes-and-pitfalls.md"
@@ -517,7 +207,7 @@
     },
     {
       "path": "docs/guide/README.md",
-      "sha256": "072276f805aacc0ab2c9d74513f30e19e82e66156ad5d51ad9a04e12dafa9c07",
+      "sha256": "e12304f26808dc91c4e62d3301affdc8c544b86f1425a30a505c53b8886882c6",
       "source": "pstack/docs/guide/README.md",
       "sourceSha256": "5c888d034d38f380789fad57c2c6fa7307ace803a0622cdde9e57fa2afe182de",
       "adaptation": "pstack/docs/guide/README.md"
@@ -552,262 +242,10 @@
     },
     {
       "path": "README.md",
-      "sha256": "53f102b8eb467301b1207b1280ca97d59ccda5d0770d3ddc30ad20b37c145621",
+      "sha256": "f49df779e23215fded1a5d1d99ce247bd4f763411689c382bcfe674386672b08",
       "source": "raga bundle maintenance guide",
-      "sourceSha256": "53f102b8eb467301b1207b1280ca97d59ccda5d0770d3ddc30ad20b37c145621",
+      "sourceSha256": "f49df779e23215fded1a5d1d99ce247bd4f763411689c382bcfe674386672b08",
       "adaptation": "raga bundle maintenance guide"
-    },
-    {
-      "path": "skills/architect/references/design-red-flags.md",
-      "sha256": "d0e639e4cc588ec865f930d3a4111faad60987ae36925917e319d7ceca7c69ce",
-      "source": "pstack/skills/architect/references/design-red-flags.md",
-      "sourceSha256": "d0e639e4cc588ec865f930d3a4111faad60987ae36925917e319d7ceca7c69ce",
-      "adaptation": "pstack/skills/architect/references/design-red-flags.md"
-    },
-    {
-      "path": "skills/architect/references/rationale-template.md",
-      "sha256": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
-      "source": "pstack/skills/architect/references/rationale-template.md",
-      "sourceSha256": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
-      "adaptation": "pstack/skills/architect/references/rationale-template.md"
-    },
-    {
-      "path": "skills/architect/references/runner-prompt.md",
-      "sha256": "21dd5314aab778c5007228027a4591d97693fbec6ab86524037772b63f40948e",
-      "source": "pstack/skills/architect/references/runner-prompt.md",
-      "sourceSha256": "21dd5314aab778c5007228027a4591d97693fbec6ab86524037772b63f40948e",
-      "adaptation": "pstack/skills/architect/references/runner-prompt.md"
-    },
-    {
-      "path": "skills/architect/SKILL.md",
-      "sha256": "484a966b8e853cc4a5d4d1dfba7248d18cd77b0702aa308c0762531dab9fe877",
-      "source": "pstack/skills/architect/SKILL.md",
-      "sourceSha256": "31f8e97a52bfa5432edd61f68ade2a8632ef0bacbc2d2a6802d7a0e6821944ac",
-      "adaptation": "raga execution adaptation of skills/architect/SKILL.md"
-    },
-    {
-      "path": "skills/arena/SKILL.md",
-      "sha256": "8d8c604bae007c01018cd7479ba232b728edfc3531633cda653376d6c7f9769b",
-      "source": "pstack/skills/arena/SKILL.md",
-      "sourceSha256": "ed72f6c132b1ce3974d949581d0adc5dade424fe20793ac3b4c4fae22ecb9354",
-      "adaptation": "raga execution adaptation of skills/arena/SKILL.md"
-    },
-    {
-      "path": "skills/automate-me/SKILL.md",
-      "sha256": "f3ef392cc5f029ebed0b4186fc55b00dcfaa56c7021e186038be5c66322119d0",
-      "source": "pstack/skills/automate-me/SKILL.md",
-      "sourceSha256": "30b35f3628c4fd8c11af0ada06d14cdc3b28901810caca2480f627d4d21acfbe",
-      "adaptation": "raga execution adaptation of skills/automate-me/SKILL.md"
-    },
-    {
-      "path": "skills/benchmark-checklist/SKILL.md",
-      "sha256": "71cfac1dd60a48c73cec96b34bd271d7b9fc3346d29f4f5ce492f3aa40406bb1",
-      "source": "pstack/skills/benchmark-checklist/SKILL.md",
-      "sourceSha256": "ba109e96c8f6c1c391baccf19e5d11e14370df7b3f2605e1572cd565a6c0fca0",
-      "adaptation": "raga execution adaptation of skills/benchmark-checklist/SKILL.md"
-    },
-    {
-      "path": "skills/blast-radius/SKILL.md",
-      "sha256": "bebc4932c03ba1b9983763373ee0bb0ace1ed15aec41ceee05031bb6648b695d",
-      "source": "pstack/skills/blast-radius/SKILL.md",
-      "sourceSha256": "2e10745b97f5862323dcda3b29ca60d56b5c3c98e37020085d26b48efbe0a436",
-      "adaptation": "raga execution adaptation of skills/blast-radius/SKILL.md"
-    },
-    {
-      "path": "skills/bro/SKILL.md",
-      "sha256": "143b46ff92a2b4918efeaefcb5b9d22166bbd9a4d0ab072a0300d57d2ad14921",
-      "source": "pstack/skills/bro/SKILL.md",
-      "sourceSha256": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
-      "adaptation": "raga execution adaptation of skills/bro/SKILL.md"
-    },
-    {
-      "path": "skills/control-cli/SKILL.md",
-      "sha256": "8b7a6a7477a0c375cbc5fcc13220d1d2c3d09c5a65bf744160023f4ee95470f7",
-      "source": "cursor-team-kit/skills/control-cli/SKILL.md",
-      "sourceSha256": "13ac93e595bbda2000849bdb815d5f2ca03f7c2ca63788c8335f9212b9b422a2",
-      "adaptation": "raga execution adaptation of skills/control-cli/SKILL.md"
-    },
-    {
-      "path": "skills/control-ui/SKILL.md",
-      "sha256": "ece3dcea13e7bc505f47200206a3d3a51e636a3ec9815550593ea7b68f0895b5",
-      "source": "cursor-team-kit/skills/control-ui/SKILL.md",
-      "sourceSha256": "410cae25bdb1e5d2323b126abc5047b0213be7fdb0195710213fa8de8a751871",
-      "adaptation": "raga execution adaptation of skills/control-ui/SKILL.md"
-    },
-    {
-      "path": "skills/correct/SKILL.md",
-      "sha256": "3b6453b16a26cad5f7dc1a16489cdd8f437511b921d920022f8c1397938b0eee",
-      "source": "pstack/skills/correct/SKILL.md",
-      "sourceSha256": "e347045d00c967a0b831ef883cc6ac79d21329aa10b5968637df95de7febf0ba",
-      "adaptation": "raga execution adaptation of skills/correct/SKILL.md"
-    },
-    {
-      "path": "skills/create-formal-verification-skill/SKILL.md",
-      "sha256": "1b1e68c00b35a3311ed2926a643a9204c68f1cf7b85c6c635188ea3d66a88e9a",
-      "source": "pstack/skills/create-formal-verification-skill/SKILL.md",
-      "sourceSha256": "6c934cd15a9583533ff9b7a9cad62775d7e80402d26d3ba7f74f79ea21a1d8eb",
-      "adaptation": "raga execution adaptation of skills/create-formal-verification-skill/SKILL.md"
-    },
-    {
-      "path": "skills/create-skill/SKILL.md",
-      "sha256": "aedaf3dbbddb808144ecdd6051b4ec75865d6a0fe25a04661d86bdbb66301b8b",
-      "source": "raga native skill authoring",
-      "sourceSha256": "aedaf3dbbddb808144ecdd6051b4ec75865d6a0fe25a04661d86bdbb66301b8b",
-      "adaptation": "raga native skill authoring"
-    },
-    {
-      "path": "skills/create-verification-skill/references/feature-map-example/create-note.md",
-      "sha256": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
-      "source": "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md",
-      "sourceSha256": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
-      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md"
-    },
-    {
-      "path": "skills/create-verification-skill/references/feature-map-example/README.md",
-      "sha256": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
-      "source": "pstack/skills/create-verification-skill/references/feature-map-example/README.md",
-      "sourceSha256": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
-      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/README.md"
-    },
-    {
-      "path": "skills/create-verification-skill/references/feature-map-example/search.md",
-      "sha256": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
-      "source": "pstack/skills/create-verification-skill/references/feature-map-example/search.md",
-      "sourceSha256": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
-      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/search.md"
-    },
-    {
-      "path": "skills/create-verification-skill/SKILL.md",
-      "sha256": "75c2e0fd2509103e54282358c83930617dd3c1198d25fb3c1df818593be4c03a",
-      "source": "pstack/skills/create-verification-skill/SKILL.md",
-      "sourceSha256": "d353973547bf8ad8977eca645f4cd4feaed0d32f4b43d1448f906b0a76c4d694",
-      "adaptation": "raga execution adaptation of skills/create-verification-skill/SKILL.md"
-    },
-    {
-      "path": "skills/deslop/SKILL.md",
-      "sha256": "173f745ad865cb7c9cd5b1235dc5c2c015dd1338323e56b833c4162df3f8802b",
-      "source": "cursor-team-kit/skills/deslop/SKILL.md",
-      "sourceSha256": "2f7b7def74af7ed11f5b44b4d32f0f91fca8c5d1f92bf2171e8d12fd33a0f810",
-      "adaptation": "raga execution adaptation of skills/deslop/SKILL.md"
-    },
-    {
-      "path": "skills/figure-it-out/SKILL.md",
-      "sha256": "52574f6d3eb03e60d67f57be14e861e584a382fb3b44cc916e13e208c1c16b96",
-      "source": "pstack/skills/figure-it-out/SKILL.md",
-      "sourceSha256": "bdb23cdbd82a1e6af094b495691c832a6f7f3ab9706ba9edbeb664ef51a726e1",
-      "adaptation": "raga execution adaptation of skills/figure-it-out/SKILL.md"
-    },
-    {
-      "path": "skills/how/references/explainer-prompt.md",
-      "sha256": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
-      "source": "pstack/skills/how/references/explainer-prompt.md",
-      "sourceSha256": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
-      "adaptation": "pstack/skills/how/references/explainer-prompt.md"
-    },
-    {
-      "path": "skills/how/references/explorer-prompt.md",
-      "sha256": "6300128385ee940fd42ecb84b0e623435440a2dc283eae54ee4a52ba56947ba1",
-      "source": "pstack/skills/how/references/explorer-prompt.md",
-      "sourceSha256": "6300128385ee940fd42ecb84b0e623435440a2dc283eae54ee4a52ba56947ba1",
-      "adaptation": "pstack/skills/how/references/explorer-prompt.md"
-    },
-    {
-      "path": "skills/how/SKILL.md",
-      "sha256": "82b9531198f39cadb3127cf0ca0d32fa7b1b0f130e149088efc2039804c41909",
-      "source": "pstack/skills/how/SKILL.md",
-      "sourceSha256": "08a00079bb15b4258874ac3ff62d4ca7e94350ffedb521d0fd296dc9dd21904e",
-      "adaptation": "raga execution adaptation of skills/how/SKILL.md"
-    },
-    {
-      "path": "skills/in-your-own-words/SKILL.md",
-      "sha256": "56729894b34026630fadc81164d3c2c72b94d4bc841ac7926e809b3ac3fb4db1",
-      "source": "pstack/skills/in-your-own-words/SKILL.md",
-      "sourceSha256": "fa8ba74e27d7be371dc270ec78bbf816411477d0dfab185356c861ac8dd413ad",
-      "adaptation": "raga execution adaptation of skills/in-your-own-words/SKILL.md"
-    },
-    {
-      "path": "skills/interrogate/references/code-quality-review.md",
-      "sha256": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8",
-      "source": "pstack/skills/interrogate/references/code-quality-review.md",
-      "sourceSha256": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8",
-      "adaptation": "pstack/skills/interrogate/references/code-quality-review.md"
-    },
-    {
-      "path": "skills/interrogate/references/lead-judgment.md",
-      "sha256": "355f5195a76bc75a655125292369f2a8231a2b61fabe5188d8f1386060922b87",
-      "source": "pstack/skills/interrogate/references/lead-judgment.md",
-      "sourceSha256": "355f5195a76bc75a655125292369f2a8231a2b61fabe5188d8f1386060922b87",
-      "adaptation": "pstack/skills/interrogate/references/lead-judgment.md"
-    },
-    {
-      "path": "skills/interrogate/references/reviewer-prompt.md",
-      "sha256": "f6005cc2b535006fca97a96c5bfda49df57312eedf1ffd8d1aaaf3eb33817c25",
-      "source": "pstack/skills/interrogate/references/reviewer-prompt.md",
-      "sourceSha256": "f6005cc2b535006fca97a96c5bfda49df57312eedf1ffd8d1aaaf3eb33817c25",
-      "adaptation": "pstack/skills/interrogate/references/reviewer-prompt.md"
-    },
-    {
-      "path": "skills/interrogate/references/rubric.md",
-      "sha256": "0f9c6bdb0b96e26dbde5f6407f417e0c02f54080e7a1268d8994f3c3ec6c5ac0",
-      "source": "pstack/skills/interrogate/references/rubric.md",
-      "sourceSha256": "0f9c6bdb0b96e26dbde5f6407f417e0c02f54080e7a1268d8994f3c3ec6c5ac0",
-      "adaptation": "pstack/skills/interrogate/references/rubric.md"
-    },
-    {
-      "path": "skills/interrogate/SKILL.md",
-      "sha256": "c141749a382f667d6fff5e5e71e644704955bf66029774d277fef01ef63d8495",
-      "source": "pstack/skills/interrogate/SKILL.md",
-      "sourceSha256": "a16dfe179005abc22a4651b82f25b0c8ab953284276efe4e6dc341958fb63647",
-      "adaptation": "raga execution adaptation of skills/interrogate/SKILL.md"
-    },
-    {
-      "path": "skills/ketchup/SKILL.md",
-      "sha256": "f70abed2344ec4b02654f43e8559faceca730e3955c31286c00743a61cc559e7",
-      "source": "pstack/skills/ketchup/SKILL.md",
-      "sourceSha256": "f2923ffd14f6fc778f75a47aaed1f317fb5fd00b5701ca769d6446c74106dead",
-      "adaptation": "raga execution adaptation of skills/ketchup/SKILL.md"
-    },
-    {
-      "path": "skills/maintain-formal-verification-skill/SKILL.md",
-      "sha256": "b43349360a701140f70359c51c7f83783b98d64d7c19f361df4ebaa2eeb9ba1a",
-      "source": "pstack/skills/maintain-formal-verification-skill/SKILL.md",
-      "sourceSha256": "0c96f54293542d3818b68754562b338073958781a9684454611dca37592e2d2c",
-      "adaptation": "raga execution adaptation of skills/maintain-formal-verification-skill/SKILL.md"
-    },
-    {
-      "path": "skills/maintain-verification-skill/SKILL.md",
-      "sha256": "3893123600423c5beae648c30c2dc15a3ce8d6b6e8c2fb457cd40d943f4ba758",
-      "source": "pstack/skills/maintain-verification-skill/SKILL.md",
-      "sourceSha256": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
-      "adaptation": "raga execution adaptation of skills/maintain-verification-skill/SKILL.md"
-    },
-    {
-      "path": "skills/no-comments/SKILL.md",
-      "sha256": "116a469726d7352cc682987b985fcfe49a31a155774ea71ebc9e3ad75cc2b51b",
-      "source": "pstack/skills/no-comments/SKILL.md",
-      "sourceSha256": "078ecfe224eafbb017f6476870612838bf6dbe38c0b697e12f0c887d0313f17e",
-      "adaptation": "raga execution adaptation of skills/no-comments/SKILL.md"
-    },
-    {
-      "path": "skills/no-mistakes/SKILL.md",
-      "sha256": "4595e5aade2f4532f070807d650b40f133bc4275ded261253b6189d7264ee026",
-      "source": "raga authorization policy",
-      "sourceSha256": "4595e5aade2f4532f070807d650b40f133bc4275ded261253b6189d7264ee026",
-      "adaptation": "raga authorization policy"
-    },
-    {
-      "path": "skills/no-mistakes/upstream/SKILL.md",
-      "sha256": "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44",
-      "source": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md",
-      "sourceSha256": "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44",
-      "adaptation": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md"
-    },
-    {
-      "path": "skills/peak-setup/SKILL.md",
-      "sha256": "f2989def1dc7f2112e8583de961d8865f20fd6333cacab05f9a64ee0399c7681",
-      "source": "pstack/skills/setup-pstack/SKILL.md",
-      "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
-      "adaptation": "raga execution adaptation of skills/peak-setup/SKILL.md"
     },
     {
       "path": "skills/peak/playbooks/authoring-a-skill.md",
@@ -881,7 +319,7 @@
     },
     {
       "path": "skills/peak/playbooks/multi-phase-plan.md",
-      "sha256": "d52ea61e3b00d991d6323d1f3cd90fe8141054340b2c6f7a7b395f6b9f82dc62",
+      "sha256": "5bc9cb0a7aecb6964c91393c3068de23f14218ab09c2e27ebab0e8263de7a896",
       "source": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
       "sourceSha256": "5f239457bfdec3345c92caa06c59bf0257c662b89353f25a1c02ea942dcd00b1",
       "adaptation": "pstack/skills/poteto-mode/playbooks/multi-phase-plan.md"
@@ -971,11 +409,774 @@
       "adaptation": "raga ownership-aware cleanup adaptation"
     },
     {
+      "path": "skills/peak/references/architect/references/design-red-flags.md",
+      "sha256": "d0e639e4cc588ec865f930d3a4111faad60987ae36925917e319d7ceca7c69ce",
+      "source": "pstack/skills/architect/references/design-red-flags.md",
+      "sourceSha256": "d0e639e4cc588ec865f930d3a4111faad60987ae36925917e319d7ceca7c69ce",
+      "adaptation": "pstack/skills/architect/references/design-red-flags.md"
+    },
+    {
+      "path": "skills/peak/references/architect/references/rationale-template.md",
+      "sha256": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
+      "source": "pstack/skills/architect/references/rationale-template.md",
+      "sourceSha256": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
+      "adaptation": "pstack/skills/architect/references/rationale-template.md"
+    },
+    {
+      "path": "skills/peak/references/architect/references/runner-prompt.md",
+      "sha256": "21dd5314aab778c5007228027a4591d97693fbec6ab86524037772b63f40948e",
+      "source": "pstack/skills/architect/references/runner-prompt.md",
+      "sourceSha256": "21dd5314aab778c5007228027a4591d97693fbec6ab86524037772b63f40948e",
+      "adaptation": "pstack/skills/architect/references/runner-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/architect/SKILL.md",
+      "sha256": "484a966b8e853cc4a5d4d1dfba7248d18cd77b0702aa308c0762531dab9fe877",
+      "source": "pstack/skills/architect/SKILL.md",
+      "sourceSha256": "31f8e97a52bfa5432edd61f68ade2a8632ef0bacbc2d2a6802d7a0e6821944ac",
+      "adaptation": "raga execution adaptation of skills/peak/references/architect/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/arena/SKILL.md",
+      "sha256": "8d8c604bae007c01018cd7479ba232b728edfc3531633cda653376d6c7f9769b",
+      "source": "pstack/skills/arena/SKILL.md",
+      "sourceSha256": "ed72f6c132b1ce3974d949581d0adc5dade424fe20793ac3b4c4fae22ecb9354",
+      "adaptation": "raga execution adaptation of skills/peak/references/arena/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/automate-me/SKILL.md",
+      "sha256": "f3ef392cc5f029ebed0b4186fc55b00dcfaa56c7021e186038be5c66322119d0",
+      "source": "pstack/skills/automate-me/SKILL.md",
+      "sourceSha256": "30b35f3628c4fd8c11af0ada06d14cdc3b28901810caca2480f627d4d21acfbe",
+      "adaptation": "raga execution adaptation of skills/peak/references/automate-me/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/benchmark-checklist/SKILL.md",
+      "sha256": "71cfac1dd60a48c73cec96b34bd271d7b9fc3346d29f4f5ce492f3aa40406bb1",
+      "source": "pstack/skills/benchmark-checklist/SKILL.md",
+      "sourceSha256": "ba109e96c8f6c1c391baccf19e5d11e14370df7b3f2605e1572cd565a6c0fca0",
+      "adaptation": "raga execution adaptation of skills/peak/references/benchmark-checklist/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/blast-radius/SKILL.md",
+      "sha256": "bebc4932c03ba1b9983763373ee0bb0ace1ed15aec41ceee05031bb6648b695d",
+      "source": "pstack/skills/blast-radius/SKILL.md",
+      "sourceSha256": "2e10745b97f5862323dcda3b29ca60d56b5c3c98e37020085d26b48efbe0a436",
+      "adaptation": "raga execution adaptation of skills/peak/references/blast-radius/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/bro/SKILL.md",
+      "sha256": "143b46ff92a2b4918efeaefcb5b9d22166bbd9a4d0ab072a0300d57d2ad14921",
+      "source": "pstack/skills/bro/SKILL.md",
+      "sourceSha256": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
+      "adaptation": "raga execution adaptation of skills/peak/references/bro/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/control-cli/SKILL.md",
+      "sha256": "8b7a6a7477a0c375cbc5fcc13220d1d2c3d09c5a65bf744160023f4ee95470f7",
+      "source": "cursor-team-kit/skills/control-cli/SKILL.md",
+      "sourceSha256": "13ac93e595bbda2000849bdb815d5f2ca03f7c2ca63788c8335f9212b9b422a2",
+      "adaptation": "raga execution adaptation of skills/peak/references/control-cli/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/control-ui/SKILL.md",
+      "sha256": "ece3dcea13e7bc505f47200206a3d3a51e636a3ec9815550593ea7b68f0895b5",
+      "source": "cursor-team-kit/skills/control-ui/SKILL.md",
+      "sourceSha256": "410cae25bdb1e5d2323b126abc5047b0213be7fdb0195710213fa8de8a751871",
+      "adaptation": "raga execution adaptation of skills/peak/references/control-ui/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/correct/SKILL.md",
+      "sha256": "3b6453b16a26cad5f7dc1a16489cdd8f437511b921d920022f8c1397938b0eee",
+      "source": "pstack/skills/correct/SKILL.md",
+      "sourceSha256": "e347045d00c967a0b831ef883cc6ac79d21329aa10b5968637df95de7febf0ba",
+      "adaptation": "raga execution adaptation of skills/peak/references/correct/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/create-formal-verification-skill/SKILL.md",
+      "sha256": "1b1e68c00b35a3311ed2926a643a9204c68f1cf7b85c6c635188ea3d66a88e9a",
+      "source": "pstack/skills/create-formal-verification-skill/SKILL.md",
+      "sourceSha256": "6c934cd15a9583533ff9b7a9cad62775d7e80402d26d3ba7f74f79ea21a1d8eb",
+      "adaptation": "raga execution adaptation of skills/peak/references/create-formal-verification-skill/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/create-skill/SKILL.md",
+      "sha256": "f4d68d00a26f22f7b100ac40a614d70d4c7dd0721ef330af3406487239370c10",
+      "source": "raga native skill authoring",
+      "sourceSha256": "f4d68d00a26f22f7b100ac40a614d70d4c7dd0721ef330af3406487239370c10",
+      "adaptation": "raga native skill authoring"
+    },
+    {
+      "path": "skills/peak/references/create-verification-skill/references/feature-map-example/create-note.md",
+      "sha256": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md",
+      "sourceSha256": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
+      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/create-note.md"
+    },
+    {
+      "path": "skills/peak/references/create-verification-skill/references/feature-map-example/README.md",
+      "sha256": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/README.md",
+      "sourceSha256": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
+      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/README.md"
+    },
+    {
+      "path": "skills/peak/references/create-verification-skill/references/feature-map-example/search.md",
+      "sha256": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
+      "source": "pstack/skills/create-verification-skill/references/feature-map-example/search.md",
+      "sourceSha256": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
+      "adaptation": "pstack/skills/create-verification-skill/references/feature-map-example/search.md"
+    },
+    {
+      "path": "skills/peak/references/create-verification-skill/SKILL.md",
+      "sha256": "75c2e0fd2509103e54282358c83930617dd3c1198d25fb3c1df818593be4c03a",
+      "source": "pstack/skills/create-verification-skill/SKILL.md",
+      "sourceSha256": "d353973547bf8ad8977eca645f4cd4feaed0d32f4b43d1448f906b0a76c4d694",
+      "adaptation": "raga execution adaptation of skills/peak/references/create-verification-skill/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/deslop/SKILL.md",
+      "sha256": "173f745ad865cb7c9cd5b1235dc5c2c015dd1338323e56b833c4162df3f8802b",
+      "source": "cursor-team-kit/skills/deslop/SKILL.md",
+      "sourceSha256": "2f7b7def74af7ed11f5b44b4d32f0f91fca8c5d1f92bf2171e8d12fd33a0f810",
+      "adaptation": "raga execution adaptation of skills/peak/references/deslop/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/figure-it-out/SKILL.md",
+      "sha256": "52574f6d3eb03e60d67f57be14e861e584a382fb3b44cc916e13e208c1c16b96",
+      "source": "pstack/skills/figure-it-out/SKILL.md",
+      "sourceSha256": "bdb23cdbd82a1e6af094b495691c832a6f7f3ab9706ba9edbeb664ef51a726e1",
+      "adaptation": "raga execution adaptation of skills/peak/references/figure-it-out/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/how/references/explainer-prompt.md",
+      "sha256": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
+      "source": "pstack/skills/how/references/explainer-prompt.md",
+      "sourceSha256": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
+      "adaptation": "pstack/skills/how/references/explainer-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/how/references/explorer-prompt.md",
+      "sha256": "6300128385ee940fd42ecb84b0e623435440a2dc283eae54ee4a52ba56947ba1",
+      "source": "pstack/skills/how/references/explorer-prompt.md",
+      "sourceSha256": "6300128385ee940fd42ecb84b0e623435440a2dc283eae54ee4a52ba56947ba1",
+      "adaptation": "pstack/skills/how/references/explorer-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/how/SKILL.md",
+      "sha256": "82b9531198f39cadb3127cf0ca0d32fa7b1b0f130e149088efc2039804c41909",
+      "source": "pstack/skills/how/SKILL.md",
+      "sourceSha256": "08a00079bb15b4258874ac3ff62d4ca7e94350ffedb521d0fd296dc9dd21904e",
+      "adaptation": "raga execution adaptation of skills/peak/references/how/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/in-your-own-words/SKILL.md",
+      "sha256": "56729894b34026630fadc81164d3c2c72b94d4bc841ac7926e809b3ac3fb4db1",
+      "source": "pstack/skills/in-your-own-words/SKILL.md",
+      "sourceSha256": "fa8ba74e27d7be371dc270ec78bbf816411477d0dfab185356c861ac8dd413ad",
+      "adaptation": "raga execution adaptation of skills/peak/references/in-your-own-words/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/interrogate/references/code-quality-review.md",
+      "sha256": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8",
+      "source": "pstack/skills/interrogate/references/code-quality-review.md",
+      "sourceSha256": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8",
+      "adaptation": "pstack/skills/interrogate/references/code-quality-review.md"
+    },
+    {
+      "path": "skills/peak/references/interrogate/references/lead-judgment.md",
+      "sha256": "355f5195a76bc75a655125292369f2a8231a2b61fabe5188d8f1386060922b87",
+      "source": "pstack/skills/interrogate/references/lead-judgment.md",
+      "sourceSha256": "355f5195a76bc75a655125292369f2a8231a2b61fabe5188d8f1386060922b87",
+      "adaptation": "pstack/skills/interrogate/references/lead-judgment.md"
+    },
+    {
+      "path": "skills/peak/references/interrogate/references/reviewer-prompt.md",
+      "sha256": "f6005cc2b535006fca97a96c5bfda49df57312eedf1ffd8d1aaaf3eb33817c25",
+      "source": "pstack/skills/interrogate/references/reviewer-prompt.md",
+      "sourceSha256": "f6005cc2b535006fca97a96c5bfda49df57312eedf1ffd8d1aaaf3eb33817c25",
+      "adaptation": "pstack/skills/interrogate/references/reviewer-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/interrogate/references/rubric.md",
+      "sha256": "0f9c6bdb0b96e26dbde5f6407f417e0c02f54080e7a1268d8994f3c3ec6c5ac0",
+      "source": "pstack/skills/interrogate/references/rubric.md",
+      "sourceSha256": "0f9c6bdb0b96e26dbde5f6407f417e0c02f54080e7a1268d8994f3c3ec6c5ac0",
+      "adaptation": "pstack/skills/interrogate/references/rubric.md"
+    },
+    {
+      "path": "skills/peak/references/interrogate/SKILL.md",
+      "sha256": "c141749a382f667d6fff5e5e71e644704955bf66029774d277fef01ef63d8495",
+      "source": "pstack/skills/interrogate/SKILL.md",
+      "sourceSha256": "a16dfe179005abc22a4651b82f25b0c8ab953284276efe4e6dc341958fb63647",
+      "adaptation": "raga execution adaptation of skills/peak/references/interrogate/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/ketchup/SKILL.md",
+      "sha256": "f70abed2344ec4b02654f43e8559faceca730e3955c31286c00743a61cc559e7",
+      "source": "pstack/skills/ketchup/SKILL.md",
+      "sourceSha256": "f2923ffd14f6fc778f75a47aaed1f317fb5fd00b5701ca769d6446c74106dead",
+      "adaptation": "raga execution adaptation of skills/peak/references/ketchup/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/maintain-formal-verification-skill/SKILL.md",
+      "sha256": "b43349360a701140f70359c51c7f83783b98d64d7c19f361df4ebaa2eeb9ba1a",
+      "source": "pstack/skills/maintain-formal-verification-skill/SKILL.md",
+      "sourceSha256": "0c96f54293542d3818b68754562b338073958781a9684454611dca37592e2d2c",
+      "adaptation": "raga execution adaptation of skills/peak/references/maintain-formal-verification-skill/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/maintain-verification-skill/SKILL.md",
+      "sha256": "3893123600423c5beae648c30c2dc15a3ce8d6b6e8c2fb457cd40d943f4ba758",
+      "source": "pstack/skills/maintain-verification-skill/SKILL.md",
+      "sourceSha256": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
+      "adaptation": "raga execution adaptation of skills/peak/references/maintain-verification-skill/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/no-comments/SKILL.md",
+      "sha256": "116a469726d7352cc682987b985fcfe49a31a155774ea71ebc9e3ad75cc2b51b",
+      "source": "pstack/skills/no-comments/SKILL.md",
+      "sourceSha256": "078ecfe224eafbb017f6476870612838bf6dbe38c0b697e12f0c887d0313f17e",
+      "adaptation": "raga execution adaptation of skills/peak/references/no-comments/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/no-mistakes/SKILL.md",
+      "sha256": "4595e5aade2f4532f070807d650b40f133bc4275ded261253b6189d7264ee026",
+      "source": "raga authorization policy",
+      "sourceSha256": "4595e5aade2f4532f070807d650b40f133bc4275ded261253b6189d7264ee026",
+      "adaptation": "raga authorization policy"
+    },
+    {
+      "path": "skills/peak/references/no-mistakes/upstream/SKILL.md",
+      "sha256": "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44",
+      "source": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md",
+      "sourceSha256": "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44",
+      "adaptation": "no-mistakes@4822244e763fd4c3d7f48be6433f92df10bb5b33/skills/no-mistakes/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/peak-setup/SKILL.md",
+      "sha256": "f2989def1dc7f2112e8583de961d8865f20fd6333cacab05f9a64ee0399c7681",
+      "source": "pstack/skills/setup-pstack/SKILL.md",
+      "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
+      "adaptation": "raga execution adaptation of skills/peak/references/peak-setup/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/poteto-help/references/prompting.md",
+      "sha256": "3cba686394d0f34c724cd41df1fb93f972c59c3eaa05541449d2bad527506b8f",
+      "source": "pstack/skills/poteto-help/references/prompting.md",
+      "sourceSha256": "463f450c44a60afd001a2f69fdf8a5dea174351f339369b12ec3c41515e564d3",
+      "adaptation": "pstack/skills/poteto-help/references/prompting.md"
+    },
+    {
+      "path": "skills/peak/references/poteto-help/references/recipes.md",
+      "sha256": "32dee132ae627f7c44067f919a66da54e0ab0cdbf54a73cdeb3eb33f570d3473",
+      "source": "pstack/skills/poteto-help/references/recipes.md",
+      "sourceSha256": "f2d573014f72f7c798b1998b45f4360a8a83e7b8026c4ed9074e56c5a9d49338",
+      "adaptation": "pstack/skills/poteto-help/references/recipes.md"
+    },
+    {
+      "path": "skills/peak/references/poteto-help/SKILL.md",
+      "sha256": "63e68d94e28b31124f64575c563113079ca8e87734061edac14b1724b60c023a",
+      "source": "pstack/skills/poteto-help/SKILL.md",
+      "sourceSha256": "7022e2cd0d65d5964151444c4efa82a34792a6644210a0ba60d7d6cfa69c72b8",
+      "adaptation": "raga execution adaptation of skills/peak/references/poteto-help/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-attack-the-premise/SKILL.md",
+      "sha256": "d039ae048cabca10d5b8006f44e4596635d3c150cf00c44e3efe786d22847f60",
+      "source": "pstack/skills/principle-attack-the-premise/SKILL.md",
+      "sourceSha256": "6a932884daad4aa189e9b5d1665226bbc75621d4d2a398fd4003bebd382f4599",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-attack-the-premise/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-boundary-discipline/SKILL.md",
+      "sha256": "847db4104b4194a238a33db4b966ec3d44dc51909d0719fa59933510eb949de4",
+      "source": "pstack/skills/principle-boundary-discipline/SKILL.md",
+      "sourceSha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-boundary-discipline/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-build-the-lever/SKILL.md",
+      "sha256": "7582c98bf6233b76699a7c3794197f31f79fb16527f0220fdb27a817f2fd0922",
+      "source": "pstack/skills/principle-build-the-lever/SKILL.md",
+      "sourceSha256": "3434b0ad0c640c6f1d7960be7a8986c3bcdc14e26060360dec29903df60074ff",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-build-the-lever/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-encode-lessons-in-structure/SKILL.md",
+      "sha256": "a9746554ecd4962f3f13b7e23d9fc4a7c1cfe8797c908c1a0f379b210d4b8b09",
+      "source": "pstack/skills/principle-encode-lessons-in-structure/SKILL.md",
+      "sourceSha256": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-encode-lessons-in-structure/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-exhaust-the-design-space/SKILL.md",
+      "sha256": "8ed39b036d08a491eb49bee95f45ce7cfd18e4f5a13eadf18b8503f6a330d0ad",
+      "source": "pstack/skills/principle-exhaust-the-design-space/SKILL.md",
+      "sourceSha256": "2de83d99f93f60ec6313455b0bc9aa9f0bfb93dd59f414f403691322db00d4db",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-exhaust-the-design-space/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-experience-first/SKILL.md",
+      "sha256": "36172c4b2e9b3f90d5f44246c98ce17d542daacc49f7a5a13cb226641ea89412",
+      "source": "pstack/skills/principle-experience-first/SKILL.md",
+      "sourceSha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-experience-first/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-explain-the-number/SKILL.md",
+      "sha256": "032f4bb26d991874bdd70b79a1ae895ebc6faa22221ae153214a2dfa2e39f360",
+      "source": "pstack/skills/principle-explain-the-number/SKILL.md",
+      "sourceSha256": "cd5a25f9e7cf023627ccb470dc5faa97542f29b4319496a32b839a8e1e988047",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-explain-the-number/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-fix-root-causes/SKILL.md",
+      "sha256": "e4a2a4d3d1239d4b9ce893b830b76f70e5cfaa799e43327f4a09202dbb9d1118",
+      "source": "pstack/skills/principle-fix-root-causes/SKILL.md",
+      "sourceSha256": "8df3c8c3fe57eb0055a5c8efab8ab144557fdf301da70b1cdc77a3a3ef3f3052",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-fix-root-causes/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-foundational-thinking/SKILL.md",
+      "sha256": "a4c4ad44aa207da0dfa0aa7619c0ae13b59e7a23f145c20058b1c17c994c7704",
+      "source": "pstack/skills/principle-foundational-thinking/SKILL.md",
+      "sourceSha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-foundational-thinking/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-guard-the-context-window/SKILL.md",
+      "sha256": "81e4af6d37a6a7a0a1668502b5700813332ba8dda0c16d77b80492f58b2cb4cb",
+      "source": "pstack/skills/principle-guard-the-context-window/SKILL.md",
+      "sourceSha256": "af0b9dd70b43628ce4a59a4d332e9d9ad055084e460f430e7a757495c627e81a",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-guard-the-context-window/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-laziness-protocol/SKILL.md",
+      "sha256": "e908d0e56f0ed092df67b846cc9423e09186f12542fa3028b3ed08779e363998",
+      "source": "pstack/skills/principle-laziness-protocol/SKILL.md",
+      "sourceSha256": "1be6e7a435f26a75a76eb848b9c3d611b9977d0f5822361753244da25ca3ca45",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-laziness-protocol/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-make-operations-idempotent/SKILL.md",
+      "sha256": "617c0f9d09471adae06f3989a34360730a28cde3ee26beaa475906ddda716673",
+      "source": "pstack/skills/principle-make-operations-idempotent/SKILL.md",
+      "sourceSha256": "7aa9327cf1f1aa057e95d47a0a78bd88a8f9d556b608866fee939d455a53a019",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-make-operations-idempotent/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "sha256": "bc4dcadd7b362b7bdd8f4f9c8a44631bb82d7a35391cb0482f3a28a00b74e337",
+      "source": "pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "sourceSha256": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-migrate-callers-then-delete-legacy-apis/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-minimize-reader-load/SKILL.md",
+      "sha256": "590e37848219aa16cb96221f547ea4271d912d51cbf8991f4bcbf7587770f405",
+      "source": "pstack/skills/principle-minimize-reader-load/SKILL.md",
+      "sourceSha256": "1ea2b7fef2391cae5844c4efdbd59031f775e8a52d06b7495d707229a200dcca",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-minimize-reader-load/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-model-the-domain/SKILL.md",
+      "sha256": "68ba6dc28f078b0ee0cdc6a49d99c922ea888d0d6c6667c85db95718acbfe169",
+      "source": "pstack/skills/principle-model-the-domain/SKILL.md",
+      "sourceSha256": "52c0d85e0c3827c41c18299b642657d7b47eaf77b7b31609e42e0df42b84c75f",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-model-the-domain/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-never-block-on-the-human/SKILL.md",
+      "sha256": "e8969d99d4cc3bf734961e21101b33d502c649cde73feac058b7cc44a68c5cce",
+      "source": "pstack/skills/principle-never-block-on-the-human/SKILL.md",
+      "sourceSha256": "05030a7a083c337676f793881b4e93cd218e8f1dd676529f56e6ac1d3efb8d1f",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-never-block-on-the-human/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-outcome-oriented-execution/SKILL.md",
+      "sha256": "e3101374e5911b8953a753874e7c6e46f1ab09c9446fc613e9b97ec1de982e83",
+      "source": "pstack/skills/principle-outcome-oriented-execution/SKILL.md",
+      "sourceSha256": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-outcome-oriented-execution/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-prove-it-works/SKILL.md",
+      "sha256": "ed6dfa40faee7447a673b2d23a22fb2ea669ae16f2dc66ead5ca7bb555869e72",
+      "source": "pstack/skills/principle-prove-it-works/SKILL.md",
+      "sourceSha256": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-prove-it-works/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-redesign-from-first-principles/SKILL.md",
+      "sha256": "8830acd4f105644032ccf3a4a2a550af87bc39b6bbef082a194c1d5e6cd74d6c",
+      "source": "pstack/skills/principle-redesign-from-first-principles/SKILL.md",
+      "sourceSha256": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-redesign-from-first-principles/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-separate-before-serializing-shared-state/SKILL.md",
+      "sha256": "0b7f7524050c88b74d5cfa620b12b7f7ba7c534371a329c172ee628699d7a758",
+      "source": "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "sourceSha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-separate-before-serializing-shared-state/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-sequence-verifiable-units/SKILL.md",
+      "sha256": "fd4f8bb11e6275dc0732d57b4ecb8462b765294cd4c8c9565cc9c019bb12819c",
+      "source": "pstack/skills/principle-sequence-verifiable-units/SKILL.md",
+      "sourceSha256": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-sequence-verifiable-units/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-subtract-before-you-add/SKILL.md",
+      "sha256": "0f1347ef63db71e88a1d6d5fa55caed37a801776b777623943b1c028c138a23a",
+      "source": "pstack/skills/principle-subtract-before-you-add/SKILL.md",
+      "sourceSha256": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-subtract-before-you-add/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-test-behavior-not-implementation/SKILL.md",
+      "sha256": "d181f4a1d7baf05c5d64dc1253f17d08cdbe766ecc716878fe0b02d5d011a34d",
+      "source": "pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
+      "sourceSha256": "f7223698623b6a26fea49c751e466b38e6691b1f32ce841d3983e7ffbe2b74a6",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-test-behavior-not-implementation/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/principle-type-system-discipline/SKILL.md",
+      "sha256": "2cde0e1c2892aa145705b11def464381bf1113cf35ceac9184cf001057b0b6f1",
+      "source": "pstack/skills/principle-type-system-discipline/SKILL.md",
+      "sourceSha256": "5cdaf79785e3c12b2592b9469ee8c272143eb86ab7a18d8382197cea5fd30106",
+      "adaptation": "raga execution adaptation of skills/peak/references/principle-type-system-discipline/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/raga-runtime/managed-tools.mjs",
+      "sha256": "22fff227135648672380342d6f4270c18ae98733b00e096b21d373772fa2f63c",
+      "source": "raga explicit managed TLC provisioning",
+      "sourceSha256": "22fff227135648672380342d6f4270c18ae98733b00e096b21d373772fa2f63c",
+      "adaptation": "raga explicit managed TLC provisioning"
+    },
+    {
+      "path": "skills/peak/references/raga-runtime/raga_runtime.py",
+      "sha256": "5bb5fda3cb481df3dc149b88867a75c1efb27c612a0d3ee194d96c134035e638",
+      "source": "raga native Python adapter",
+      "sourceSha256": "5bb5fda3cb481df3dc149b88867a75c1efb27c612a0d3ee194d96c134035e638",
+      "adaptation": "raga native Python adapter"
+    },
+    {
+      "path": "skills/peak/references/raga-runtime/SKILL.md",
+      "sha256": "ef2891819b052f701bbd28b253612ffb76b46538d3f9c35ed4d5a7ef2f3fe342",
+      "source": "raga native adaptation",
+      "sourceSha256": "ef2891819b052f701bbd28b253612ffb76b46538d3f9c35ed4d5a7ef2f3fe342",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/peak/references/recall/SKILL.md",
+      "sha256": "0072729f36058d0e8dbf38a10299985be5e40b4cd0ce364a74010ff83dad4ed6",
+      "source": "pstack/skills/recall/SKILL.md",
+      "sourceSha256": "b0ceb996259c3404532f61e4b010df4e3d80d7ddbed85b3c302895723eb62a89",
+      "adaptation": "raga execution adaptation of skills/peak/references/recall/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/reflect/references/divergent-reviewer.md",
+      "sha256": "edc23a8b8dfeff2ecca8a3af1e46d9b494d6c6f036a08b1fe0e364b7d6225f10",
+      "source": "pstack/skills/reflect/references/divergent-reviewer.md",
+      "sourceSha256": "f6030d88e20e906ef5e2d9ba44cb013ce610c49c2fe2ef74c377d32e0dc9e939",
+      "adaptation": "pstack/skills/reflect/references/divergent-reviewer.md"
+    },
+    {
+      "path": "skills/peak/references/reflect/references/judgment-reviewer.md",
+      "sha256": "077c3ac27b260b97f00222b1cdf24758bfe15df6dc369be3f211febac74ffc42",
+      "source": "pstack/skills/reflect/references/judgment-reviewer.md",
+      "sourceSha256": "38f917619fbf346062d643e0ad6b12fc952d58678dfcbbf42ffcf6d8b9c08307",
+      "adaptation": "pstack/skills/reflect/references/judgment-reviewer.md"
+    },
+    {
+      "path": "skills/peak/references/reflect/references/synthesizer.md",
+      "sha256": "c835d97e7b778e1be3cc0c85935d7fe57ed5f3d98a4d89577b7aee4664266d8a",
+      "source": "pstack/skills/reflect/references/synthesizer.md",
+      "sourceSha256": "6af816963de74d1a1aef4070273c1ff533d2072732e488e159ddc0b299fec3cd",
+      "adaptation": "pstack/skills/reflect/references/synthesizer.md"
+    },
+    {
+      "path": "skills/peak/references/reflect/references/tooling-reviewer.md",
+      "sha256": "a1e5ea0c5cc0b6bc829ba4fffac79bc7050dbcdae716eb08c2fa62db55b210e5",
+      "source": "pstack/skills/reflect/references/tooling-reviewer.md",
+      "sourceSha256": "f81b8697e7366fbbc18feba52c6e3253a101f751091364ebc4396a1d9b5753b4",
+      "adaptation": "pstack/skills/reflect/references/tooling-reviewer.md"
+    },
+    {
+      "path": "skills/peak/references/reflect/SKILL.md",
+      "sha256": "731df5e6c71b91aa8665a273fac311aa31a77ef4df7634d80931e526fbb49676",
+      "source": "pstack/skills/reflect/SKILL.md",
+      "sourceSha256": "1f5a8c246cdee8251f8667d85bd5d97f6c2801f505843c26ddbd6c621632519b",
+      "adaptation": "raga scoped-history adaptation of skills/peak/references/reflect/SKILL.md"
+    },
+    {
       "path": "skills/peak/references/reviewer-triage.md",
       "sha256": "3e289b74ab3af740a36fbffa1d5a27722b8cbe58f92d86876bf90f295b663f67",
       "source": "pstack/skills/poteto-mode/references/bugbot-triage.md",
       "sourceSha256": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
       "adaptation": "pstack/skills/poteto-mode/references/bugbot-triage.md"
+    },
+    {
+      "path": "skills/peak/references/sharpen/SKILL.md",
+      "sha256": "425ebc4c2127145262fcc185d12cf1d08ed02ecc1b82c483dfd863933da32947",
+      "source": "pstack/skills/sharpen/SKILL.md",
+      "sourceSha256": "563dfc460c605d311e650726288e2f1cbd61eab817db178d6e7e29643e07e7a2",
+      "adaptation": "raga execution adaptation of skills/peak/references/sharpen/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/show-me-your-work/references/decision-log-template.tsv",
+      "sha256": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
+      "source": "pstack/skills/show-me-your-work/references/decision-log-template.tsv",
+      "sourceSha256": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
+      "adaptation": "pstack/skills/show-me-your-work/references/decision-log-template.tsv"
+    },
+    {
+      "path": "skills/peak/references/show-me-your-work/scripts/log.sh",
+      "sha256": "a65a4bc5fb7cdeadbdb7b7ff1ca4682f4d9c42420942b2977cd17b46c4ac338e",
+      "source": "pstack/skills/show-me-your-work/scripts/log.sh",
+      "sourceSha256": "a65a4bc5fb7cdeadbdb7b7ff1ca4682f4d9c42420942b2977cd17b46c4ac338e",
+      "adaptation": "pstack/skills/show-me-your-work/scripts/log.sh"
+    },
+    {
+      "path": "skills/peak/references/show-me-your-work/SKILL.md",
+      "sha256": "a716741518ff752532ab579144ef2705acecc8b48e6294e036572bd73603f287",
+      "source": "pstack/skills/show-me-your-work/SKILL.md",
+      "sourceSha256": "920a8217cbb62f92a2222fb81fc9eab17ecd554a0277e444a95a927195139bd1",
+      "adaptation": "raga scoped-history adaptation of skills/peak/references/show-me-your-work/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/chart-to-tla.mjs",
+      "sha256": "9f794e273d0729ae874d68a67bfa1df4ebddc12420b7ab5081fdf58dceb729e4",
+      "source": "pstack/skills/statechart/scripts/chart-to-tla.mjs",
+      "sourceSha256": "9f794e273d0729ae874d68a67bfa1df4ebddc12420b7ab5081fdf58dceb729e4",
+      "adaptation": "pstack/skills/statechart/scripts/chart-to-tla.mjs"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/compare-charts.mjs",
+      "sha256": "12f4dc4700093156978ef1785b92739c8cf1e8375b8d13201fcdc2006a20c43b",
+      "source": "pstack/skills/statechart/scripts/compare-charts.mjs",
+      "sourceSha256": "12f4dc4700093156978ef1785b92739c8cf1e8375b8d13201fcdc2006a20c43b",
+      "adaptation": "pstack/skills/statechart/scripts/compare-charts.mjs"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/lib.mjs",
+      "sha256": "8c6e8be74545160bce19fad359678e118b9449660e72f2b974d4e811ec0b13a1",
+      "source": "pstack/skills/statechart/scripts/lib.mjs",
+      "sourceSha256": "47731d9dba3fd831bb81b739af31f2dd80b7a25dd6fa6786ee3c0d531e1ab781",
+      "adaptation": "raga pinned TLC adapter"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/model/OutputFolder.cfg",
+      "sha256": "8b9662ab7d51de9d54f84abab02888822da9c01ce4f1b86a6453a8a513773995",
+      "source": "pstack/skills/statechart/scripts/model/OutputFolder.cfg",
+      "sourceSha256": "8b9662ab7d51de9d54f84abab02888822da9c01ce4f1b86a6453a8a513773995",
+      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.cfg"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/model/OutputFolder.map.mjs",
+      "sha256": "33f2ef1c2ba397573206640843fffbc228d066e53fe5ced779d82f99600f3fd8",
+      "source": "pstack/skills/statechart/scripts/model/OutputFolder.map.mjs",
+      "sourceSha256": "33f2ef1c2ba397573206640843fffbc228d066e53fe5ced779d82f99600f3fd8",
+      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.map.mjs"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/model/OutputFolder.tla",
+      "sha256": "75bef6811d9a8e56bd702fd8d782e52101918c8dc05c6cc9dc43d02b9fe1b56f",
+      "source": "pstack/skills/statechart/scripts/model/OutputFolder.tla",
+      "sourceSha256": "75bef6811d9a8e56bd702fd8d782e52101918c8dc05c6cc9dc43d02b9fe1b56f",
+      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.tla"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/statechart.mjs",
+      "sha256": "7341fff08e3e50b151b79954fad8a54da5f992c1eb16e0725521ef0acdbab02f",
+      "source": "pstack/skills/statechart/scripts/statechart.mjs",
+      "sourceSha256": "d352ca68fb05cef8673ce1b86ea516cc619ff6c1f4faea70233de59bcdf7a9b7",
+      "adaptation": "raga offline Mermaid adapter"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/test/statechart.test.mjs",
+      "sha256": "431c448e1576f4a0a1cbbfb8e762b90c1487a52312830257ffd82e03367ac4df",
+      "source": "pstack/skills/statechart/scripts/test/statechart.test.mjs",
+      "sourceSha256": "494119bb923d25876d4984c6831a6ffcbdfd697c5f834cd6e61121ca5530b83c",
+      "adaptation": "raga managed formal-runtime fixtures"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/test/sync.mmd",
+      "sha256": "cb1f5387058a0f79d6187eb217690588a2e2d384637b4d53cbc4bb050c570757",
+      "source": "pstack/skills/statechart/scripts/test/sync.mmd",
+      "sourceSha256": "cb1f5387058a0f79d6187eb217690588a2e2d384637b4d53cbc4bb050c570757",
+      "adaptation": "pstack/skills/statechart/scripts/test/sync.mmd"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/test/upload.mmd",
+      "sha256": "bbc1fa70e26cbcbcc7cde5d8fb7eda26df34b6d973053bf13c40b18527ff0e76",
+      "source": "pstack/skills/statechart/scripts/test/upload.mmd",
+      "sourceSha256": "bbc1fa70e26cbcbcc7cde5d8fb7eda26df34b6d973053bf13c40b18527ff0e76",
+      "adaptation": "pstack/skills/statechart/scripts/test/upload.mmd"
+    },
+    {
+      "path": "skills/peak/references/statechart/scripts/tlc-to-chart.mjs",
+      "sha256": "ce41082fbc7aac05f135ccfd1e80705c60e5b38364187dd22fb1e27fdb017cd6",
+      "source": "pstack/skills/statechart/scripts/tlc-to-chart.mjs",
+      "sourceSha256": "ce41082fbc7aac05f135ccfd1e80705c60e5b38364187dd22fb1e27fdb017cd6",
+      "adaptation": "pstack/skills/statechart/scripts/tlc-to-chart.mjs"
+    },
+    {
+      "path": "skills/peak/references/statechart/SKILL.md",
+      "sha256": "f1fec43f38152b771537a3230f87d99138745c6614990b00f860d20bf6987d52",
+      "source": "pstack/skills/statechart/SKILL.md",
+      "sourceSha256": "ad01133b5578a6e1949edeee7ccd49f918c0a37c980e9b8adc1ca27c28fbd959",
+      "adaptation": "raga execution adaptation of skills/peak/references/statechart/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/swarm/SKILL.md",
+      "sha256": "0e3c9f50cc5f1b7d5a6066e3f6267f462a9b5c74089ab80d3fb4b11a280b7054",
+      "source": "pstack/skills/swarm/SKILL.md",
+      "sourceSha256": "031657cb81e490f9aed5c75d6ff2a4fda35ccafbaf72be604e59481cc4080cdc",
+      "adaptation": "raga execution adaptation of skills/peak/references/swarm/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/tdd/SKILL.md",
+      "sha256": "75992766bfee8c8a6fd4eed4074ccda99ac25394dd45671b3fee177e903bc390",
+      "source": "pstack/skills/tdd/SKILL.md",
+      "sourceSha256": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f",
+      "adaptation": "raga execution adaptation of skills/peak/references/tdd/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/teach/SKILL.md",
+      "sha256": "8d657260de58163db1df48b59b15d5cf8b9b24666140e7d1bd2fc176c6abc889",
+      "source": "pstack/skills/teach/SKILL.md",
+      "sourceSha256": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
+      "adaptation": "raga execution adaptation of skills/peak/references/teach/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/technical-writing/SKILL.md",
+      "sha256": "abe11a5912c4b644ffc27e44fcabd6dd5399f42e1e11f8d0c2e4997b888000ca",
+      "source": "pstack/skills/technical-writing/SKILL.md",
+      "sourceSha256": "61fe9c424a798ebf36ad94941f87be049cb8827bdf86d21474a0dde37b513c43",
+      "adaptation": "raga execution adaptation of skills/peak/references/technical-writing/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/typescript-best-practices/references/patterns.md",
+      "sha256": "12e70c9419a8b3f5d6a1ab80e272c1f00a43ac0b3bbf72d68199033570e5de77",
+      "source": "pstack/skills/typescript-best-practices/references/patterns.md",
+      "sourceSha256": "12e70c9419a8b3f5d6a1ab80e272c1f00a43ac0b3bbf72d68199033570e5de77",
+      "adaptation": "pstack/skills/typescript-best-practices/references/patterns.md"
+    },
+    {
+      "path": "skills/peak/references/typescript-best-practices/SKILL.md",
+      "sha256": "dfa5b360b981bbe6ff176efa8f4e2883a580b5551ef031460f49c0fd455ffcd2",
+      "source": "pstack/skills/typescript-best-practices/SKILL.md",
+      "sourceSha256": "ec1dac086d3708e5940d45d250c30a37dd953b4e3cb2ca0692f5851d7a039e27",
+      "adaptation": "raga execution adaptation of skills/peak/references/typescript-best-practices/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/unslop/SKILL.md",
+      "sha256": "8d081d19e29f0f9f3d3febe91fbf5c215174e063ae565e2cff5f6e00139c3053",
+      "source": "pstack/skills/unslop/SKILL.md",
+      "sourceSha256": "ccab208e315ce05e2fab8eeee2f7879f1289b5c6844840b2d307adf31c79144f",
+      "adaptation": "raga execution adaptation of skills/peak/references/unslop/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/verify-this/SKILL.md",
+      "sha256": "19eaf9411b1c37a443199ce2c65825e672a5303c6608f41f0a0ad15e6d8a5544",
+      "source": "cursor-team-kit/skills/verify-this/SKILL.md",
+      "sourceSha256": "c1c7b27c1133085bd3409c601ea12b6e6f61b4b23debcd52bc248fc01907e7de",
+      "adaptation": "raga execution adaptation of skills/peak/references/verify-this/SKILL.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/epistemics.md",
+      "sha256": "d54a2361b2d5973bc3fe2edf62f446d87935974d4b40d47f23b9529f956ca758",
+      "source": "pstack/skills/why/references/epistemics.md",
+      "sourceSha256": "d54a2361b2d5973bc3fe2edf62f446d87935974d4b40d47f23b9529f956ca758",
+      "adaptation": "pstack/skills/why/references/epistemics.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/investigator-prompt.md",
+      "sha256": "c44afba186f899094f3694e6c9d6de5d14ff7c4ce28b787a9f50fc789c9a7fc3",
+      "source": "pstack/skills/why/references/investigator-prompt.md",
+      "sourceSha256": "c44afba186f899094f3694e6c9d6de5d14ff7c4ce28b787a9f50fc789c9a7fc3",
+      "adaptation": "pstack/skills/why/references/investigator-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/source-playbook.md",
+      "sha256": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
+      "source": "pstack/skills/why/references/source-playbook.md",
+      "sourceSha256": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
+      "adaptation": "pstack/skills/why/references/source-playbook.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/code-archaeology.md",
+      "sha256": "a4a3970e9db448054aed676f3f7feeee667b4b69f0bd57c8fd72b751be687cc7",
+      "source": "pstack/skills/why/references/sources/code-archaeology.md",
+      "sourceSha256": "a4a3970e9db448054aed676f3f7feeee667b4b69f0bd57c8fd72b751be687cc7",
+      "adaptation": "pstack/skills/why/references/sources/code-archaeology.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/databricks.md",
+      "sha256": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
+      "source": "pstack/skills/why/references/sources/databricks.md",
+      "sourceSha256": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
+      "adaptation": "pstack/skills/why/references/sources/databricks.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/datadog.md",
+      "sha256": "b139faac5dc11b8f26c8255dce6033c1a6ac143b038d3dd103f2034c5dbec9cd",
+      "source": "pstack/skills/why/references/sources/datadog.md",
+      "sourceSha256": "b139faac5dc11b8f26c8255dce6033c1a6ac143b038d3dd103f2034c5dbec9cd",
+      "adaptation": "pstack/skills/why/references/sources/datadog.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/incident-postmortem.md",
+      "sha256": "bf2661f1a81c37700884a45b77d6289be0c802b065febced31990e6564510839",
+      "source": "pstack/skills/why/references/sources/incident-postmortem.md",
+      "sourceSha256": "bf2661f1a81c37700884a45b77d6289be0c802b065febced31990e6564510839",
+      "adaptation": "pstack/skills/why/references/sources/incident-postmortem.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/linear.md",
+      "sha256": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
+      "source": "pstack/skills/why/references/sources/linear.md",
+      "sourceSha256": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
+      "adaptation": "pstack/skills/why/references/sources/linear.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/notion.md",
+      "sha256": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
+      "source": "pstack/skills/why/references/sources/notion.md",
+      "sourceSha256": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
+      "adaptation": "pstack/skills/why/references/sources/notion.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/sentry.md",
+      "sha256": "2d4f83048eac1df530b399e2aed75dd7c9c18577b7665420aaeb96d0ceb0b702",
+      "source": "pstack/skills/why/references/sources/sentry.md",
+      "sourceSha256": "2d4f83048eac1df530b399e2aed75dd7c9c18577b7665420aaeb96d0ceb0b702",
+      "adaptation": "pstack/skills/why/references/sources/sentry.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/sources/slack.md",
+      "sha256": "3bc6309f5c7b26ace3b919dbd7f7b048861dd2020f910fe24f656cc74b3b661c",
+      "source": "pstack/skills/why/references/sources/slack.md",
+      "sourceSha256": "3bc6309f5c7b26ace3b919dbd7f7b048861dd2020f910fe24f656cc74b3b661c",
+      "adaptation": "pstack/skills/why/references/sources/slack.md"
+    },
+    {
+      "path": "skills/peak/references/why/references/synthesizer-prompt.md",
+      "sha256": "9da98d52166c6d010cec7c11c7bb0ca8af962070fb28c0a54a9736946c7258c8",
+      "source": "pstack/skills/why/references/synthesizer-prompt.md",
+      "sourceSha256": "11c62671aa7b7a6e3d36929ffe2b59bf95e6ca664eee4d93e6ee527dd3390ddb",
+      "adaptation": "pstack/skills/why/references/synthesizer-prompt.md"
+    },
+    {
+      "path": "skills/peak/references/why/SKILL.md",
+      "sha256": "da81f591547fa51f94b5ad25e16d408a8ea82832874e086441145e0c8f30834b",
+      "source": "pstack/skills/why/SKILL.md",
+      "sourceSha256": "144d42e7712723d763e607bc0a969e5f1cdf83ec7228519d87677cc534571bed",
+      "adaptation": "raga execution adaptation of skills/peak/references/why/SKILL.md"
     },
     {
       "path": "skills/peak/scripts/check-plan.mjs",
@@ -1189,521 +1390,10 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "2292f4415a5472de2548ac8db4761ce7d1cee5bc4eb4ed8f284c6716345342f9",
+      "sha256": "a45c66592cd4b3c5afcdac28e259ae37c76c43d006de664e6091dec0d778af83",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"
-    },
-    {
-      "path": "skills/poteto-help/references/prompting.md",
-      "sha256": "3cba686394d0f34c724cd41df1fb93f972c59c3eaa05541449d2bad527506b8f",
-      "source": "pstack/skills/poteto-help/references/prompting.md",
-      "sourceSha256": "463f450c44a60afd001a2f69fdf8a5dea174351f339369b12ec3c41515e564d3",
-      "adaptation": "pstack/skills/poteto-help/references/prompting.md"
-    },
-    {
-      "path": "skills/poteto-help/references/recipes.md",
-      "sha256": "32dee132ae627f7c44067f919a66da54e0ab0cdbf54a73cdeb3eb33f570d3473",
-      "source": "pstack/skills/poteto-help/references/recipes.md",
-      "sourceSha256": "f2d573014f72f7c798b1998b45f4360a8a83e7b8026c4ed9074e56c5a9d49338",
-      "adaptation": "pstack/skills/poteto-help/references/recipes.md"
-    },
-    {
-      "path": "skills/poteto-help/SKILL.md",
-      "sha256": "4b68cd93d3c09fb65a4ddf6f6d04f2dcc97548525419e66f4e2deac52624a1bf",
-      "source": "pstack/skills/poteto-help/SKILL.md",
-      "sourceSha256": "7022e2cd0d65d5964151444c4efa82a34792a6644210a0ba60d7d6cfa69c72b8",
-      "adaptation": "raga execution adaptation of skills/poteto-help/SKILL.md"
-    },
-    {
-      "path": "skills/principle-attack-the-premise/SKILL.md",
-      "sha256": "d039ae048cabca10d5b8006f44e4596635d3c150cf00c44e3efe786d22847f60",
-      "source": "pstack/skills/principle-attack-the-premise/SKILL.md",
-      "sourceSha256": "6a932884daad4aa189e9b5d1665226bbc75621d4d2a398fd4003bebd382f4599",
-      "adaptation": "raga execution adaptation of skills/principle-attack-the-premise/SKILL.md"
-    },
-    {
-      "path": "skills/principle-boundary-discipline/SKILL.md",
-      "sha256": "847db4104b4194a238a33db4b966ec3d44dc51909d0719fa59933510eb949de4",
-      "source": "pstack/skills/principle-boundary-discipline/SKILL.md",
-      "sourceSha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
-      "adaptation": "raga execution adaptation of skills/principle-boundary-discipline/SKILL.md"
-    },
-    {
-      "path": "skills/principle-build-the-lever/SKILL.md",
-      "sha256": "7582c98bf6233b76699a7c3794197f31f79fb16527f0220fdb27a817f2fd0922",
-      "source": "pstack/skills/principle-build-the-lever/SKILL.md",
-      "sourceSha256": "3434b0ad0c640c6f1d7960be7a8986c3bcdc14e26060360dec29903df60074ff",
-      "adaptation": "raga execution adaptation of skills/principle-build-the-lever/SKILL.md"
-    },
-    {
-      "path": "skills/principle-encode-lessons-in-structure/SKILL.md",
-      "sha256": "a9746554ecd4962f3f13b7e23d9fc4a7c1cfe8797c908c1a0f379b210d4b8b09",
-      "source": "pstack/skills/principle-encode-lessons-in-structure/SKILL.md",
-      "sourceSha256": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
-      "adaptation": "raga execution adaptation of skills/principle-encode-lessons-in-structure/SKILL.md"
-    },
-    {
-      "path": "skills/principle-exhaust-the-design-space/SKILL.md",
-      "sha256": "8ed39b036d08a491eb49bee95f45ce7cfd18e4f5a13eadf18b8503f6a330d0ad",
-      "source": "pstack/skills/principle-exhaust-the-design-space/SKILL.md",
-      "sourceSha256": "2de83d99f93f60ec6313455b0bc9aa9f0bfb93dd59f414f403691322db00d4db",
-      "adaptation": "raga execution adaptation of skills/principle-exhaust-the-design-space/SKILL.md"
-    },
-    {
-      "path": "skills/principle-experience-first/SKILL.md",
-      "sha256": "36172c4b2e9b3f90d5f44246c98ce17d542daacc49f7a5a13cb226641ea89412",
-      "source": "pstack/skills/principle-experience-first/SKILL.md",
-      "sourceSha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
-      "adaptation": "raga execution adaptation of skills/principle-experience-first/SKILL.md"
-    },
-    {
-      "path": "skills/principle-explain-the-number/SKILL.md",
-      "sha256": "032f4bb26d991874bdd70b79a1ae895ebc6faa22221ae153214a2dfa2e39f360",
-      "source": "pstack/skills/principle-explain-the-number/SKILL.md",
-      "sourceSha256": "cd5a25f9e7cf023627ccb470dc5faa97542f29b4319496a32b839a8e1e988047",
-      "adaptation": "raga execution adaptation of skills/principle-explain-the-number/SKILL.md"
-    },
-    {
-      "path": "skills/principle-fix-root-causes/SKILL.md",
-      "sha256": "e4a2a4d3d1239d4b9ce893b830b76f70e5cfaa799e43327f4a09202dbb9d1118",
-      "source": "pstack/skills/principle-fix-root-causes/SKILL.md",
-      "sourceSha256": "8df3c8c3fe57eb0055a5c8efab8ab144557fdf301da70b1cdc77a3a3ef3f3052",
-      "adaptation": "raga execution adaptation of skills/principle-fix-root-causes/SKILL.md"
-    },
-    {
-      "path": "skills/principle-foundational-thinking/SKILL.md",
-      "sha256": "a4c4ad44aa207da0dfa0aa7619c0ae13b59e7a23f145c20058b1c17c994c7704",
-      "source": "pstack/skills/principle-foundational-thinking/SKILL.md",
-      "sourceSha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
-      "adaptation": "raga execution adaptation of skills/principle-foundational-thinking/SKILL.md"
-    },
-    {
-      "path": "skills/principle-guard-the-context-window/SKILL.md",
-      "sha256": "81e4af6d37a6a7a0a1668502b5700813332ba8dda0c16d77b80492f58b2cb4cb",
-      "source": "pstack/skills/principle-guard-the-context-window/SKILL.md",
-      "sourceSha256": "af0b9dd70b43628ce4a59a4d332e9d9ad055084e460f430e7a757495c627e81a",
-      "adaptation": "raga execution adaptation of skills/principle-guard-the-context-window/SKILL.md"
-    },
-    {
-      "path": "skills/principle-laziness-protocol/SKILL.md",
-      "sha256": "e908d0e56f0ed092df67b846cc9423e09186f12542fa3028b3ed08779e363998",
-      "source": "pstack/skills/principle-laziness-protocol/SKILL.md",
-      "sourceSha256": "1be6e7a435f26a75a76eb848b9c3d611b9977d0f5822361753244da25ca3ca45",
-      "adaptation": "raga execution adaptation of skills/principle-laziness-protocol/SKILL.md"
-    },
-    {
-      "path": "skills/principle-make-operations-idempotent/SKILL.md",
-      "sha256": "617c0f9d09471adae06f3989a34360730a28cde3ee26beaa475906ddda716673",
-      "source": "pstack/skills/principle-make-operations-idempotent/SKILL.md",
-      "sourceSha256": "7aa9327cf1f1aa057e95d47a0a78bd88a8f9d556b608866fee939d455a53a019",
-      "adaptation": "raga execution adaptation of skills/principle-make-operations-idempotent/SKILL.md"
-    },
-    {
-      "path": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
-      "sha256": "bc4dcadd7b362b7bdd8f4f9c8a44631bb82d7a35391cb0482f3a28a00b74e337",
-      "source": "pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
-      "sourceSha256": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
-      "adaptation": "raga execution adaptation of skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md"
-    },
-    {
-      "path": "skills/principle-minimize-reader-load/SKILL.md",
-      "sha256": "590e37848219aa16cb96221f547ea4271d912d51cbf8991f4bcbf7587770f405",
-      "source": "pstack/skills/principle-minimize-reader-load/SKILL.md",
-      "sourceSha256": "1ea2b7fef2391cae5844c4efdbd59031f775e8a52d06b7495d707229a200dcca",
-      "adaptation": "raga execution adaptation of skills/principle-minimize-reader-load/SKILL.md"
-    },
-    {
-      "path": "skills/principle-model-the-domain/SKILL.md",
-      "sha256": "68ba6dc28f078b0ee0cdc6a49d99c922ea888d0d6c6667c85db95718acbfe169",
-      "source": "pstack/skills/principle-model-the-domain/SKILL.md",
-      "sourceSha256": "52c0d85e0c3827c41c18299b642657d7b47eaf77b7b31609e42e0df42b84c75f",
-      "adaptation": "raga execution adaptation of skills/principle-model-the-domain/SKILL.md"
-    },
-    {
-      "path": "skills/principle-never-block-on-the-human/SKILL.md",
-      "sha256": "e8969d99d4cc3bf734961e21101b33d502c649cde73feac058b7cc44a68c5cce",
-      "source": "pstack/skills/principle-never-block-on-the-human/SKILL.md",
-      "sourceSha256": "05030a7a083c337676f793881b4e93cd218e8f1dd676529f56e6ac1d3efb8d1f",
-      "adaptation": "raga execution adaptation of skills/principle-never-block-on-the-human/SKILL.md"
-    },
-    {
-      "path": "skills/principle-outcome-oriented-execution/SKILL.md",
-      "sha256": "e3101374e5911b8953a753874e7c6e46f1ab09c9446fc613e9b97ec1de982e83",
-      "source": "pstack/skills/principle-outcome-oriented-execution/SKILL.md",
-      "sourceSha256": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d",
-      "adaptation": "raga execution adaptation of skills/principle-outcome-oriented-execution/SKILL.md"
-    },
-    {
-      "path": "skills/principle-prove-it-works/SKILL.md",
-      "sha256": "ed6dfa40faee7447a673b2d23a22fb2ea669ae16f2dc66ead5ca7bb555869e72",
-      "source": "pstack/skills/principle-prove-it-works/SKILL.md",
-      "sourceSha256": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2",
-      "adaptation": "raga execution adaptation of skills/principle-prove-it-works/SKILL.md"
-    },
-    {
-      "path": "skills/principle-redesign-from-first-principles/SKILL.md",
-      "sha256": "8830acd4f105644032ccf3a4a2a550af87bc39b6bbef082a194c1d5e6cd74d6c",
-      "source": "pstack/skills/principle-redesign-from-first-principles/SKILL.md",
-      "sourceSha256": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
-      "adaptation": "raga execution adaptation of skills/principle-redesign-from-first-principles/SKILL.md"
-    },
-    {
-      "path": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
-      "sha256": "0b7f7524050c88b74d5cfa620b12b7f7ba7c534371a329c172ee628699d7a758",
-      "source": "pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
-      "sourceSha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
-      "adaptation": "raga execution adaptation of skills/principle-separate-before-serializing-shared-state/SKILL.md"
-    },
-    {
-      "path": "skills/principle-sequence-verifiable-units/SKILL.md",
-      "sha256": "fd4f8bb11e6275dc0732d57b4ecb8462b765294cd4c8c9565cc9c019bb12819c",
-      "source": "pstack/skills/principle-sequence-verifiable-units/SKILL.md",
-      "sourceSha256": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187",
-      "adaptation": "raga execution adaptation of skills/principle-sequence-verifiable-units/SKILL.md"
-    },
-    {
-      "path": "skills/principle-subtract-before-you-add/SKILL.md",
-      "sha256": "0f1347ef63db71e88a1d6d5fa55caed37a801776b777623943b1c028c138a23a",
-      "source": "pstack/skills/principle-subtract-before-you-add/SKILL.md",
-      "sourceSha256": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
-      "adaptation": "raga execution adaptation of skills/principle-subtract-before-you-add/SKILL.md"
-    },
-    {
-      "path": "skills/principle-test-behavior-not-implementation/SKILL.md",
-      "sha256": "d181f4a1d7baf05c5d64dc1253f17d08cdbe766ecc716878fe0b02d5d011a34d",
-      "source": "pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
-      "sourceSha256": "f7223698623b6a26fea49c751e466b38e6691b1f32ce841d3983e7ffbe2b74a6",
-      "adaptation": "raga execution adaptation of skills/principle-test-behavior-not-implementation/SKILL.md"
-    },
-    {
-      "path": "skills/principle-type-system-discipline/SKILL.md",
-      "sha256": "2cde0e1c2892aa145705b11def464381bf1113cf35ceac9184cf001057b0b6f1",
-      "source": "pstack/skills/principle-type-system-discipline/SKILL.md",
-      "sourceSha256": "5cdaf79785e3c12b2592b9469ee8c272143eb86ab7a18d8382197cea5fd30106",
-      "adaptation": "raga execution adaptation of skills/principle-type-system-discipline/SKILL.md"
-    },
-    {
-      "path": "skills/raga-runtime/managed-tools.mjs",
-      "sha256": "bf2333a8a17d5efa076b09cb52bf0e260bf0502fb294783eaa86667858ea27a4",
-      "source": "raga explicit managed TLC provisioning",
-      "sourceSha256": "bf2333a8a17d5efa076b09cb52bf0e260bf0502fb294783eaa86667858ea27a4",
-      "adaptation": "raga explicit managed TLC provisioning"
-    },
-    {
-      "path": "skills/raga-runtime/raga_runtime.py",
-      "sha256": "e5d35a9f46a6e6ee195008f7932927f20741daf7f3f53e5f890dc778ca242939",
-      "source": "raga native Python adapter",
-      "sourceSha256": "e5d35a9f46a6e6ee195008f7932927f20741daf7f3f53e5f890dc778ca242939",
-      "adaptation": "raga native Python adapter"
-    },
-    {
-      "path": "skills/raga-runtime/SKILL.md",
-      "sha256": "324fa57f5f46bc8247cb002262d4f57e093f13bffca8a217edad62ca9dc3be9e",
-      "source": "raga native adaptation",
-      "sourceSha256": "324fa57f5f46bc8247cb002262d4f57e093f13bffca8a217edad62ca9dc3be9e",
-      "adaptation": "raga native adaptation"
-    },
-    {
-      "path": "skills/recall/SKILL.md",
-      "sha256": "0072729f36058d0e8dbf38a10299985be5e40b4cd0ce364a74010ff83dad4ed6",
-      "source": "pstack/skills/recall/SKILL.md",
-      "sourceSha256": "b0ceb996259c3404532f61e4b010df4e3d80d7ddbed85b3c302895723eb62a89",
-      "adaptation": "raga execution adaptation of skills/recall/SKILL.md"
-    },
-    {
-      "path": "skills/reflect/references/divergent-reviewer.md",
-      "sha256": "edc23a8b8dfeff2ecca8a3af1e46d9b494d6c6f036a08b1fe0e364b7d6225f10",
-      "source": "pstack/skills/reflect/references/divergent-reviewer.md",
-      "sourceSha256": "f6030d88e20e906ef5e2d9ba44cb013ce610c49c2fe2ef74c377d32e0dc9e939",
-      "adaptation": "pstack/skills/reflect/references/divergent-reviewer.md"
-    },
-    {
-      "path": "skills/reflect/references/judgment-reviewer.md",
-      "sha256": "077c3ac27b260b97f00222b1cdf24758bfe15df6dc369be3f211febac74ffc42",
-      "source": "pstack/skills/reflect/references/judgment-reviewer.md",
-      "sourceSha256": "38f917619fbf346062d643e0ad6b12fc952d58678dfcbbf42ffcf6d8b9c08307",
-      "adaptation": "pstack/skills/reflect/references/judgment-reviewer.md"
-    },
-    {
-      "path": "skills/reflect/references/synthesizer.md",
-      "sha256": "c835d97e7b778e1be3cc0c85935d7fe57ed5f3d98a4d89577b7aee4664266d8a",
-      "source": "pstack/skills/reflect/references/synthesizer.md",
-      "sourceSha256": "6af816963de74d1a1aef4070273c1ff533d2072732e488e159ddc0b299fec3cd",
-      "adaptation": "pstack/skills/reflect/references/synthesizer.md"
-    },
-    {
-      "path": "skills/reflect/references/tooling-reviewer.md",
-      "sha256": "a1e5ea0c5cc0b6bc829ba4fffac79bc7050dbcdae716eb08c2fa62db55b210e5",
-      "source": "pstack/skills/reflect/references/tooling-reviewer.md",
-      "sourceSha256": "f81b8697e7366fbbc18feba52c6e3253a101f751091364ebc4396a1d9b5753b4",
-      "adaptation": "pstack/skills/reflect/references/tooling-reviewer.md"
-    },
-    {
-      "path": "skills/reflect/SKILL.md",
-      "sha256": "731df5e6c71b91aa8665a273fac311aa31a77ef4df7634d80931e526fbb49676",
-      "source": "pstack/skills/reflect/SKILL.md",
-      "sourceSha256": "1f5a8c246cdee8251f8667d85bd5d97f6c2801f505843c26ddbd6c621632519b",
-      "adaptation": "raga scoped-history adaptation of skills/reflect/SKILL.md"
-    },
-    {
-      "path": "skills/sharpen/SKILL.md",
-      "sha256": "425ebc4c2127145262fcc185d12cf1d08ed02ecc1b82c483dfd863933da32947",
-      "source": "pstack/skills/sharpen/SKILL.md",
-      "sourceSha256": "563dfc460c605d311e650726288e2f1cbd61eab817db178d6e7e29643e07e7a2",
-      "adaptation": "raga execution adaptation of skills/sharpen/SKILL.md"
-    },
-    {
-      "path": "skills/show-me-your-work/references/decision-log-template.tsv",
-      "sha256": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
-      "source": "pstack/skills/show-me-your-work/references/decision-log-template.tsv",
-      "sourceSha256": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
-      "adaptation": "pstack/skills/show-me-your-work/references/decision-log-template.tsv"
-    },
-    {
-      "path": "skills/show-me-your-work/scripts/log.sh",
-      "sha256": "a65a4bc5fb7cdeadbdb7b7ff1ca4682f4d9c42420942b2977cd17b46c4ac338e",
-      "source": "pstack/skills/show-me-your-work/scripts/log.sh",
-      "sourceSha256": "a65a4bc5fb7cdeadbdb7b7ff1ca4682f4d9c42420942b2977cd17b46c4ac338e",
-      "adaptation": "pstack/skills/show-me-your-work/scripts/log.sh"
-    },
-    {
-      "path": "skills/show-me-your-work/SKILL.md",
-      "sha256": "a716741518ff752532ab579144ef2705acecc8b48e6294e036572bd73603f287",
-      "source": "pstack/skills/show-me-your-work/SKILL.md",
-      "sourceSha256": "920a8217cbb62f92a2222fb81fc9eab17ecd554a0277e444a95a927195139bd1",
-      "adaptation": "raga scoped-history adaptation of skills/show-me-your-work/SKILL.md"
-    },
-    {
-      "path": "skills/statechart/scripts/chart-to-tla.mjs",
-      "sha256": "9f794e273d0729ae874d68a67bfa1df4ebddc12420b7ab5081fdf58dceb729e4",
-      "source": "pstack/skills/statechart/scripts/chart-to-tla.mjs",
-      "sourceSha256": "9f794e273d0729ae874d68a67bfa1df4ebddc12420b7ab5081fdf58dceb729e4",
-      "adaptation": "pstack/skills/statechart/scripts/chart-to-tla.mjs"
-    },
-    {
-      "path": "skills/statechart/scripts/compare-charts.mjs",
-      "sha256": "12f4dc4700093156978ef1785b92739c8cf1e8375b8d13201fcdc2006a20c43b",
-      "source": "pstack/skills/statechart/scripts/compare-charts.mjs",
-      "sourceSha256": "12f4dc4700093156978ef1785b92739c8cf1e8375b8d13201fcdc2006a20c43b",
-      "adaptation": "pstack/skills/statechart/scripts/compare-charts.mjs"
-    },
-    {
-      "path": "skills/statechart/scripts/lib.mjs",
-      "sha256": "8c6e8be74545160bce19fad359678e118b9449660e72f2b974d4e811ec0b13a1",
-      "source": "pstack/skills/statechart/scripts/lib.mjs",
-      "sourceSha256": "47731d9dba3fd831bb81b739af31f2dd80b7a25dd6fa6786ee3c0d531e1ab781",
-      "adaptation": "raga pinned TLC adapter"
-    },
-    {
-      "path": "skills/statechart/scripts/model/OutputFolder.cfg",
-      "sha256": "8b9662ab7d51de9d54f84abab02888822da9c01ce4f1b86a6453a8a513773995",
-      "source": "pstack/skills/statechart/scripts/model/OutputFolder.cfg",
-      "sourceSha256": "8b9662ab7d51de9d54f84abab02888822da9c01ce4f1b86a6453a8a513773995",
-      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.cfg"
-    },
-    {
-      "path": "skills/statechart/scripts/model/OutputFolder.map.mjs",
-      "sha256": "33f2ef1c2ba397573206640843fffbc228d066e53fe5ced779d82f99600f3fd8",
-      "source": "pstack/skills/statechart/scripts/model/OutputFolder.map.mjs",
-      "sourceSha256": "33f2ef1c2ba397573206640843fffbc228d066e53fe5ced779d82f99600f3fd8",
-      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.map.mjs"
-    },
-    {
-      "path": "skills/statechart/scripts/model/OutputFolder.tla",
-      "sha256": "75bef6811d9a8e56bd702fd8d782e52101918c8dc05c6cc9dc43d02b9fe1b56f",
-      "source": "pstack/skills/statechart/scripts/model/OutputFolder.tla",
-      "sourceSha256": "75bef6811d9a8e56bd702fd8d782e52101918c8dc05c6cc9dc43d02b9fe1b56f",
-      "adaptation": "pstack/skills/statechart/scripts/model/OutputFolder.tla"
-    },
-    {
-      "path": "skills/statechart/scripts/statechart.mjs",
-      "sha256": "7341fff08e3e50b151b79954fad8a54da5f992c1eb16e0725521ef0acdbab02f",
-      "source": "pstack/skills/statechart/scripts/statechart.mjs",
-      "sourceSha256": "d352ca68fb05cef8673ce1b86ea516cc619ff6c1f4faea70233de59bcdf7a9b7",
-      "adaptation": "raga offline Mermaid adapter"
-    },
-    {
-      "path": "skills/statechart/scripts/test/statechart.test.mjs",
-      "sha256": "431c448e1576f4a0a1cbbfb8e762b90c1487a52312830257ffd82e03367ac4df",
-      "source": "pstack/skills/statechart/scripts/test/statechart.test.mjs",
-      "sourceSha256": "494119bb923d25876d4984c6831a6ffcbdfd697c5f834cd6e61121ca5530b83c",
-      "adaptation": "raga managed formal-runtime fixtures"
-    },
-    {
-      "path": "skills/statechart/scripts/test/sync.mmd",
-      "sha256": "cb1f5387058a0f79d6187eb217690588a2e2d384637b4d53cbc4bb050c570757",
-      "source": "pstack/skills/statechart/scripts/test/sync.mmd",
-      "sourceSha256": "cb1f5387058a0f79d6187eb217690588a2e2d384637b4d53cbc4bb050c570757",
-      "adaptation": "pstack/skills/statechart/scripts/test/sync.mmd"
-    },
-    {
-      "path": "skills/statechart/scripts/test/upload.mmd",
-      "sha256": "bbc1fa70e26cbcbcc7cde5d8fb7eda26df34b6d973053bf13c40b18527ff0e76",
-      "source": "pstack/skills/statechart/scripts/test/upload.mmd",
-      "sourceSha256": "bbc1fa70e26cbcbcc7cde5d8fb7eda26df34b6d973053bf13c40b18527ff0e76",
-      "adaptation": "pstack/skills/statechart/scripts/test/upload.mmd"
-    },
-    {
-      "path": "skills/statechart/scripts/tlc-to-chart.mjs",
-      "sha256": "ce41082fbc7aac05f135ccfd1e80705c60e5b38364187dd22fb1e27fdb017cd6",
-      "source": "pstack/skills/statechart/scripts/tlc-to-chart.mjs",
-      "sourceSha256": "ce41082fbc7aac05f135ccfd1e80705c60e5b38364187dd22fb1e27fdb017cd6",
-      "adaptation": "pstack/skills/statechart/scripts/tlc-to-chart.mjs"
-    },
-    {
-      "path": "skills/statechart/SKILL.md",
-      "sha256": "f1fec43f38152b771537a3230f87d99138745c6614990b00f860d20bf6987d52",
-      "source": "pstack/skills/statechart/SKILL.md",
-      "sourceSha256": "ad01133b5578a6e1949edeee7ccd49f918c0a37c980e9b8adc1ca27c28fbd959",
-      "adaptation": "raga execution adaptation of skills/statechart/SKILL.md"
-    },
-    {
-      "path": "skills/swarm/SKILL.md",
-      "sha256": "0e3c9f50cc5f1b7d5a6066e3f6267f462a9b5c74089ab80d3fb4b11a280b7054",
-      "source": "pstack/skills/swarm/SKILL.md",
-      "sourceSha256": "031657cb81e490f9aed5c75d6ff2a4fda35ccafbaf72be604e59481cc4080cdc",
-      "adaptation": "raga execution adaptation of skills/swarm/SKILL.md"
-    },
-    {
-      "path": "skills/tdd/SKILL.md",
-      "sha256": "75992766bfee8c8a6fd4eed4074ccda99ac25394dd45671b3fee177e903bc390",
-      "source": "pstack/skills/tdd/SKILL.md",
-      "sourceSha256": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f",
-      "adaptation": "raga execution adaptation of skills/tdd/SKILL.md"
-    },
-    {
-      "path": "skills/teach/SKILL.md",
-      "sha256": "8d657260de58163db1df48b59b15d5cf8b9b24666140e7d1bd2fc176c6abc889",
-      "source": "pstack/skills/teach/SKILL.md",
-      "sourceSha256": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
-      "adaptation": "raga execution adaptation of skills/teach/SKILL.md"
-    },
-    {
-      "path": "skills/technical-writing/SKILL.md",
-      "sha256": "abe11a5912c4b644ffc27e44fcabd6dd5399f42e1e11f8d0c2e4997b888000ca",
-      "source": "pstack/skills/technical-writing/SKILL.md",
-      "sourceSha256": "61fe9c424a798ebf36ad94941f87be049cb8827bdf86d21474a0dde37b513c43",
-      "adaptation": "raga execution adaptation of skills/technical-writing/SKILL.md"
-    },
-    {
-      "path": "skills/typescript-best-practices/references/patterns.md",
-      "sha256": "12e70c9419a8b3f5d6a1ab80e272c1f00a43ac0b3bbf72d68199033570e5de77",
-      "source": "pstack/skills/typescript-best-practices/references/patterns.md",
-      "sourceSha256": "12e70c9419a8b3f5d6a1ab80e272c1f00a43ac0b3bbf72d68199033570e5de77",
-      "adaptation": "pstack/skills/typescript-best-practices/references/patterns.md"
-    },
-    {
-      "path": "skills/typescript-best-practices/SKILL.md",
-      "sha256": "dfa5b360b981bbe6ff176efa8f4e2883a580b5551ef031460f49c0fd455ffcd2",
-      "source": "pstack/skills/typescript-best-practices/SKILL.md",
-      "sourceSha256": "ec1dac086d3708e5940d45d250c30a37dd953b4e3cb2ca0692f5851d7a039e27",
-      "adaptation": "raga execution adaptation of skills/typescript-best-practices/SKILL.md"
-    },
-    {
-      "path": "skills/unslop/SKILL.md",
-      "sha256": "8d081d19e29f0f9f3d3febe91fbf5c215174e063ae565e2cff5f6e00139c3053",
-      "source": "pstack/skills/unslop/SKILL.md",
-      "sourceSha256": "ccab208e315ce05e2fab8eeee2f7879f1289b5c6844840b2d307adf31c79144f",
-      "adaptation": "raga execution adaptation of skills/unslop/SKILL.md"
-    },
-    {
-      "path": "skills/verify-this/SKILL.md",
-      "sha256": "19eaf9411b1c37a443199ce2c65825e672a5303c6608f41f0a0ad15e6d8a5544",
-      "source": "cursor-team-kit/skills/verify-this/SKILL.md",
-      "sourceSha256": "c1c7b27c1133085bd3409c601ea12b6e6f61b4b23debcd52bc248fc01907e7de",
-      "adaptation": "raga execution adaptation of skills/verify-this/SKILL.md"
-    },
-    {
-      "path": "skills/why/references/epistemics.md",
-      "sha256": "d54a2361b2d5973bc3fe2edf62f446d87935974d4b40d47f23b9529f956ca758",
-      "source": "pstack/skills/why/references/epistemics.md",
-      "sourceSha256": "d54a2361b2d5973bc3fe2edf62f446d87935974d4b40d47f23b9529f956ca758",
-      "adaptation": "pstack/skills/why/references/epistemics.md"
-    },
-    {
-      "path": "skills/why/references/investigator-prompt.md",
-      "sha256": "c44afba186f899094f3694e6c9d6de5d14ff7c4ce28b787a9f50fc789c9a7fc3",
-      "source": "pstack/skills/why/references/investigator-prompt.md",
-      "sourceSha256": "c44afba186f899094f3694e6c9d6de5d14ff7c4ce28b787a9f50fc789c9a7fc3",
-      "adaptation": "pstack/skills/why/references/investigator-prompt.md"
-    },
-    {
-      "path": "skills/why/references/source-playbook.md",
-      "sha256": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
-      "source": "pstack/skills/why/references/source-playbook.md",
-      "sourceSha256": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
-      "adaptation": "pstack/skills/why/references/source-playbook.md"
-    },
-    {
-      "path": "skills/why/references/sources/code-archaeology.md",
-      "sha256": "a4a3970e9db448054aed676f3f7feeee667b4b69f0bd57c8fd72b751be687cc7",
-      "source": "pstack/skills/why/references/sources/code-archaeology.md",
-      "sourceSha256": "a4a3970e9db448054aed676f3f7feeee667b4b69f0bd57c8fd72b751be687cc7",
-      "adaptation": "pstack/skills/why/references/sources/code-archaeology.md"
-    },
-    {
-      "path": "skills/why/references/sources/databricks.md",
-      "sha256": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
-      "source": "pstack/skills/why/references/sources/databricks.md",
-      "sourceSha256": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
-      "adaptation": "pstack/skills/why/references/sources/databricks.md"
-    },
-    {
-      "path": "skills/why/references/sources/datadog.md",
-      "sha256": "b139faac5dc11b8f26c8255dce6033c1a6ac143b038d3dd103f2034c5dbec9cd",
-      "source": "pstack/skills/why/references/sources/datadog.md",
-      "sourceSha256": "b139faac5dc11b8f26c8255dce6033c1a6ac143b038d3dd103f2034c5dbec9cd",
-      "adaptation": "pstack/skills/why/references/sources/datadog.md"
-    },
-    {
-      "path": "skills/why/references/sources/incident-postmortem.md",
-      "sha256": "bf2661f1a81c37700884a45b77d6289be0c802b065febced31990e6564510839",
-      "source": "pstack/skills/why/references/sources/incident-postmortem.md",
-      "sourceSha256": "bf2661f1a81c37700884a45b77d6289be0c802b065febced31990e6564510839",
-      "adaptation": "pstack/skills/why/references/sources/incident-postmortem.md"
-    },
-    {
-      "path": "skills/why/references/sources/linear.md",
-      "sha256": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
-      "source": "pstack/skills/why/references/sources/linear.md",
-      "sourceSha256": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
-      "adaptation": "pstack/skills/why/references/sources/linear.md"
-    },
-    {
-      "path": "skills/why/references/sources/notion.md",
-      "sha256": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
-      "source": "pstack/skills/why/references/sources/notion.md",
-      "sourceSha256": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
-      "adaptation": "pstack/skills/why/references/sources/notion.md"
-    },
-    {
-      "path": "skills/why/references/sources/sentry.md",
-      "sha256": "2d4f83048eac1df530b399e2aed75dd7c9c18577b7665420aaeb96d0ceb0b702",
-      "source": "pstack/skills/why/references/sources/sentry.md",
-      "sourceSha256": "2d4f83048eac1df530b399e2aed75dd7c9c18577b7665420aaeb96d0ceb0b702",
-      "adaptation": "pstack/skills/why/references/sources/sentry.md"
-    },
-    {
-      "path": "skills/why/references/sources/slack.md",
-      "sha256": "3bc6309f5c7b26ace3b919dbd7f7b048861dd2020f910fe24f656cc74b3b661c",
-      "source": "pstack/skills/why/references/sources/slack.md",
-      "sourceSha256": "3bc6309f5c7b26ace3b919dbd7f7b048861dd2020f910fe24f656cc74b3b661c",
-      "adaptation": "pstack/skills/why/references/sources/slack.md"
-    },
-    {
-      "path": "skills/why/references/synthesizer-prompt.md",
-      "sha256": "9da98d52166c6d010cec7c11c7bb0ca8af962070fb28c0a54a9736946c7258c8",
-      "source": "pstack/skills/why/references/synthesizer-prompt.md",
-      "sourceSha256": "11c62671aa7b7a6e3d36929ffe2b59bf95e6ca664eee4d93e6ee527dd3390ddb",
-      "adaptation": "pstack/skills/why/references/synthesizer-prompt.md"
-    },
-    {
-      "path": "skills/why/SKILL.md",
-      "sha256": "da81f591547fa51f94b5ad25e16d408a8ea82832874e086441145e0c8f30834b",
-      "source": "pstack/skills/why/SKILL.md",
-      "sourceSha256": "144d42e7712723d763e607bc0a969e5f1cdf83ec7228519d87677cc534571bed",
-      "adaptation": "raga execution adaptation of skills/why/SKILL.md"
     }
   ],
   "exclusions": [

@@ -10,7 +10,7 @@ if (args[0] !== "provision-tla" || !args.includes("--approved") || !args.include
   throw new Error("Operator use: node managed-tools.mjs provision-tla --root <absolute supervisor runtime directory> --approved");
 }
 if (process.env.NO_MISTAKES_GATE || process.env.RAGA_VALIDATION_STEP) throw new Error("Nested validation agents cannot provision runtimes");
-const harness = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const harness = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const root = resolve(directory);
 const within = relative(harness, root);
 if (!within || (!within.startsWith(".." + sep) && within !== ".." && !isAbsolute(within))) throw new Error("Runtime provisioning cannot write a pinned harness");

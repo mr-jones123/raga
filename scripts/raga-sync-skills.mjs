@@ -11,13 +11,18 @@ const RENAMED_SKILLS = new Map([
   ["setup-pstack", "peak-setup"],
 ]);
 const renameSkill = (name) => RENAMED_SKILLS.get(name) ?? name;
+/** peak is the only installed skill. Every other skill becomes a reference under it. */
+const REFERENCE_ROOT = "skills/peak/references";
+const allSkills = [];
+const skillDestination = (name) => (name === "peak" ? "skills/peak" : `${REFERENCE_ROOT}/${name}`);
+const referencePath = (name) => `${REFERENCE_ROOT}/${name}/SKILL.md`;
 const nmCommit = "4822244e763fd4c3d7f48be6433f92df10bb5b33";
 const [source, noMistakes, commander] = process.argv.slice(2).map((path) => resolve(path));
 if (!source || !noMistakes || !commander) throw new Error("Usage: node scripts/raga-sync-skills.mjs <pinned cursor/plugins tree> <pinned no-mistakes tree> <commander 14.0.0 package tree>");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../packages/coding-agent/bundled-skills");
 const previousFiles = JSON.parse(readFileSync(join(root, "bundle.json"), "utf8")).files;
 const sourceHashes = new Map(previousFiles.map((entry) => [entry.source, entry.sourceSha256]));
-const manifest = { schemaVersion: 1, adaptationRevision: "raga-2", sources: [
+const manifest = { schemaVersion: 1, adaptationRevision: "raga-3", sources: [
   { repository: "https://github.com/cursor/plugins", commit, license: "licenses/pstack", companionsLicense: "licenses/cursor-team-kit" },
   { repository: "https://github.com/kunchenguid/no-mistakes", commit: nmCommit, tag: "v1.84.0", license: "licenses/no-mistakes" },
   { repository: "https://github.com/tj/commander.js", version: "14.0.0", commit: "395cf7145fe28122f5a69026b310e02df114f907", integrity: "sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==", license: "licenses/commander" },
@@ -169,13 +174,14 @@ const names = readdirSync(upstreamSkills).filter((name) => name !== "make-bot-ui
 if (names.length !== 56 || names.filter((name) => name.startsWith("principle-")).length !== 24) throw new Error("Source is not the pinned 56-skill portable inventory");
 for (const name of names) {
   const shipped = renameSkill(name);
-  copyTree(join(upstreamSkills, name), `skills/${shipped}`, `pstack/skills/${name}`);
-  manifest.skills.push({ name: shipped, path: `skills/${shipped}/SKILL.md`, source: "pstack" });
+  copyTree(join(upstreamSkills, name), skillDestination(shipped), `pstack/skills/${name}`);
+  allSkills.push({ name: shipped, path: `${skillDestination(shipped)}/SKILL.md`, source: "pstack" });
 }
 for (const name of ["deslop", "control-cli", "control-ui", "verify-this"]) {
-  copyTree(join(source, "cursor-team-kit/skills", name), `skills/${name}`, `cursor-team-kit/skills/${name}`);
-  manifest.skills.push({ name, path: `skills/${name}/SKILL.md`, source: "cursor-team-kit" });
+  copyTree(join(source, "cursor-team-kit/skills", name), skillDestination(name), `cursor-team-kit/skills/${name}`);
+  allSkills.push({ name, path: `${skillDestination(name)}/SKILL.md`, source: "cursor-team-kit" });
 }
+manifest.skills.push({ name: "peak", path: "skills/peak/SKILL.md", source: "pstack" });
 copyTree(join(source, "pstack/docs/guide"), "docs/guide", "pstack/docs/guide");
 for (const name of ["pstack", "cursor-team-kit"]) emit(`licenses/${name}`, readFileSync(join(source, name, "LICENSE")), `${name}/LICENSE`);
 emit("licenses/no-mistakes", readFileSync(join(noMistakes, "LICENSE")), "no-mistakes/LICENSE");
@@ -219,18 +225,18 @@ emit(storePath, store.toString().replace(
   }
 }`,
 ), "raga Node erasable-syntax adaptation", store);
-const chartPath = "skills/statechart/scripts/statechart.mjs";
+const chartPath = "skills/peak/references/statechart/scripts/statechart.mjs";
 const chart = files.get(chartPath);
 emit(chartPath, chart.toString().replaceAll("npx @mermaid-js/mermaid-cli", "the managed MERMAID_CLI executable")
   .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar")
   .replace('"npx",\n      ["-y", "@mermaid-js/mermaid-cli",', 'process.env.MERMAID_CLI || "mmdc",\n      ['), "raga offline Mermaid adapter", chart);
-const tlcPath = "skills/statechart/scripts/lib.mjs";
+const tlcPath = "skills/peak/references/statechart/scripts/lib.mjs";
 const tlc = files.get(tlcPath);
 emit(tlcPath, 'import { createHash } from "node:crypto";\n' + tlc.toString().replace(
   '  return { jar: TLA2TOOLS, java: JAVA || "java" };',
   '  if (createHash("sha256").update(fs.readFileSync(TLA2TOOLS)).digest("hex") !== "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f") throw new Error("TLC checksum mismatch. Request managed provisioning of TLA+ v1.8.0.");\n  return { jar: TLA2TOOLS, java: JAVA || "java" };'
 ).replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar"), "raga pinned TLC adapter", tlc);
-const chartTestsPath = "skills/statechart/scripts/test/statechart.test.mjs";
+const chartTestsPath = "skills/peak/references/statechart/scripts/test/statechart.test.mjs";
 const chartTests = files.get(chartTestsPath);
 emit(chartTestsPath, chartTests.toString()
   .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar")
@@ -252,7 +258,7 @@ Use the Python tool. It owns one persistent kernel per session. Load this adapte
 
 Load \`raga_runtime.py\` beside this skill with \`exec(await read(absolute_helper_path), globals())\`, then call \`await run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False)\`. The resource root is the session's pinned harness path. Independent calls run with \`await asyncio.gather(...)\`. Writing children require \`read_only=False, details=True\` and receive isolated application workspaces from the supervisor. A context value is data, never a permission grant. The supervisor pins every child to the parent's harness revision.
 
-Child specifications are in \`../../agents/\`. \`poteto-agent\` carries the engineering style. \`comment-sicko\` reviews comments. \`worker\` handles general tasks. Model selectors are real provider/model strings from the configured registry. \`None\` inherits the parent. Role settings live in \`agents/model-roles.json\` in a candidate revision. When different review seats resolve to the same family, report that the review is not model-diverse. Do not invent aliases or silently replace a rejected model.
+Child specifications are in \`../../../agents/\`. \`poteto-agent\` carries the engineering style. \`comment-sicko\` reviews comments. \`worker\` handles general tasks. Model selectors are real provider/model strings from the configured registry. \`None\` inherits the parent. Role settings live in \`agents/model-roles.json\` in a candidate revision. When different review seats resolve to the same family, report that the review is not model-diverse. Do not invent aliases or silently replace a rejected model.
 
 \`answer['content']\` and \`answer['ready'] = True\` return a child result. The native \`rlm_query\` API returns text by default. \`details=True\` returns the supervisor's workspace and change evidence. Never promise a worktree from a plain text answer.
 
@@ -274,8 +280,8 @@ TLC is pinned to v1.8.0 with SHA-256 d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4
 
 Node 22.19.0 or newer runs the shipped operational helpers. Commander 14.0.0 and its MIT license are vendored, so helper startup never installs npm packages. \`await capability_report()\` checks available local commands without installing software. Terminal verification uses an existing repo harness or Python's standard pty module. Browser verification requires the repo's pinned Playwright and managed browser installation. Ask for approved setup when absent; never run an unpinned npx download. TLA+ requires a digest-verified tla2tools.jar and an approved Java runtime, supplied by the operator through TLA2TOOLS and JAVA. Mermaid PNG rendering uses a provisioned MERMAID_CLI path, never a runtime download. GitHub and other optional integrations require their explicit tools and authentication. An absent optional capability is a prerequisite report, not a successful check.
 `;
-emit("skills/raga-runtime/SKILL.md", runtimeSkill, "raga native adaptation");
-emit("skills/raga-runtime/raga_runtime.py", `import asyncio
+emit("skills/peak/references/raga-runtime/SKILL.md", runtimeSkill, "raga native adaptation");
+emit("skills/peak/references/raga-runtime/raga_runtime.py", `import asyncio
 import json
 import os
 import shlex
@@ -293,7 +299,8 @@ async def run_child(spec, task, resource_root, context_data=None, model=None, ma
         raise ValueError("Child instructions must stay in the pinned resource root")
     instructions = await read(root + "/" + definition["instructions"])
     for name in definition["skills"]:
-        instructions += "\\n\\n" + await read(root + "/skills/" + name + "/SKILL.md")
+        path = root + ("/skills/peak/SKILL.md" if name == "peak" else "/skills/peak/references/" + name + "/SKILL.md")
+        instructions += "\\n\\n" + await read(path)
     roles = json.loads(await read(root + "/agents/model-roles.json"))
     if model is None:
         model = roles.get(definition["modelRole"])
@@ -329,14 +336,13 @@ description: Author or revise a portable Agent Skills workflow in a candidate ha
 
 Define the trigger, input data, observable result, dependencies, side effects, approval boundaries, and failure behavior. Read nearby skills before choosing a shape. Use the native adapter at [raga-runtime](../raga-runtime/SKILL.md).
 
-Request a candidate with \`candidate = await instance.candidate_create()\`. Read an existing resource with \`await instance.candidate_read(candidate['id'], path)\`. Write the proposed text with \`await instance.candidate_write(candidate['id'], path, content)\`. Never edit an accepted revision or a global skill installation. Use \`skills/<name>/SKILL.md\`, with lowercase hyphenated name and a description in YAML frontmatter. Keep references and helpers beside the skill. Resolve relative references from that directory.
+Request a candidate with \`candidate = await instance.candidate_create()\`. Read an existing resource with \`await instance.candidate_read(candidate['id'], path)\`. Write the proposed text with \`await instance.candidate_write(candidate['id'], path, content)\`. Never edit an accepted revision or a global skill installation. Use \`skills/peak/references/<name>/SKILL.md\`, with a lowercase hyphenated name and a description in YAML frontmatter. Keep helpers beside the reference. Resolve relative paths from that directory. Add the new reference to the index in \`skills/peak/SKILL.md\`.
 
 Exercise success, input variation, failure, and ambiguous cases with real input. Executable Python helpers must pass fresh sandboxed interpreter probes without session globals. Record dependencies and external effects. A source-text assertion does not prove behavior. An unsupported capability reports its setup prerequisites.
 
 Commit through \`await instance.candidate_commit(candidate['id'], message)\` and hand the candidate ID and evidence to the user. Promotion belongs to the trusted supervisor and explicit user approval. Host extension activation requires separate review. A skill cannot grant itself network or publication authority.
 `;
-emit("skills/create-skill/SKILL.md", authoring, "raga native skill authoring");
-for (const name of ["raga-runtime", "create-skill"]) manifest.skills.push({ name, path: `skills/${name}/SKILL.md`, source: "raga" });
+emit("skills/peak/references/create-skill/SKILL.md", authoring, "raga native skill authoring");
 for (const name of ["poteto-agent", "comment-sicko"]) {
   const original = readFileSync(join(source, "pstack/agents", `${name}.md`));
   const native = original.toString().replace(/Use the absolute path your parent gave you[\s\S]*?If no such file exists, stop and tell your parent\./, "The native helper supplies the pinned resource root and the complete required skill bodies. Resolve every additional leaf from that root. Never search a global plugin installation.");
@@ -352,8 +358,8 @@ emit("agents/model-roles.json", JSON.stringify(roles, null, 2), "raga native mod
 
 const upstreamNm = readFileSync(join(noMistakes, "skills/no-mistakes/SKILL.md"));
 if (digest(upstreamNm) !== "7ee4d49f3fbe9d639a19aee37f40d43bcac013ba7cf212f9fd2a70c21dafad44") throw new Error("Source is not the pinned no-mistakes v1.84.0 public skill");
-emit("skills/no-mistakes/upstream/SKILL.md", upstreamNm, `no-mistakes@${nmCommit}/skills/no-mistakes/SKILL.md`);
-emit("skills/no-mistakes/SKILL.md", `---
+emit("skills/peak/references/no-mistakes/upstream/SKILL.md", upstreamNm, `no-mistakes@${nmCommit}/skills/no-mistakes/SKILL.md`);
+emit("skills/peak/references/no-mistakes/SKILL.md", `---
 name: no-mistakes
 description: Drive the explicitly enabled, pinned no-mistakes validation backend through the trusted instance supervisor. Use when asked to validate or gate committed code changes.
 ---
@@ -374,7 +380,6 @@ At a gate, report findings and ask-user choices without silently accepting them.
 
 Report the raw outcome, requested skips, automatic skips, overrides, missing evidence, and custody instructions. Passed-with-override, passed-with-skips, timeout, cancellation, and an unknown result are not a fully verified pass. Default restricted validation does not establish push, PR, CI, or merge readiness. The backend returns fullyVerified=false deliberately.
 `, "raga authorization policy");
-manifest.skills.push({ name: "no-mistakes", path: "skills/no-mistakes/SKILL.md", source: "no-mistakes" });
 
 const cleanup = `### Worktree cleanup
 
@@ -406,26 +411,26 @@ Read agents/model-roles.json from the pinned resource root. Null inherits the se
 
 Read \`agents/model-roles.json\`. Show only the role entries to the operator; leave \`schemaVersion\` and \`rules\` alone. For a single-selector role, offer the current value, then ask for an exact provider/model selector or inherit. For a list-valued role (\`architect runners\`, \`arena runners\`, \`arena cross-judge pool\`, \`interrogate reviewers\`, \`reflect reviewers\`), ask once per seat and keep the same number of seats. Do not choose silently, and do not reuse one model for a diverse panel unless the operator asks for it. Record same-family picks so a review does not claim diversity. Write the finished JSON through \`instance.candidate_write\`, commit the candidate, and request explicit promotion. This does not change a running session's pinned configuration.
 `;
-emit("skills/peak-setup/SKILL.md", setup, "raga native role setup");
+emit("skills/peak/references/peak-setup/SKILL.md", setup, "raga native role setup");
 emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/peak-setup/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
-emit("skills/poteto-help/SKILL.md", `---
+emit("skills/peak/references/poteto-help/SKILL.md", `---
 name: poteto-help
 description: Find the bundled engineering skill or playbook for understanding, design, implementation, verification, and communication.
 ---
 
 # Find an engineering workflow
 
-Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../peak/SKILL.md). Its playbooks select the workflow.
+Read [raga-runtime](../raga-runtime/SKILL.md) for tools, permissions, history, and native child execution. Start structured work with [peak](../../SKILL.md). Its reference index selects the workflow.
 
 Understanding uses [how](../how/SKILL.md), [why](../why/SKILL.md), [teach](../teach/SKILL.md), and [recall](../recall/SKILL.md). Design uses [architect](../architect/SKILL.md), [arena](../arena/SKILL.md), and [statechart](../statechart/SKILL.md). Parallel execution uses [swarm](../swarm/SKILL.md). Review uses [interrogate](../interrogate/SKILL.md) and [no-comments](../no-comments/SKILL.md).
 
 Use [control-cli](../control-cli/SKILL.md) for terminals and [control-ui](../control-ui/SKILL.md) for browser apps. Use [verify-this](../verify-this/SKILL.md) to attach evidence. Use [create-skill](../create-skill/SKILL.md) for candidate authoring and [no-mistakes](../no-mistakes/SKILL.md) for the explicitly enabled validation gate.
 
-The [guide](../../docs/guide/README.md) explains the portable workflows. The bundle includes all 24 principle leaf skills. Load only the bodies relevant to the task. User invocation is /skill:<name>. There is no editor automation service, global installation requirement, or persistent loop after process exit.
+The [guide](../../../../docs/guide/README.md) explains the portable workflows. The bundle keeps every workflow as a reference beside this file. Load only the ones relevant to the task. The only skill invocation is /skill:peak; pick a reference from its index. There is no editor automation service, global installation requirement, or persistent loop after process exit.
 `, "raga skill routing");
 emit("AGENTS.md", `# Default engineering workflows
 
-Load skills on demand from skills/<name>/SKILL.md. Read skills/raga-runtime/SKILL.md before following a portable workflow. Tool names in inherited prose refer to the native Python adapter, not external editor APIs. Use native children and isolated workspaces. All skill authoring is candidate-only. The supervisor owns evidence, promotion, credentials, publication, and backend lifecycle.
+peak is the only skill. Read skills/peak/SKILL.md, then the reference it names from skills/peak/references/<name>/SKILL.md. Read skills/peak/references/raga-runtime/SKILL.md before following a portable workflow. Tool names in inherited prose refer to the native Python adapter, not external editor APIs. Use native children and isolated workspaces. All skill authoring is candidate-only. The supervisor owns evidence, promotion, credentials, publication, and backend lifecycle.
 
 No-mistakes is available but not enabled automatically. Its managed runtime requires explicit provisioning and repository enablement. A validation-step child cannot control an outer gate. Never interpret a skipped or overridden check as fully verified.
 `, "raga default instructions");
@@ -433,9 +438,9 @@ emit("README.md", `# Portable default skills
 
 New instances copy this pack into their first accepted revision. Each session reads its pinned copy. Updating package assets does not rewrite an existing instance.
 
-The pack contains 56 portable pstack skills, four companion skills, the native create-skill and raga-runtime adapters, and the managed no-mistakes skill. It excludes make-bot-ui and editor-only services. The original public no-mistakes skill stays unchanged under skills/no-mistakes/upstream.
+The pack installs one skill, peak. Its 62 references hold 55 portable pstack workflows, four companion workflows, the native create-skill and raga-runtime adapters, and the managed no-mistakes workflow. It excludes make-bot-ui and editor-only services. The original public no-mistakes text stays unchanged under skills/peak/references/no-mistakes/upstream.
 
-Read [the native runtime](skills/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for skill selection. Workers return supervisor-owned workspace changes rather than Git commits. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
+Read [peak](skills/peak/SKILL.md) to pick a reference. Read [the native runtime](skills/peak/references/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for the reference map. Workers return supervisor-owned workspace changes rather than Git commits. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
 
 ## Sources and regeneration
 
@@ -456,7 +461,7 @@ The backend keeps HOME and NM_HOME below instance state, disables telemetry and 
 From packages/coding-agent, run the focused Vitest files test/instances-bundle.test.ts and test/instances-no-mistakes.test.ts after integration. The separate test/instances-no-mistakes-smoke.test.ts is opt-in with RAGA_NM_SMOKE=1, RAGA_NM_AGENT_EXECUTABLE, and RAGA_NM_AGENT_VERSION. Its optional JSON RAGA_NM_AGENT_ARGS and RAGA_NM_AGENT_ENV are explicit adapter inputs. The smoke creates a disposable Git remote, uses the actual pinned backend, and asserts that the feature branch is not published. It can use network and paid model calls. Do not enable it without authorization.
 `, "raga bundle maintenance guide");
 emit("dependencies.json", JSON.stringify({ schemaVersion: 1, runtime: { node: ">=22.19.0", python: ">=3.11" }, vendored: { commander: "14.0.0" }, managed: { noMistakes: { tag: "v1.84.0", commit: nmCommit, skillSha256: digest(upstreamNm), provisioning: "trusted supervisor, pinned per-platform archive SHA-256" }, tla: { tag: "v1.8.0", url: "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar", sha256: "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f" } }, optional: { upstreamHelperTests: { bun: "1.3.11" }, terminal: "repository harness or Python stdlib pty", browser: "repository-pinned Playwright and browser; explicit setup", tlaJava: "approved Java >=11", mermaid: "repository-pinned and digest-verified MERMAID_CLI path", github: "explicit authenticated gh CLI" }, policy: "No helper auto-install, latest installer, global home mutation, or credential copy" }, null, 2), "raga dependency contract");
-emit("skills/raga-runtime/managed-tools.mjs", `#!/usr/bin/env node
+emit("skills/peak/references/raga-runtime/managed-tools.mjs", `#!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -468,7 +473,7 @@ if (args[0] !== "provision-tla" || !args.includes("--approved") || !args.include
   throw new Error("Operator use: node managed-tools.mjs provision-tla --root <absolute supervisor runtime directory> --approved");
 }
 if (process.env.NO_MISTAKES_GATE || process.env.RAGA_VALIDATION_STEP) throw new Error("Nested validation agents cannot provision runtimes");
-const harness = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const harness = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const root = resolve(directory);
 const within = relative(harness, root);
 if (!within || (!within.startsWith(".." + sep) && within !== ".." && !isAbsolute(within))) throw new Error("Runtime provisioning cannot write a pinned harness");
@@ -502,17 +507,17 @@ emit("dependencies.json", JSON.stringify(dependencies, null, 2), "raga pinned ru
 manifest.dependencies = dependencies;
 
 // Native execution semantics are adjacent to every workflow, even when loaded without AGENTS.md.
-for (const entry of manifest.skills.filter((entry) => entry.source === "pstack" || entry.source === "cursor-team-kit")) {
+for (const entry of allSkills.filter((entry) => entry.source === "pstack" || entry.source === "cursor-team-kit")) {
   const original = files.get(entry.path);
   const text = original.toString();
   const front = /^---\n[\s\S]*?\n---\n/.exec(text);
   if (!front) throw new Error(`Missing skill frontmatter ${entry.path}`);
   emit(entry.path, text.slice(0, front[0].length) + "\nRead [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Authoring targets candidate revisions. Children use run_child, not an external agent service.\n" + text.slice(front[0].length), `raga execution adaptation of ${entry.path}`, original);
 }
-for (const path of ["skills/reflect/SKILL.md", "skills/peak/playbooks/session-pickup.md", "skills/peak/playbooks/eval.md", "skills/show-me-your-work/SKILL.md"]) {
+for (const path of ["skills/peak/references/reflect/SKILL.md", "skills/peak/playbooks/session-pickup.md", "skills/peak/playbooks/eval.md", "skills/peak/references/show-me-your-work/SKILL.md"]) {
   const original = files.get(path);
   let text = original.toString();
-  if (path === "skills/reflect/SKILL.md") {
+  if (path.endsWith("reflect/SKILL.md")) {
     text = text.replace(/## 1\. Locate the active transcript[\s\S]*?(?=## 2\.)/, "## 1. Read the current session\n\nUse await context.history() to read this session. Pass the relevant messages and evidence as context_data to reviewers. Earlier transcripts must be explicitly supplied by the supervisor. Do not search global transcript directories or pretend that a filesystem session layout is part of the Python API.\n\n");
   } else if (path.endsWith("session-pickup.md")) {
     text = text.replace(/^1\. Locate the prior trail\..*$/m, "1. Locate the prior trail in the supplied state capsule, await context.history(), or project-scoped await memory.search(query). Read full entries with await memory.get(id). Earlier transcripts require an explicit supervisor-provided export. Preserve the original evidence and distinguish missing history from an empty result.");
@@ -528,7 +533,113 @@ const potetoOriginal = files.get(potetoPath);
 emit(potetoPath, potetoOriginal.toString()
   .replace(/^\*\*Defaults for every `run_child` call\.\*\*.*$/m, "**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models from agents/model-roles.json. Null inherits the parent. Same-family seats are not model-diverse.")
   .replace(/^\*\*Match the model to the job\.\*\*.*$/m, "**Match the model to the job.** Use real configured provider/model selectors. The runtime does not accept separate effort, speed, cloud environment, or resume fields. Include each seat's configured selector in its assignment. Report an unavailable selector rather than substitute another model.")
-  .replace(/set their own `spec` for diverse-model review/g, "choose a native specification and configured model for review"), "raga native delegation policy", potetoOriginal);
+  .replace(/set their own `spec` for diverse-model review/g, "choose a native specification and configured model for review")
+  .replace(/^description:.*$/m, "description: The only bundled skill. Entry point for peak's agent style and the index of every engineering reference. Use for peak, /peak, or requests to work in this style.")
+  .replace("Bundled skills live at `../<name>/SKILL.md` from this file", "Every reference lives at `references/<name>/SKILL.md` next to this file")
+  .replace("Cite only principles whose leaf SKILL.md you read this session.", "Cite only principles whose reference you read in full this session.")
+  .replace(/the \*\*([a-z0-9-]+)\*\* skill/g, "the **$1** reference")
+  .replace("the **unslop** skill. Write the reply per", "the **unslop** reference. Write the reply per")
+  .replace("the **create-skill** skill (the raga candidate authoring workflow)", "the **create-skill** reference")
+  .replace("the **technical-writing** skill (`/technical-writing`)", "the **technical-writing** reference")
+  .replace("the `deslop` skill from the `cursor-team-kit` plugin (`/deslop`)", "the **deslop** reference")
+  .replace("the **no-comments** skill (`/no-comments`)", "the **no-comments** reference")
+  .replace("the matching control skill", "the matching control reference")
+  .replace(", not the bundled babysit skill, whose description matches the same words", "")
+  .replace(" (\`/technical-writing\`)", "")
+  .replace(" (\`/deslop\`)", "")
+  .replace(" (\`/no-comments\`)", "")
+  .replace("the **deslop** reference from the `cursor-team-kit` plugin", "the **deslop** reference")
+  .replace("the **no-comments** reference (`/no-comments`)", "the **no-comments** reference")
+  .replace("Broken skill mid-task", "Broken reference mid-task")
+  .replace("Routed workflow skills", "Routed workflow references")
+  .replace("Respect what the skill prescribes", "Respect what the reference prescribes"), "raga native delegation policy", potetoOriginal);
+// Rewrite every cross-skill link for the one-skill layout, then index the references in peak.
+const rewrite = (path, text) => {
+  const bytes = Buffer.from(text);
+  writeFileSync(join(root, path), bytes);
+  files.set(path, bytes);
+  for (const entry of manifest.files) if (entry.path === path) entry.sha256 = digest(bytes);
+};
+const knownNames = [...new Set([...allSkills.map((entry) => entry.name), "peak", "raga-runtime", "create-skill", "no-mistakes", "poteto-help"])]
+  .sort((a, b) => b.length - a.length);
+for (const [path, bytes] of [...files]) {
+  if (!/\.(?:md|ts|mjs|json|sh|py)$/.test(path)) continue;
+  const text = bytes.toString();
+  let next = text;
+  if (path.startsWith(`${REFERENCE_ROOT}/`)) {
+    next = next.replaceAll("](../peak/", "](../../");
+    next = next.replaceAll("](../../docs/", "](../../../docs/");
+  } else if (path.startsWith("skills/peak/")) {
+    for (const name of knownNames) {
+      if (name === "peak") continue;
+      next = next.replaceAll(`](../${name}/`, `](references/${name}/`);
+    }
+  }
+  for (const name of knownNames) {
+    if (name === "peak") continue;
+    next = next.replaceAll(`skills/${name}/`, `${REFERENCE_ROOT}/${name}/`);
+  }
+  if (path === "docs/guide/08-principles.md") {
+    next = next.replace(
+      "pstack ships 24 principles as individual skills.",
+      "peak indexes 24 principles as references.",
+    );
+  }
+  if (path === "docs/guide/02-peak.md") {
+    next = next
+      .replace("calls the other skills as the steps need them", "reads the references the steps need")
+      .replace("Read the Principles section", "Read the reference index");
+  }
+  if (path === "docs/guide/README.md") {
+    next = next
+      .replace("runs the other skills as the steps need them", "reads the references the steps need")
+      .replace("calls the right skills as each step fires", "reads the right references as each step fires");
+  }
+  if (next !== text) rewrite(path, next);
+}
+
+const descriptionOf = (path) => {
+  const front = /^---\n([\s\S]*?)\n---/.exec(files.get(path).toString());
+  const match = front ? /^description:\s*(.+)$/m.exec(front[1]) : null;
+  if (!match) throw new Error(`Reference has no one-line description: ${path}`);
+  let value = match[1].trim();
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+  return value.replace(/\s+/g, " ").replaceAll("|", "\\|");
+};
+const references = [...files.keys()]
+  .filter((path) => path.startsWith(`${REFERENCE_ROOT}/`) && path.endsWith("/SKILL.md") && path.split("/").length === 5)
+  .map((path) => {
+    const name = path.split("/")[3];
+    return { name, description: descriptionOf(path) };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
+const row = (entry) => `| [${entry.name}](references/${entry.name}/SKILL.md) | ${entry.description} |`;
+const principles = references.filter((entry) => entry.name.startsWith("principle-"));
+const workflows = references.filter((entry) => !entry.name.startsWith("principle-"));
+const index = `## Reference index
+
+This is the only installed skill. Every other workflow is a reference under \`references/<name>/SKILL.md\`. Pick the reference whose description matches the task and read it in full before acting. Do not read them all.
+
+### Principles
+
+| Reference | Use when |
+| --- | --- |
+${principles.map(row).join("\n")}
+
+### Engineering workflows
+
+| Reference | Use when |
+| --- | --- |
+${workflows.map(row).join("\n")}
+`;
+const peakPath = "skills/peak/SKILL.md";
+const peakText = files.get(peakPath).toString();
+const withIndex = peakText
+  .replace(/^The Principles section below grounds every trigger\./m, "The reference index below grounds every trigger.")
+  .replace(/## Principles\n[\s\S]*?(?=\n## Autonomy\n)/, index);
+if (!withIndex.includes("## Reference index")) throw new Error("peak Principles section not found");
+rewrite(peakPath, withIndex);
+
 manifest.skills.sort((a, b) => a.name.localeCompare(b.name));
 // A path has one final record, while source hashes retain the pinned input for copied assets.
 manifest.files = [...new Map(manifest.files.map((entry) => [entry.path, entry])).values()].sort((a, b) => a.path.localeCompare(b.path));

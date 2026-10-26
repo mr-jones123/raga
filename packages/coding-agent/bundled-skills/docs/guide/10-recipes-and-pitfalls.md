@@ -148,7 +148,7 @@ You rarely need more words. You need the right name, and [the principles page](.
 /bro
 ```
 
-That's the whole prompt. [`/bro`](../../skills/bro/SKILL.md) restates the last message like one human talking to another, no jargon, shorter. Use it when a reply is technically thorough and you still don't know what it said.
+That's the whole prompt. [`/bro`](../../skills/peak/references/bro/SKILL.md) restates the last message like one human talking to another, no jargon, shorter. Use it when a reply is technically thorough and you still don't know what it said.
 
 ## Catch up on a chat you left running
 
@@ -156,7 +156,7 @@ That's the whole prompt. [`/bro`](../../skills/bro/SKILL.md) restates the last m
 /ketchup
 ```
 
-[`/ketchup`](../../skills/ketchup/SKILL.md) tells you in plain words what changed since your last message, then lists each call waiting on you with its pick, evidence, and risk. It changes nothing while it reports.
+[`/ketchup`](../../skills/peak/references/ketchup/SKILL.md) tells you in plain words what changed since your last message, then lists each call waiting on you with its pick, evidence, and risk. It changes nothing while it reports.
 
 ## The pitfalls
 

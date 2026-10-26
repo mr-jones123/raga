@@ -48,7 +48,7 @@ npm run build
 ./raga-test.sh
 ```
 
-Every session loads the pstack pack and the `no-mistakes` skill. `/skill:peak` starts the pstack engineering playbooks; `/skill:no-mistakes` covers the validation backend.
+Every session loads one skill, `peak`. It indexes 62 engineering references under `skills/peak/references/`, including the pstack playbooks and the managed no-mistakes workflow. Run `/skill:peak` and let it pick the reference for the task.
 
 While Python cells run, a small dashboard shows each active cell with a spinning wheel and its own color.
 

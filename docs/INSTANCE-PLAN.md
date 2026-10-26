@@ -236,7 +236,7 @@ Instance metadata lives in `.raga/`. User credentials and model configuration st
 
 ## Default engineering skills
 
-The bundled harness in `packages/coding-agent/bundled-skills/` holds 63 skills: 56 portable [pstack](https://github.com/cursor/plugins/tree/main/pstack) skills, the `deslop`, `control-cli`, `control-ui`, and `verify-this` companion skills from `cursor-team-kit`, the native `create-skill` and `raga-runtime` adapters, and the managed [no-mistakes skill](https://github.com/kunchenguid/no-mistakes/blob/main/skills/no-mistakes/SKILL.md). The original public no-mistakes skill is unchanged under `skills/no-mistakes/upstream/`.
+The bundled harness in `packages/coding-agent/bundled-skills/` installs one skill, `peak`, which indexes 62 references: 55 portable [pstack](https://github.com/cursor/plugins/tree/main/pstack) workflows, the `deslop`, `control-cli`, `control-ui`, and `verify-this` companion workflows from `cursor-team-kit`, the native `create-skill` and `raga-runtime` adapters, and the managed [no-mistakes workflow](https://github.com/kunchenguid/no-mistakes/blob/main/skills/no-mistakes/SKILL.md). The original public no-mistakes text is unchanged under `skills/peak/references/no-mistakes/upstream/`.
 
 ### Portable pstack manifest
 

@@ -243,7 +243,7 @@ describe("pinned instance sessions", () => {
 				if (turn > 0) return fauxAssistantMessage("Completed.");
 				if (task === "Delegate two writers")
 					return python(
-						"import asyncio\nroot = (await instance.info())['harnessPath']\nexec(await read(root + '/skills/raga-runtime/raga_runtime.py'), globals())\na, b = await asyncio.gather(run_child('worker', 'writer-one', root, read_only=False, details=True), run_child('worker', 'writer-two', root, read_only=False, details=True))\nassert a['workspace']['id'] != b['workspace']['id']\nassert await read('shared.txt') == 'original\\n'\nprint('writers isolated')",
+						"import asyncio\nroot = (await instance.info())['harnessPath']\nexec(await read(root + '/skills/peak/references/raga-runtime/raga_runtime.py'), globals())\na, b = await asyncio.gather(run_child('worker', 'writer-one', root, read_only=False, details=True), run_child('worker', 'writer-two', root, read_only=False, details=True))\nassert a['workspace']['id'] != b['workspace']['id']\nassert await read('shared.txt') == 'original\\n'\nprint('writers isolated')",
 					);
 				return python(
 					`await write('shared.txt', ${JSON.stringify(task)})\nanswer['content'] = 'change isolated'\nanswer['ready'] = True`,
