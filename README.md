@@ -50,6 +50,8 @@ npm run build
 
 Every session loads the pstack pack and the `no-mistakes` skill. `/skill:peak` starts the pstack engineering playbooks; `/skill:no-mistakes` covers the validation backend.
 
+While Python cells run, a small dashboard shows each active cell with a spinning wheel and its own color.
+
 `./raga-test.sh` runs the TypeScript sources through the resolver, so edits apply without a build. Module loading costs about a second more, because Node strips and resolves the whole source graph on every start. Use it while changing the code, and `./raga` otherwise.
 
 On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~/.pi/agent/rlm/venv`. To use another interpreter, set `RAGA_PYTHON`.

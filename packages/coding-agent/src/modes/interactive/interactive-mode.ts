@@ -172,6 +172,7 @@ import {
 } from "./components/oauth-selector.ts";
 import { createLoginMenuSelector } from "./components/radius-login-selector.ts";
 import { ragaLogoLines, ragaWordmark, supportsRagaLogo } from "./components/raga-logo.ts";
+import { RlmCellDashboard } from "./components/rlm-cell-dashboard.ts";
 import { ScopedModelsSelectorComponent } from "./components/scoped-models-selector.ts";
 import { SessionSelectorComponent } from "./components/session-selector.ts";
 import { SettingsSelectorComponent } from "./components/settings-selector.ts";
@@ -452,6 +453,7 @@ export interface InteractiveModeOptions {
 export class InteractiveMode {
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
+	private rlmCellDashboard: RlmCellDashboard | undefined;
 	private ui: TUI;
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
@@ -966,10 +968,12 @@ export class InteractiveMode {
 
 		// Keep one component tree and remount it when changing renderers.
 		this.renderWidgets(); // Initialize with default spacer
+		this.rlmCellDashboard = new RlmCellDashboard(() => this.ui.requestRender());
 		const viewport = createChatViewport({
 			document: this.documentContainer,
 			pendingMessages: this.pendingMessagesContainer,
 			status: this.statusContainer,
+			cellDashboard: this.rlmCellDashboard,
 			widgetsAbove: this.widgetContainerAbove,
 			editor: this.editorContainer,
 			widgetsBelow: this.widgetContainerBelow,
@@ -984,6 +988,7 @@ export class InteractiveMode {
 			this.documentContainer,
 			this.pendingMessagesContainer,
 			this.statusContainer,
+			this.rlmCellDashboard,
 			this.widgetContainerAbove,
 			this.editorContainer,
 			this.widgetContainerBelow,
@@ -7185,6 +7190,8 @@ export class InteractiveMode {
 
 	stop(fullscreenExitOutput = this.settingsManager.getFullscreenExitOutput()): void {
 		this.disposeActiveSelector();
+		this.rlmCellDashboard?.dispose();
+		this.rlmCellDashboard = undefined;
 		if (this.settingsManager.getShowTerminalProgress()) {
 			this.ui.terminal.setProgress(false);
 		}

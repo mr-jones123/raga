@@ -27,6 +27,7 @@ import type { SessionEntry, SessionManager } from "../session-manager.ts";
 import type { SettingsManager } from "../settings-manager.ts";
 import { pythonRenderers } from "../tools/renderers/python.ts";
 import { combineUsage } from "../usage-totals.ts";
+import { emitRlmCellEvent, type RlmCellStatus } from "./cell-events.ts";
 import { createRlmQueryHandler, RlmChildSlots } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
@@ -337,87 +338,110 @@ export class RlmRuntime {
 		this.startFailure = undefined;
 		if (startFailure) return this.failure(`The Python kernel failed to start: ${errorMessage(startFailure)}`);
 
-		// Debounce: the snapshot waits until no cell has run for SNAPSHOT_DELAY_MS.
-		clearTimeout(this.snapshotTimer);
-		this.snapshotTimer = undefined;
-		const { outputLimit } = this.host.settingsManager.getRlmSettings();
-		this.currentToolCallId = toolCallId;
-		this.cellUsage = undefined;
-		let streamed = "";
-		let lastUpdate = 0;
-		const onOutput = (_stream: "stdout" | "stderr", text: string) => {
-			streamed = (streamed + text).slice(-outputLimit);
-			const now = Date.now();
-			if (!onUpdate || now - lastUpdate < UPDATE_THROTTLE_MS) return;
-			lastUpdate = now;
-			onUpdate({ content: [{ type: "text", text: streamed }], details: { cutCharacters: 0, restarted: false } });
-		};
-
-		const notices: string[] = [];
-		let output: CellOutput;
-		let restarted: boolean;
+		const cellStartedAt = Date.now();
+		const cellSessionId = this.host.sessionManager.getSessionId();
+		emitRlmCellEvent({
+			type: "start",
+			cellId: toolCallId,
+			sessionId: cellSessionId,
+			depth: this.host.depth,
+			code,
+			startedAt: cellStartedAt,
+		});
+		let cellStatus: RlmCellStatus = "error";
 		try {
-			await this.kernel.start();
-			restarted = this.lastCellPid !== undefined && this.kernel.pid !== this.lastCellPid;
-			if (this.kernel.pid !== this.contextPid) {
-				await this.kernel.setContext(this.getTask(), { ...this.host.inputs }, this.host.data);
-				this.contextPid = this.kernel.pid;
+			// Debounce: the snapshot waits until no cell has run for SNAPSHOT_DELAY_MS.
+			clearTimeout(this.snapshotTimer);
+			this.snapshotTimer = undefined;
+			const { outputLimit } = this.host.settingsManager.getRlmSettings();
+			this.currentToolCallId = toolCallId;
+			this.cellUsage = undefined;
+			let streamed = "";
+			let lastUpdate = 0;
+			const onOutput = (_stream: "stdout" | "stderr", text: string) => {
+				streamed = (streamed + text).slice(-outputLimit);
+				const now = Date.now();
+				if (!onUpdate || now - lastUpdate < UPDATE_THROTTLE_MS) return;
+				lastUpdate = now;
+				onUpdate({ content: [{ type: "text", text: streamed }], details: { cutCharacters: 0, restarted: false } });
+			};
+
+			const notices: string[] = [];
+			let output: CellOutput;
+			let restarted: boolean;
+			try {
+				await this.kernel.start();
+				restarted = this.lastCellPid !== undefined && this.kernel.pid !== this.lastCellPid;
+				if (this.kernel.pid !== this.contextPid) {
+					await this.kernel.setContext(this.getTask(), { ...this.host.inputs }, this.host.data);
+					this.contextPid = this.kernel.pid;
+				}
+				if (!this.restoreChecked) {
+					this.restoreChecked = true;
+					const restoreNotice = await this.restoreSnapshot();
+					if (restoreNotice) notices.push(restoreNotice);
+				}
+				output = await this.kernel.execute(code, { signal, onOutput });
+				cellStatus = output.status === "ok" ? "ok" : "error";
+			} catch (error) {
+				return this.failure(`The Python kernel is unavailable: ${errorMessage(error)}`);
 			}
-			if (!this.restoreChecked) {
-				this.restoreChecked = true;
-				const restoreNotice = await this.restoreSnapshot();
-				if (restoreNotice) notices.push(restoreNotice);
-			}
-			output = await this.kernel.execute(code, { signal, onOutput });
-		} catch (error) {
-			return this.failure(`The Python kernel is unavailable: ${errorMessage(error)}`);
-		}
-		if (this.host.instance && this.host.instanceMemory !== false && output.error) {
-			const failure = `${output.error.ename}: ${output.error.evalue}`.slice(0, 1000);
-			if (failure !== this.lastMemoryFailure) {
-				this.lastMemoryFailure = failure;
-				try {
-					const retrieved = await new InstanceMemory(this.host.instance.instanceRoot).retrieve({
-						query: `${this.getTask()}\n${failure}`,
-						scope: this.host.instance.projectRoot,
-						harnessRevision: this.host.instance.revision,
-						maxChars: 4000,
-						limit: 5,
-					});
-					this.host.appendCustomEntry("raga-memory-retrieval", { trigger: "failure", ...retrieved });
-					if (retrieved.text) notices.push(retrieved.text);
-				} catch (error) {
-					notices.push(`[Memory retrieval failed: ${errorMessage(error)}]`);
+			if (this.host.instance && this.host.instanceMemory !== false && output.error) {
+				const failure = `${output.error.ename}: ${output.error.evalue}`.slice(0, 1000);
+				if (failure !== this.lastMemoryFailure) {
+					this.lastMemoryFailure = failure;
+					try {
+						const retrieved = await new InstanceMemory(this.host.instance.instanceRoot).retrieve({
+							query: `${this.getTask()}\n${failure}`,
+							scope: this.host.instance.projectRoot,
+							harnessRevision: this.host.instance.revision,
+							maxChars: 4000,
+							limit: 5,
+						});
+						this.host.appendCustomEntry("raga-memory-retrieval", { trigger: "failure", ...retrieved });
+						if (retrieved.text) notices.push(retrieved.text);
+					} catch (error) {
+						notices.push(`[Memory retrieval failed: ${errorMessage(error)}]`);
+					}
 				}
 			}
-		}
-		restarted ||= output.restarted;
-		this.lastCellPid = this.kernel.pid;
-		const usage = this.cellUsage;
-		this.cellUsage = undefined;
-		if (restarted) notices.push(RESTART_NOTICE);
-		notices.push(...this.pendingNotes);
-		this.pendingNotes = [];
+			restarted ||= output.restarted;
+			this.lastCellPid = this.kernel.pid;
+			const usage = this.cellUsage;
+			this.cellUsage = undefined;
+			if (restarted) notices.push(RESTART_NOTICE);
+			notices.push(...this.pendingNotes);
+			this.pendingNotes = [];
 
-		// A restarted kernel has an empty namespace; saving it would overwrite the last good snapshot.
-		this.snapshotDue = !restarted && (this.snapshotDue || output.status === "ok");
-		if (this.snapshotDue) {
-			this.snapshotTimer = setTimeout(() => {
-				this.snapshotTimer = undefined;
-				this.queueSnapshot();
-			}, SNAPSHOT_DELAY_MS);
-			this.snapshotTimer.unref();
-		}
+			// A restarted kernel has an empty namespace; saving it would overwrite the last good snapshot.
+			this.snapshotDue = !restarted && (this.snapshotDue || output.status === "ok");
+			if (this.snapshotDue) {
+				this.snapshotTimer = setTimeout(() => {
+					this.snapshotTimer = undefined;
+					this.queueSnapshot();
+				}, SNAPSHOT_DELAY_MS);
+				this.snapshotTimer.unref();
+			}
 
-		const { text, cutCharacters } = formatCellOutput(output, outputLimit);
-		return {
-			content: [
-				{ type: "text", text: [...notices, text, ...formatMemoryNotes(output, this.memoryLimitMb)].join("\n") },
-			],
-			details: { cutCharacters, restarted },
-			...(usage ? { usage } : {}),
-			...(output.status === "error" ? { isError: true } : {}),
-		};
+			const { text, cutCharacters } = formatCellOutput(output, outputLimit);
+			return {
+				content: [
+					{ type: "text", text: [...notices, text, ...formatMemoryNotes(output, this.memoryLimitMb)].join("\n") },
+				],
+				details: { cutCharacters, restarted },
+				...(usage ? { usage } : {}),
+				...(output.status === "error" ? { isError: true } : {}),
+			};
+		} finally {
+			emitRlmCellEvent({
+				type: "end",
+				cellId: toolCallId,
+				sessionId: cellSessionId,
+				depth: this.host.depth,
+				status: signal?.aborted ? "aborted" : cellStatus,
+				durationMs: Date.now() - cellStartedAt,
+			});
+		}
 	}
 
 	private failure(text: string): AgentToolResult<PythonToolDetails> {
