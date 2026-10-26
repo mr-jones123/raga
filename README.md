@@ -29,7 +29,7 @@ The RLM runtime works end to end. The adaptive layer, which lets the harness rew
 
 The packages and the binary still use pi's names (`@earendil-works/pi-*`, `pi`, `~/.pi`). A rename to `raga` comes later.
 
-## Run it from source
+## Run it
 
 Raga needs Node.js 22.19 or newer, `uv`, and an AI provider that pi supports.
 
@@ -38,8 +38,17 @@ git clone https://github.com/mr-jones123/raga.git
 cd raga
 npm ci --ignore-scripts
 npm run generate-models -w packages/ai
-./pi-test.sh --rlm
+npm run build
+./raga
 ```
+
+`./raga` runs the bundled build. It reaches the first frame in roughly half a second.
+
+```bash
+./raga-test.sh
+```
+
+`./raga-test.sh` runs the TypeScript sources through the resolver, so edits apply without a build. Module loading costs about a second more, because Node strips and resolves the whole source graph on every start. Use it while changing the code, and `./raga` otherwise.
 
 On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~/.pi/agent/rlm/venv`. To use another interpreter, set `RAGA_PYTHON`.
 
