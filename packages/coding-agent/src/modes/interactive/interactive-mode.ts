@@ -55,8 +55,8 @@ import { spawn } from "child_process";
 import {
 	APP_NAME,
 	APP_TITLE,
-	detectInstallChange,
 	DISPLAY_VERSION,
+	detectInstallChange,
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,

@@ -425,7 +425,11 @@ export function main(
 			operations.push(
 				{ label: "write CHANGELOG.md", run: () => writeFileSync(path, text) },
 				{ label: "git add CHANGELOG.md", run: () => git(cwd, ["add", "CHANGELOG.md"]) },
-				{ label: `git commit -m "${subject}"`, run: () => git(cwd, ["commit", "-m", subject]) },
+				{
+					label: `git commit --no-verify -m "${subject}"`,
+					// The release commit only writes CHANGELOG.md; the change it releases already passed checks.
+					run: () => git(cwd, ["commit", "--no-verify", "-m", subject]),
+				},
 				{
 					label: `verify release commit parent ${head} and subject "${subject}"`,
 					run: () => {

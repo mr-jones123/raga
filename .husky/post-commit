@@ -1,0 +1,19 @@
+#!/bin/sh
+# Every change gets a raga release. Conventional headers pick the bump; commits
+# with no changelog entry (docs, chore) still bump patch.
+[ -n "${RAGA_NO_AUTO_RELEASE:-}" ] && exit 0
+
+subject=$(git log -1 --format=%s)
+case "$subject" in
+  "chore(release): raga v"*) exit 0 ;;
+esac
+
+[ -z "$(git symbolic-ref -q HEAD)" ] && exit 0
+
+if out=$(node scripts/raga-release.mjs release 2>&1); then
+  printf '%s\n' "$out"
+  exit 0
+fi
+if out=$(node scripts/raga-release.mjs release patch 2>&1); then
+  printf '%s\n' "$out"
+fi

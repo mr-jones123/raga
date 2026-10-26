@@ -586,6 +586,36 @@ export const PROJECT_CONFIG_DIR_NAME = ".raga";
 export const VERSION: string = pkg.version || "0.0.0";
 export const IS_RAGA_CLI = launchedAsRaga;
 
+/**
+ * Raga keeps its own version line in annotated `raga-vX.Y.Z` tags, separate from
+ * upstream pi's package version. Read it from git when the checkout has it; an
+ * installed package without git falls back to the package version.
+ */
+function ragaVersion(): string | undefined {
+	if (!launchedAsRaga) return undefined;
+	let directory = getPackageDir();
+	for (let depth = 0; depth < 5; depth++) {
+		if (existsSync(join(directory, ".git")) && existsSync(join(directory, "scripts", "raga-release.mjs"))) {
+			const described = spawnProcessSync(
+				"git",
+				["-C", directory, "describe", "--tags", "--long", "--match", "raga-v*"],
+				{ encoding: "utf8" },
+			);
+			const match = /^raga-v(\d+\.\d+\.\d+)-(\d+)-g([0-9a-f]+)$/.exec(described.stdout?.trim() ?? "");
+			if (described.status === 0 && match) {
+				return match[2] === "0" ? match[1] : `${match[1]}+${match[2]}.g${match[3]}`;
+			}
+			return undefined;
+		}
+		const parent = dirname(directory);
+		if (parent === directory) break;
+		directory = parent;
+	}
+	return undefined;
+}
+
+export const DISPLAY_VERSION: string = ragaVersion() ?? VERSION;
+
 // e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR. Branding never moves credentials.
 const AGENT_ENV_NAME = (piConfigName || "pi").toUpperCase();
 export const ENV_AGENT_DIR = `${AGENT_ENV_NAME}_CODING_AGENT_DIR`;

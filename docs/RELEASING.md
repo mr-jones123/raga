@@ -21,7 +21,7 @@ Run these steps once per clone.
 	git fetch --tags
 	```
 
-3. Activate the git hooks. The `commit-msg` hook checks every commit header.
+3. Activate the git hooks. `commit-msg` checks every commit header, and `post-commit` cuts the release.
 
 	```sh
 	npx husky
@@ -43,7 +43,15 @@ Each commit header is one changelog entry. Write the header for a reader of the 
 
 Land raga work by rebase or squash. A merge commit from a raga branch makes the release fail, because the script reads only the first-parent history.
 
-## Release a version
+## Every change bumps the version
+
+The `post-commit` hook releases after every commit. The header picks the bump: `feat` raises the minor version, a breaking change raises the major version once past 1.0, and everything else, including `docs` and `chore`, raises the patch version. The hook writes the changelog entry, commits it as `chore(release): raga vX.Y.Z` with hooks skipped, and tags that commit. The generated commit does not release again.
+
+So one change produces two commits: your change, then its release. Tags stay local until you push them. Set `RAGA_NO_AUTO_RELEASE=1` for a commit that should not release, such as an amended checkpoint. The release commit only writes `CHANGELOG.md`, so skipping its hooks does not skip checks on the change itself.
+
+## Manual release or recovery
+
+Run `release --dry-run` to see the plan, or `release` / `release <bump>` to recover an interrupted release or to cut one by hand. The steps below describe that path.
 
 1. Check the commits since the last release.
 

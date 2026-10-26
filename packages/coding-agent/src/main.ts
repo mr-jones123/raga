@@ -37,12 +37,12 @@ import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
 import {
 	APP_NAME,
+	DISPLAY_VERSION,
 	ENV_SESSION_DIR,
 	expandTildePath,
 	getAgentDir,
 	getPackageDir,
 	IS_RAGA_CLI,
-	VERSION,
 } from "./config.ts";
 import { type CreateAgentSessionRuntimeFactory, createAgentSessionRuntime } from "./core/agent-session-runtime.ts";
 import {
@@ -659,7 +659,7 @@ export async function main(args: string[], options?: MainOptions) {
 	time("parseArgs");
 
 	if (parsed.version) {
-		console.log(VERSION);
+		console.log(DISPLAY_VERSION);
 		process.exit(0);
 	}
 
