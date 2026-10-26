@@ -5,7 +5,7 @@
 import { basename } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import chalk from "chalk";
-import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR } from "../config.ts";
+import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR, IS_RAGA_CLI } from "../config.ts";
 import type { ExtensionFlag } from "../core/extensions/types.ts";
 import { getToolListError, type TuiMode } from "../core/settings-manager.ts";
 
@@ -71,6 +71,14 @@ export function isValidThinkingLevel(level: string): level is ThinkingLevel {
 export function normalizeSessionName(value: string): string | undefined {
 	const name = value.trim();
 	return name.length > 0 ? name : undefined;
+}
+
+/**
+ * Raga ships RLM as its mode, so an unset flag means on. An explicit `--rlm` or
+ * `--no-rlm` always wins, and pi keeps the setting's default.
+ */
+export function applyRagaDefaults(args: Args, raga: boolean): void {
+	if (raga && args.rlm === undefined) args.rlm = true;
 }
 
 export function parseArgs(args: string[]): Args {
@@ -250,6 +258,8 @@ export function parseArgs(args: string[]): Args {
 			result.offline = true;
 		} else if (arg === "--rlm") {
 			result.rlm = true;
+		} else if (arg === "--no-rlm") {
+			result.rlm = false;
 		} else if (arg === "--rlm-input") {
 			const spec = args[i + 1];
 			if (spec === undefined || spec.startsWith("-")) {
@@ -362,8 +372,13 @@ ${chalk.bold("Options:")}
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
-  --rlm                          RLM mode: the model gets one tool, python, a persistent kernel that
+${
+	IS_RAGA_CLI
+		? ""
+		: `  --rlm                          RLM mode: the model gets one tool, python, a persistent kernel that
                                  reaches read, bash, edit, write, and sub-LLM calls (setting: rlm.enabled)
+  --no-rlm                       Use plain pi tools`
+}
   --rlm-input <[name=]path>      Expose a file as context.inputs[name] in RLM mode (default name: the
                                  file name; can be used multiple times)
   --                             End option parsing; treat remaining arguments as messages/files

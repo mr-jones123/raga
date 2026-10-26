@@ -303,6 +303,8 @@ async function runSingleAgent(
 		args.push("--thinking", dispatchDefaults.thinkingLevel);
 	}
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
+	// Subagents declare their own tool lists, which RLM does not use.
+	args.push("--no-rlm");
 
 	let tmpPromptDir: string | null = null;
 	let tmpPromptPath: string | null = null;

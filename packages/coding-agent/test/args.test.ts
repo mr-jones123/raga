@@ -1,7 +1,31 @@
 import { describe, expect, test } from "vitest";
-import { normalizeSessionName, parseArgs } from "../src/cli/args.ts";
+import { applyRagaDefaults, normalizeSessionName, parseArgs } from "../src/cli/args.ts";
 
 describe("parseArgs", () => {
+	describe("RLM flags", () => {
+		test("parses --rlm and --no-rlm", () => {
+			expect(parseArgs(["--rlm"]).rlm).toBe(true);
+			expect(parseArgs(["--no-rlm"]).rlm).toBe(false);
+		});
+
+		test("the last flag wins", () => {
+			expect(parseArgs(["--no-rlm", "--rlm"]).rlm).toBe(true);
+			expect(parseArgs(["--rlm", "--no-rlm"]).rlm).toBe(false);
+		});
+
+		test("raga defaults to RLM without overriding an explicit choice", () => {
+			const unset = parseArgs([]);
+			applyRagaDefaults(unset, true);
+			expect(unset.rlm).toBe(true);
+			const off = parseArgs(["--no-rlm"]);
+			applyRagaDefaults(off, true);
+			expect(off.rlm).toBe(false);
+			const pi = parseArgs([]);
+			applyRagaDefaults(pi, false);
+			expect(pi.rlm).toBeUndefined();
+		});
+	});
+
 	describe("--version flag", () => {
 		test("parses --version flag", () => {
 			const result = parseArgs(["--version"]);

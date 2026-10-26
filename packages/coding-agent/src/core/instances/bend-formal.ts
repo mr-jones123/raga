@@ -95,6 +95,7 @@ export async function runReadOnlyAgent(
 			"--no-context-files",
 			"--no-prompt-templates",
 			"--no-mcp",
+			"--no-rlm",
 			"--tools",
 			"read,grep,glob,ls",
 			prompt,
