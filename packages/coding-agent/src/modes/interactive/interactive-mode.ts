@@ -56,10 +56,12 @@ import {
 	APP_NAME,
 	APP_TITLE,
 	detectInstallChange,
+	DISPLAY_VERSION,
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,
 	getDocsPath,
+	IS_RAGA_CLI,
 	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "../../config.ts";
@@ -617,7 +619,7 @@ export class InteractiveMode {
 			await this.rebindCurrentSession({ renderBeforeBind: true });
 			this.themeController.applyFromSettings();
 		});
-		this.version = VERSION;
+		this.version = DISPLAY_VERSION;
 		this.renderer = createInteractiveTui({
 			tuiMode,
 			showHardwareCursor: this.settingsManager.getShowHardwareCursor(),
@@ -1062,10 +1064,11 @@ export class InteractiveMode {
 					"dim",
 					`Press ${keyText("app.tools.expand")} to show full startup help${showDetails ? " and loaded resources" : ""}.`,
 				);
+			const brandName = `${APP_NAME.charAt(0).toUpperCase()}${APP_NAME.slice(1)}`;
 			const onboarding = () =>
 				theme.fg(
 					"dim",
-					`${APP_NAME} can explain its own features and look up its docs. Ask it how to use or extend ${APP_NAME}.`,
+					`${brandName} runs long coding tasks in a versioned, per-project instance. It keeps memory and learned skills across work, isolates child agents, and can require Bend proofs before a change becomes active.`,
 				);
 			const header = new ExpandableText(
 				() => `${withLogo(compactInstructions())}\n${compactOnboarding()}\n\n${onboarding()}`,
@@ -1160,12 +1163,14 @@ export class InteractiveMode {
 				.finally(() => clearTimeout(timeout));
 		}
 
-		// Start version check asynchronously
-		checkForNewPiVersion(this.version).then((newRelease) => {
-			if (newRelease) {
-				this.showNewVersionNotification(newRelease);
-			}
-		});
+		// Pi's release feed does not describe raga's version line.
+		if (!IS_RAGA_CLI) {
+			checkForNewPiVersion(this.version).then((newRelease) => {
+				if (newRelease) {
+					this.showNewVersionNotification(newRelease);
+				}
+			});
+		}
 
 		// Start package update check asynchronously
 		this.checkForPackageUpdates()
