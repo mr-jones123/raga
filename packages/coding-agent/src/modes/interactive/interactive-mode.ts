@@ -160,6 +160,7 @@ import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
 import { FooterComponent, formatTokens } from "./components/footer.ts";
+import { showIdleWheel } from "./components/idle-wheel.ts";
 import { formatKeyText, keyDisplayText, keyHint, keyText, rawKeyHint } from "./components/keybinding-hints.ts";
 import { LoginDialogComponent } from "./components/login-dialog.ts";
 import { createMermaidMarkdownTransformer } from "./components/mermaid.ts";
@@ -1372,7 +1373,8 @@ export class InteractiveMode {
 	}
 
 	private reportInstallTelemetry(version: string): void {
-		if (process.env.PI_OFFLINE) {
+		// pi.dev counts pi installs; raga is a separate distribution.
+		if (process.env.PI_OFFLINE || IS_RAGA_CLI) {
 			return;
 		}
 
@@ -3238,6 +3240,11 @@ export class InteractiveMode {
 			if (text === "/hotkeys") {
 				this.handleHotkeysCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/idle") {
+				this.editor.setText("");
+				showIdleWheel(this.ui);
 				return;
 			}
 			if (text === "/fork") {
