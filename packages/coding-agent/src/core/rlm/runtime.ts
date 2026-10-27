@@ -46,6 +46,11 @@ const RESTART_NOTICE = "[kernel restarted: the namespace is empty]";
 /** Kernel memory, as a fraction of `rlm.memoryLimitMb`, from which the python result warns. */
 const MEMORY_WARNING_FRACTION = 0.75;
 
+/** The kernel enforces `RLIMIT_DATA` on Linux only; elsewhere the effective limit is 0. */
+export function kernelMemoryLimitMb(platform: NodeJS.Platform, configuredMb: number): number {
+	return platform === "linux" ? configuredMb : 0;
+}
+
 /** RLM options of one session. Its presence turns RLM mode on. */
 export interface RlmSessionOptions {
 	/** Input names mapped to absolute file paths, read lazily by Python through `context.inputs`. */
@@ -212,7 +217,7 @@ export class RlmRuntime {
 	readonly toolDefinition: ToolDefinition<typeof pythonSchema, PythonToolDetails>;
 	private readonly host: RlmHost;
 	private readonly kernel: Kernel;
-	/** `rlm.memoryLimitMb` when the kernel was created; every kernel process of this session gets it. */
+	/** Effective kernel memory limit when the kernel was created; 0 where the platform does not enforce it. */
 	private readonly memoryLimitMb: number;
 	private disposed = false;
 	/** Settles with the eager start's error, reported by the first python call. */
@@ -271,7 +276,7 @@ export class RlmRuntime {
 				if (host.instanceMemory !== false || !name.startsWith("memory.")) handlers.set(name, handler);
 			}
 		}
-		this.memoryLimitMb = host.settingsManager.getRlmSettings().memoryLimitMb;
+		this.memoryLimitMb = kernelMemoryLimitMb(process.platform, host.settingsManager.getRlmSettings().memoryLimitMb);
 		this.kernel = new Kernel({
 			cwd: host.cwd,
 			env: {

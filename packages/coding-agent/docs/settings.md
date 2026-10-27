@@ -67,7 +67,7 @@ CLI tool options override this setting for one invocation. `--tools` with only `
 | `rlm.subModel` | string | Session model | Model for `llm_query` and `llm_batch` in the kernel, as `"provider/id"`. A `model` argument in the call takes precedence. |
 | `rlm.outputLimit` | number | `16000` | Characters of cell output the model sees per `python` call. Longer output keeps its first three quarters and last quarter of the limit, and the full output stays in `cells[-1]`. |
 | `rlm.maxDepth` | number | `2` | How many levels of `rlm_query` child sessions may nest. |
-| `rlm.memoryLimitMb` | number | `2048` | Memory limit of each RLM Python kernel in MiB. On Linux the kernel applies it as `RLIMIT_DATA`, so an allocation past it raises `MemoryError` in the cell and the kernel keeps running; macOS has no hard limit. The `python` result warns from 75% of the limit. `0` disables it. |
+| `rlm.memoryLimitMb` | number | `2048` | Memory limit of each RLM Python kernel in MiB. Applied as `RLIMIT_DATA` on Linux only; macOS and other non-Linux platforms ignore it and run without a limit. On Linux the `python` result warns from 75% of the limit. `0` disables it. |
 
 `--rlm-input <path>` or `--rlm-input <name>=<path>` exposes a file as `context.inputs[name]` in the kernel; without a name the file name is the key. Python reads the file the first time the key is read. See the [RLM runtime reference](../../../docs/RLM.md).
 

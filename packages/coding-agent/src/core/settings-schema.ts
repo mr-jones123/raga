@@ -199,7 +199,7 @@ const RlmSettingsSchema = Type.Object({
 		Type.Integer({
 			minimum: 0,
 			description:
-				"Memory limit of each RLM Python kernel in MiB. On Linux an allocation past it raises MemoryError in the cell. 0 disables it.",
+				"Memory limit of each RLM Python kernel in MiB. Applied as RLIMIT_DATA on Linux only; ignored on other platforms. 0 disables it.",
 			default: SETTINGS_DEFAULTS.rlm.memoryLimitMb,
 		}),
 	),

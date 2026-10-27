@@ -658,7 +658,7 @@
         "memoryLimitMb": {
           "type": "integer",
           "minimum": 0,
-          "description": "Memory limit of each RLM Python kernel in MiB. On Linux an allocation past it raises MemoryError in the cell. 0 disables it.",
+          "description": "Memory limit of each RLM Python kernel in MiB. Applied as RLIMIT_DATA on Linux only; ignored on other platforms. 0 disables it.",
           "default": 2048
         }
       }

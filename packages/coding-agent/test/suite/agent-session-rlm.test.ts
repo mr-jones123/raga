@@ -10,7 +10,7 @@ import {
 } from "@earendil-works/pi-ai";
 import type { AssistantMessage } from "@earendil-works/pi-ai/compat";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import type { RlmSessionOptions } from "../../src/core/rlm/runtime.ts";
+import { kernelMemoryLimitMb, type RlmSessionOptions } from "../../src/core/rlm/runtime.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
 import { createHarness, getMessageText, getToolResult, type Harness } from "./harness.ts";
 
@@ -193,7 +193,14 @@ describe("AgentSession RLM mode", () => {
 		expect(getMessageText(results[1])).toBe("[result]\n1001");
 	});
 
-	it("passes rlm.memoryLimitMb to the kernel as RAGA_RLM_MEMORY_LIMIT_MB", async () => {
+	it("only applies the kernel memory limit on Linux", () => {
+		expect(kernelMemoryLimitMb("linux", 2048)).toBe(2048);
+		expect(kernelMemoryLimitMb("linux", 0)).toBe(0);
+		expect(kernelMemoryLimitMb("darwin", 2048)).toBe(0);
+		expect(kernelMemoryLimitMb("win32", 2048)).toBe(0);
+	});
+
+	it("passes the effective kernel memory limit to the kernel as RAGA_RLM_MEMORY_LIMIT_MB", async () => {
 		const harness = await setup({ settings: { rlm: { memoryLimitMb: 1234 } } });
 		harness.setResponses([
 			pythonCall(
@@ -202,24 +209,27 @@ describe("AgentSession RLM mode", () => {
 			fauxAssistantMessage("done"),
 		]);
 		await harness.session.prompt("show the limit");
-		expect(resultText(harness)).toBe(process.platform === "linux" ? "[stdout]\n1234\n1234" : "[stdout]\n1234");
+		expect(resultText(harness)).toBe(process.platform === "linux" ? "[stdout]\n1234\n1234" : "[stdout]\n0");
 	});
 
-	it("warns in the python result when the kernel uses 75% of rlm.memoryLimitMb", async () => {
-		const harness = await setup({ settings: { rlm: { memoryLimitMb: 200 } } });
-		harness.setResponses([
-			pythonCall("small = 1"),
-			pythonCall("blob = b'x' * (145 * 1024 * 1024)"),
-			fauxAssistantMessage("done"),
-		]);
-		await harness.session.prompt("fill memory");
+	it.skipIf(process.platform !== "linux")(
+		"warns in the python result when the kernel uses 75% of rlm.memoryLimitMb",
+		async () => {
+			const harness = await setup({ settings: { rlm: { memoryLimitMb: 200 } } });
+			harness.setResponses([
+				pythonCall("small = 1"),
+				pythonCall("blob = b'x' * (145 * 1024 * 1024)"),
+				fauxAssistantMessage("done"),
+			]);
+			await harness.session.prompt("fill memory");
 
-		const results = harness.session.messages.filter((message) => message.role === "toolResult");
-		expect(getMessageText(results[0])).toBe("(no output)");
-		expect(getMessageText(results[1])).toMatch(
-			/^\(no output\)\n\[kernel memory: \d+ MiB of 200 MiB limit; free large variables with del\]$/,
-		);
-	});
+			const results = harness.session.messages.filter((message) => message.role === "toolResult");
+			expect(getMessageText(results[0])).toBe("(no output)");
+			expect(getMessageText(results[1])).toMatch(
+				/^\(no output\)\n\[kernel memory: \d+ MiB of 200 MiB limit; free large variables with del\]$/,
+			);
+		},
+	);
 
 	it.skipIf(process.platform !== "linux")(
 		"notes the memory limit when a cell raises MemoryError and keeps the namespace",

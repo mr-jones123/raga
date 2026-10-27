@@ -145,7 +145,7 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 
 The tool's parameters are `{"code": str}`. It runs as `executionMode: "sequential"`. Its result text is the cell's stdout, stderr, result `repr`, traceback, and background output, in that order. Each non-empty part starts with a label line (`[stdout]`, `[stderr]`, `[result]`, `[error]`, `[background]`), and empty parts are left out. A cell with no output returns `(no output)`. When the text exceeds the `rlm.outputLimit` setting (default 16,000 characters), the tool keeps the first three quarters and the last quarter of the limit and puts `[... N characters cut; full output in cells[-1] ...]` between them. `isError` is true when the cell ends with `status: "error"`.
 
-After the output come memory lines when `rlm.memoryLimitMb` is not 0. When the cell's `done` reports `rss_mb` of at least 75% of the limit, the result ends with `[kernel memory: X MiB of Y MiB limit; free large variables with del]`. When the cell fails with `MemoryError`, it ends with `[kernel memory limit Y MiB reached; free large variables with del, or process data in chunks]`.
+After the output come memory lines when the effective kernel limit is not 0. When the cell's `done` reports `rss_mb` of at least 75% of the limit, the result ends with `[kernel memory: X MiB of Y MiB limit; free large variables with del]`. When the cell fails with `MemoryError`, it ends with `[kernel memory limit Y MiB reached; free large variables with del, or process data in chunks]`.
 
 Before the first cell on each kernel process, the host sends `set_context` with `context.task`, the input paths, and `context.data`. `context.task` is the text of the first user message on the session branch.
 
@@ -155,9 +155,9 @@ The session starts the kernel when it is created. If the start fails, the first 
 
 Each kernel is a separate process. An idle kernel uses about 21 MiB of RSS. A tree holds the root's kernel and at most 8 child kernels at once (see "Child sessions").
 
-1. Limit. The host starts every kernel with the environment variable `RAGA_RLM_MEMORY_LIMIT_MB` set to the `rlm.memoryLimitMb` setting (default 2048). Before the bootstrap, the kernel sets the soft and hard `RLIMIT_DATA` to that many MiB, or to the existing hard limit when that is lower. `0` sets no limit.
+1. Limit. The host starts every kernel with the environment variable `RAGA_RLM_MEMORY_LIMIT_MB` set to the effective limit: `rlm.memoryLimitMb` on Linux, and `0` on other platforms. On Linux, before the bootstrap, the kernel sets the soft and hard `RLIMIT_DATA` to that many MiB, or to the existing hard limit when that is lower. `0` sets no limit.
 2. Linux. `RLIMIT_DATA` covers the heap and private anonymous mappings, so an allocation past the limit raises `MemoryError` in the cell. The cell ends with `status: "error"`, the kernel keeps serving, and earlier variables stay in the namespace.
-3. Other platforms. The kernel sets the limit only on Linux. macOS does not enforce `RLIMIT_DATA`, so there is no hard limit there; the memory lines in the `python` result still appear.
+3. Other platforms. The host passes `0` and the kernel sets no limit, so macOS and Windows have no hard limit and no memory lines in the `python` result.
 4. Subprocesses. A process started from Python code (`subprocess`, `os.system`) inherits the limit. `bash()` runs pi's `bash` tool in the host process, so its commands do not.
 5. Visibility. The `done` of every `execute` carries `rss_mb`, and the `python` result warns from 75% of the limit (see "The python tool").
 6. Growth that the kernel bounds itself: `cells` keeps full output for at most 32 Mi characters (see "Python API"), a snapshot skips a large buffer without pickling it, and `restore` holds one pickle in memory at a time (see "Snapshot and restore").
@@ -190,7 +190,7 @@ A session pinned to an instance revision changes the runtime as follows. [INSTAN
 | `rlm.subModel` | none | `"provider/id"` for `llm_query`, `llm_batch`, and `rlm_query`. |
 | `rlm.outputLimit` | `16000` | Characters of cell output that the model sees per cell. |
 | `rlm.maxDepth` | `2` | How many levels of `rlm_query` children may nest. |
-| `rlm.memoryLimitMb` | `2048` | Memory limit of each kernel in MiB, applied as `RLIMIT_DATA` on Linux. `0` disables it. See "Memory". |
+| `rlm.memoryLimitMb` | `2048` | Memory limit of each kernel in MiB, applied as `RLIMIT_DATA` on Linux; ignored on other platforms. `0` disables it. See "Memory". |
 
 In RLM mode the session's active tools are `python` plus `bash`, `edit`, and `write` as hidden declarations. Hidden tools stay callable from the host and do not reach the model. The `defaultTools` setting, `--tools`, `--no-tools`, and `--no-builtin-tools` do not apply; `--exclude-tools` still removes tools, and extension tools that activate on registration stay declared next to `python`. The system prompt gets an `rlm` section that describes the kernel and its names.
 
