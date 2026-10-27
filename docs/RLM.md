@@ -201,7 +201,7 @@ In an instance session the only allowed tool is `python`, with no hidden built-i
 `python-env.ts` picks the interpreter in this order:
 
 1. The `RAGA_PYTHON` environment variable.
-2. `~/.pi/agent/rlm/venv/bin/python`, when it exists.
+2. `<agent-dir>/rlm/venv/bin/python` (`~/.raga/agent` under `raga`, `~/.pi/agent` under `pi`), when it exists.
 3. A new venv at that path, when `uv` is on `PATH`. The host runs `uv venv --python 3.11` and `uv pip install dill`.
 4. `python3` on `PATH`. Snapshots fail with `dill not installed` if `dill` is missing.
 

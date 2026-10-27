@@ -13,7 +13,7 @@ The engine remains fixed during execution. Changes to the Node implementation ar
 `raga` is the dedicated executable for this workflow. It accepts every instance command
 without the `instance` level: `raga init`, `raga run`, `raga status`, `raga verify run`.
 Bare `raga` opens the interactive session for the project's instance. The `pi` executable
-keeps `pi instance ...` for the same commands, and both share credentials under `~/.pi`.
+keeps `pi instance ...` for the same commands. `raga` reads credentials from `~/.raga/agent` and `pi` from `~/.pi/agent`.
 
 
 An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or newer. Writing children, refinement, and skill proposals also need the project to be a Git repository with a commit at `HEAD`. Every `pi instance` command prints JSON, except `run`. `--project PATH` selects the project, and the default is the current directory. `pi instance --help` lists every command and flag.
@@ -232,7 +232,7 @@ Accepted revisions are the only state that `fork` copies and that a session load
 
 Every session records a `raga-instance-pin` entry with the instance ID, instance root, revision, and project root. Children, memory retrievals, observations, owned candidates, child workspaces, collected changes, and integration checks append their own custom entries to the session. Git versions files, not external services or running processes.
 
-Instance metadata lives in `.raga/`. User credentials and model configuration stay in `~/.pi/agent/auth.json` and `~/.pi/agent/models.json`. An instance session reads them from there and never copies them into a revision, a fork, or a worker environment.
+Instance metadata lives in `.raga/`. User credentials and model configuration stay in the launcher's agent directory: `~/.raga/agent/auth.json` and `~/.raga/agent/models.json` under `raga`, `~/.pi/agent/` under `pi`. An instance session reads them from there and never copies them into a revision, a fork, or a worker environment.
 
 ## Default engineering skills
 
@@ -293,7 +293,7 @@ Each milestone delivers an exercised behavior, not just interfaces or directory 
 
 ### M9. Instance identity and `.raga` discovery
 
-**Delivered.** `src/core/instances/store.ts` initializes, opens, inspects, and forks instances. `PROJECT_CONFIG_DIR_NAME` in `src/config.ts` is `.raga`, and project discovery of settings, skills, prompts, extensions, packages, MCP configuration, and trust uses it. User configuration stays in `~/.pi`. `src/core/instances/migration.ts` performs the explicit `.pi` migration. `createAgentSession` and `createAgentSessionServices` accept `instance`, open the pin, and load resources only from the pinned checkout. Instance sessions disable project resource discovery, so project files cannot override the pin. `src/cli/instance-command.ts` provides `pi instance`.
+**Delivered.** `src/core/instances/store.ts` initializes, opens, inspects, and forks instances. `PROJECT_CONFIG_DIR_NAME` in `src/config.ts` is `.raga`, and project discovery of settings, skills, prompts, extensions, packages, MCP configuration, and trust uses it. User configuration stays in `~/.raga/agent` under `raga` and `~/.pi/agent` under `pi`. `src/core/instances/migration.ts` performs the explicit `.pi` migration. `createAgentSession` and `createAgentSessionServices` accept `instance`, open the pin, and load resources only from the pinned checkout. Instance sessions disable project resource discovery, so project files cannot override the pin. `src/cli/instance-command.ts` provides `pi instance`.
 
 **Acceptance.** Two temporary projects load different instructions and skills and keep separate sessions. A harness-only fork contains no credentials, raw memory, or kernel snapshots. Migration with both source and destination present reports the conflict without data loss. Untrusted project extensions remain inactive.
 

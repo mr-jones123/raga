@@ -89,6 +89,27 @@ If a release stops partway, run the same command again. The script reads the rep
 
 To print the current version, run `node scripts/raga-release.mjs version`. Between releases the output looks like `0.1.0+3.g1a2b3c4`, which means three commits after `raga-v0.1.0`.
 
+## Publish to npm
+
+Raga is published as `raga-cli`, which installs one command, `raga`. The package holds the esbuild bundle of `packages/coding-agent`, which already contains raga's copies of the `pi-*` packages, so it depends only on `jiti`, `@silvia-odwyer/photon-node`, and `quickjs-wasi`. `raga update` reads the latest version from the npm registry.
+
+1. Release first, so `HEAD` is a `raga-vX.Y.Z` tag. The npm version is that release's version.
+2. Build and pack.
+
+	```sh
+	node scripts/raga-pack.mjs
+	```
+
+	The script runs `npm run build`, stages the package in `packages/coding-agent/dist/raga-cli/`, and writes `packages/coding-agent/dist/raga-cli-X.Y.Z.tgz`. It refuses a version between releases, such as `0.7.1+1.g13b6e94`. Pass `--allow-unreleased` to pack one for a local `npm install -g <tarball>` test, and `--skip-build` to reuse the current build.
+3. Publish the tarball. The script prints the command and never publishes.
+
+	```sh
+	npm login
+	npm publish packages/coding-agent/dist/raga-cli-X.Y.Z.tgz
+	```
+
+	A published version can never be reused, even after unpublishing.
+
 ## Merge upstream pi
 
 Merge upstream with a merge commit. Do not rebase onto upstream.

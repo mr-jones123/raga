@@ -535,6 +535,41 @@ Content`,
 			}
 		});
 
+		it("should keep ~/.agents/skills user-scoped when HOME is a symlink and cwd is its real path", async () => {
+			const previousHome = process.env.HOME;
+			const realHome = join(tempDir, "real-home");
+			const linkedHome = join(tempDir, "linked-home");
+			mkdirSync(realHome, { recursive: true });
+			symlinkSync(realHome, linkedHome, process.platform === "win32" ? "junction" : "dir");
+			process.env.HOME = linkedHome;
+
+			try {
+				const cwd = join(realHome, "scratch");
+				mkdirSync(cwd, { recursive: true });
+				mkdirSync(join(realHome, ".agents", "skills", "home-skill"), { recursive: true });
+				writeFileSync(
+					join(realHome, ".agents", "skills", "home-skill", "SKILL.md"),
+					"---\nname: home-skill\ndescription: home\n---\n",
+				);
+
+				const pm = new DefaultPackageManager({
+					cwd,
+					agentDir: join(realHome, ".pi", "agent"),
+					settingsManager: SettingsManager.inMemory(),
+				});
+
+				const result = await pm.resolve();
+				const homeSkills = result.skills.filter((r) => pathEndsWith(r.path, "home-skill/SKILL.md"));
+				expect(homeSkills.map((r) => r.metadata.scope)).toEqual(["user"]);
+			} finally {
+				if (previousHome === undefined) {
+					delete process.env.HOME;
+				} else {
+					process.env.HOME = previousHome;
+				}
+			}
+		});
+
 		it("should dedupe user skill entries when ~/.pi/agent/skills is a symlink to ~/.agents/skills", async () => {
 			const previousHome = process.env.HOME;
 			process.env.HOME = tempDir;

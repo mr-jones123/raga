@@ -2,7 +2,7 @@
 
 Raga is a coding harness for long tasks such as refactors, model training runs, and ports of legacy codebases. It keeps working until a goal or a metric is met, and it is built to get better at a task each time the task repeats. No measurement has shown that improvement yet. Raga is a fork of [pi](https://github.com/badlogic/pi-mono). This document explains how the pi base works and where raga's own layers attach to it. [PROGRESS.md](PROGRESS.md) tracks which of those layers exist today.
 
-The repository still uses pi's names: the `@earendil-works/pi-*` packages and the `pi` binary. User configuration, credentials, and models stay in `~/.pi/agent/`. Project configuration moved from `.pi` to `.raga`, and `pi instance migrate --trust` copies an existing `.pi` directory. Package and executable renaming is separate.
+The repository still uses pi's names: the `@earendil-works/pi-*` packages and the `pi` binary. The `raga` command keeps user configuration, credentials, models, and sessions in `~/.raga/agent/`, and the `pi` command keeps them in `~/.pi/agent/`. `getAgentDir` in `packages/coding-agent/src/config.ts` picks the directory from the launch name. Under `raga`, user skills come only from `~/.raga/agent/skills` and installed packages; the shared `~/.agents/skills` folder is not loaded. Project configuration moved from `.pi` to `.raga`, and `pi instance migrate --trust` copies an existing `.pi` directory. Package renaming is separate.
 
 ## Overview
 
@@ -16,7 +16,7 @@ The TypeScript host is the stable core and is not editable by the agent. Agents 
 
 ## Key concepts
 
-**Session.** A session is one append-only JSONL file under `~/.pi/agent/sessions/`, or under `.raga/state/sessions/` for an instance session. Every entry has an `id` and a `parentId`, so one file holds a tree of branches. The JSONL tree is the source of truth. The in-memory transcript is rebuilt from it before every model request.
+**Session.** A session is one append-only JSONL file under the agent directory's `sessions/` (`~/.raga/agent/sessions/` under `raga`), or under `.raga/state/sessions/` for an instance session. Every entry has an `id` and a `parentId`, so one file holds a tree of branches. The JSONL tree is the source of truth. The in-memory transcript is rebuilt from it before every model request.
 
 **Projection.** `buildSessionProjection` in `packages/coding-agent/src/core/session-manager.ts` turns the current branch into the messages the model sees. It applies compaction summaries and context edits on the way.
 
@@ -100,7 +100,7 @@ The kernel is a small custom Python process, the same design Prime Agent uses. I
 
 An instance keeps two kinds of data. Accepted harness revisions are reviewed, immutable, and shareable. Sessions, kernel snapshots, child checkouts, memory, backend state, and evidence are transient and belong to one project. Keeping the second kind out of the harness repository means a fork or a rollback cannot carry credentials, raw observations, or live kernel state, and a session can always reload exactly the revision it started on.
 
-`createAgentSession` resolves the pin first. When it finds an instance, it reads settings from the pinned `settings.json`, loads resources only from the pinned checkout, stores the session under `.raga/state/sessions/`, forces RLM mode, and starts the kernel in bubblewrap with `python` as the only model tool. Credentials still come from `~/.pi/agent/auth.json`. A child opens the same pin instead of borrowing its parent's loaders, and a writing child works in its own checkout of a project snapshot. Only the supervisor merges child changes, in a separate integration checkout that runs your check command on the combined result.
+`createAgentSession` resolves the pin first. When it finds an instance, it reads settings from the pinned `settings.json`, loads resources only from the pinned checkout, stores the session under `.raga/state/sessions/`, forces RLM mode, and starts the kernel in bubblewrap with `python` as the only model tool. Credentials still come from the agent directory's `auth.json`. A child opens the same pin instead of borrowing its parent's loaders, and a writing child works in its own checkout of a project snapshot. Only the supervisor merges child changes, in a separate integration checkout that runs your check command on the combined result.
 
 Revision changes go through one gate. A candidate becomes active only when supervisor evidence compares it with the current active revision, the caller names that active revision, and the user approves. Opt-in policy approval exists for held-out evidence, but it never covers `extensions/` or `settings.json`.
 

@@ -37,7 +37,7 @@ import type { Readable } from "node:stream";
 import ignore from "ignore";
 import { minimatch } from "minimatch";
 import { gt, maxSatisfying, rcompare, satisfies, valid, validRange } from "semver";
-import { PROJECT_CONFIG_DIR_NAME } from "../config.ts";
+import { IS_RAGA_CLI, PROJECT_CONFIG_DIR_NAME } from "../config.ts";
 import { spawnProcess, spawnProcessSync } from "../utils/child-process.ts";
 import { type GitSource, parseGitUrl } from "../utils/git.ts";
 import {
@@ -2462,9 +2462,13 @@ export class DefaultPackageManager implements PackageManager {
 			themes: join(projectBaseDir, "themes"),
 		};
 		const userAgentsSkillsDir = join(getHomeDir(), ".agents", "skills");
+		const canonicalUserAgentsSkillsDir = canonicalizePath(resolve(userAgentsSkillsDir));
 		const projectTrusted = this.settingsManager.isProjectTrusted();
+		// Canonical paths, so a symlinked HOME cannot bring ~/.agents/skills back in as a project directory.
 		const projectAgentsSkillDirs = projectTrusted
-			? collectAncestorAgentsSkillDirs(this.cwd).filter((dir) => resolve(dir) !== resolve(userAgentsSkillsDir))
+			? collectAncestorAgentsSkillDirs(this.cwd).filter(
+					(dir) => canonicalizePath(resolve(dir)) !== canonicalUserAgentsSkillsDir,
+				)
 			: [];
 
 		const addResources = (
@@ -2534,7 +2538,7 @@ export class DefaultPackageManager implements PackageManager {
 			);
 		}
 
-		// User extensions from ~/.pi/agent/
+		// User extensions from the agent dir (~/.pi/agent/ or ~/.raga/agent/)
 		addResources(
 			"extensions",
 			collectAutoExtensionEntries(userDirs.extensions),
@@ -2543,7 +2547,7 @@ export class DefaultPackageManager implements PackageManager {
 			globalBaseDir,
 		);
 
-		// User skills from ~/.pi/agent/
+		// User skills from the agent dir
 		addResources(
 			"skills",
 			collectAutoSkillEntries(userDirs.skills, "pi"),
@@ -2552,19 +2556,21 @@ export class DefaultPackageManager implements PackageManager {
 			globalBaseDir,
 		);
 
-		// User skills from ~/.agents/ (with its own baseDir)
-		const userAgentsBaseDir = dirname(userAgentsSkillsDir);
-		const userAgentsMetadata: PathMetadata = {
-			...userMetadata,
-			baseDir: userAgentsBaseDir,
-		};
-		addResources(
-			"skills",
-			collectAutoSkillEntries(userAgentsSkillsDir, "agents"),
-			userAgentsMetadata,
-			userOverrides.skills,
-			userAgentsBaseDir,
-		);
+		// User skills from ~/.agents/ (with its own baseDir). Raga keeps its user skills in its own directory.
+		if (!IS_RAGA_CLI) {
+			const userAgentsBaseDir = dirname(userAgentsSkillsDir);
+			const userAgentsMetadata: PathMetadata = {
+				...userMetadata,
+				baseDir: userAgentsBaseDir,
+			};
+			addResources(
+				"skills",
+				collectAutoSkillEntries(userAgentsSkillsDir, "agents"),
+				userAgentsMetadata,
+				userOverrides.skills,
+				userAgentsBaseDir,
+			);
+		}
 
 		addResources(
 			"prompts",

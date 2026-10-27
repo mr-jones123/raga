@@ -1,4 +1,5 @@
 import { compare, valid } from "semver";
+import { RAGA_PACKAGE_NAME } from "../config.ts";
 import { fetchWithRetry } from "./management-http.ts";
 import { getPiUserAgent } from "./pi-user-agent.ts";
 
@@ -85,6 +86,25 @@ export async function getLatestPiRelease(
 		packageName,
 		...(note ? { note } : {}),
 	};
+}
+
+/** The latest `raga-cli` release from the npm registry. Raga is not published through pi.dev. */
+export async function getLatestRagaRelease(
+	currentVersion: string,
+	options: { timeoutMs?: number; retry?: boolean } = {},
+): Promise<LatestPiRelease | undefined> {
+	if (process.env.PI_OFFLINE) return undefined;
+
+	const response = await fetchWithRetry(
+		`https://registry.npmjs.org/${RAGA_PACKAGE_NAME}/latest`,
+		{ headers: { "User-Agent": getPiUserAgent(currentVersion), accept: "application/json" } },
+		{ maxRetries: options.retry ? 2 : 0, timeoutMs: options.timeoutMs ?? DEFAULT_VERSION_CHECK_TIMEOUT_MS },
+	);
+	if (!response.ok) return undefined;
+
+	const data = (await response.json()) as { version?: unknown };
+	if (typeof data.version !== "string" || !data.version.trim()) return undefined;
+	return { version: data.version.trim(), packageName: RAGA_PACKAGE_NAME };
 }
 
 export async function getLatestPiVersion(

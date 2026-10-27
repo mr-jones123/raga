@@ -575,16 +575,18 @@ try {
 }
 
 const piConfigName: string | undefined = pkg.piConfig?.name;
-/** The raga launcher is the same code under another name; branding changes, storage does not. */
+/** The raga launcher is the same code under another name, with its own user directory (~/.raga/agent). */
 const launchedAsRaga = /(?:^|[\\/])raga(?:\.[a-z]+)?$/.test(isBunBinary ? process.execPath : (process.argv[1] ?? ""));
 const ragaBrand: string | undefined = launchedAsRaga ? "raga" : undefined;
 export const PACKAGE_NAME: string = pkg.name || "@earendil-works/pi-coding-agent";
 export const APP_NAME: string = ragaBrand || piConfigName || "pi";
 export const APP_TITLE: string = ragaBrand || (piConfigName ? APP_NAME : "π");
-export const CONFIG_DIR_NAME: string = pkg.piConfig?.configDir || ".pi";
+export const CONFIG_DIR_NAME: string = launchedAsRaga ? ".raga" : pkg.piConfig?.configDir || ".pi";
 export const PROJECT_CONFIG_DIR_NAME = ".raga";
 export const VERSION: string = pkg.version || "0.0.0";
 export const IS_RAGA_CLI = launchedAsRaga;
+/** The npm package that publishes the raga command. `raga update` installs releases of it. */
+export const RAGA_PACKAGE_NAME = "raga-cli";
 
 /**
  * Raga keeps its own version line in annotated `raga-vX.Y.Z` tags, separate from
@@ -616,8 +618,8 @@ function ragaVersion(): string | undefined {
 
 export const DISPLAY_VERSION: string = ragaVersion() ?? VERSION;
 
-// e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR. Branding never moves credentials.
-const AGENT_ENV_NAME = (piConfigName || "pi").toUpperCase();
+// e.g., PI_CODING_AGENT_DIR, TAU_CODING_AGENT_DIR, or RAGA_CODING_AGENT_DIR.
+const AGENT_ENV_NAME = APP_NAME.toUpperCase();
 export const ENV_AGENT_DIR = `${AGENT_ENV_NAME}_CODING_AGENT_DIR`;
 export const ENV_SESSION_DIR = `${AGENT_ENV_NAME}_CODING_AGENT_SESSION_DIR`;
 

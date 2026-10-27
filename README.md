@@ -27,11 +27,18 @@ The RLM runtime works end to end. The adaptive layer, which lets the harness rew
 | Goal and metric loop (`--goal`, `--gate`, `--metric`) | Not started |
 | Native engineering skills (pstack, no-mistakes) | Not started |
 
-The packages and the binary still use pi's names (`@earendil-works/pi-*`, `pi`, `~/.pi`). A rename to `raga` comes later.
+The packages still use pi's names (`@earendil-works/pi-*`). The `raga` command keeps its own user directory, `~/.raga/agent`, for logins, settings, sessions, skills, extensions, and packages. Set `RAGA_CODING_AGENT_DIR` to move it. It does not read `~/.pi/agent` or the shared `~/.agents/skills` folder, so an existing pi setup does not carry over. The `pi` command still uses `~/.pi/agent`.
 
 ## Run it
 
-Raga needs Node.js 22.19 or newer, `uv`, and an AI provider that pi supports.
+Raga needs Node.js 22.19 or newer, `uv`, and an AI provider that pi supports. Install it from npm:
+
+```bash
+npm install -g raga-cli
+raga
+```
+
+`raga update` installs the newest `raga-cli` release. To run from source instead:
 
 ```bash
 git clone https://github.com/mr-jones123/raga.git
@@ -54,7 +61,7 @@ While Python cells run, a small dashboard shows each active cell with a spinning
 
 `./raga-test.sh` runs the TypeScript sources through the resolver, so edits apply without a build. Module loading costs about a second more, because Node strips and resolves the whole source graph on every start. Use it while changing the code, and `./raga` otherwise.
 
-On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~/.pi/agent/rlm/venv`. To use another interpreter, set `RAGA_PYTHON`.
+On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~/.raga/agent/rlm/venv`. To use another interpreter, set `RAGA_PYTHON`.
 
 Without `--rlm`, raga behaves like pi, with `read`, `bash`, `edit`, and `write` as model tools.
 
