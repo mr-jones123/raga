@@ -281,7 +281,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 			output.append("\x1b[?2026h"); // Begin synchronized output
 			if (clear) {
 				output.append(this.deleteKittyImages(this.previousKittyImageIds));
-				output.append("\x1b[2J\x1b[H\x1b[3J"); // Clear screen, home, then clear scrollback
+				output.append("\x1b[0m\x1b[2J\x1b[H\x1b[3J"); // Clear screen, home, then clear scrollback
 			}
 			for (let i = 0; i < newLines.length; i++) {
 				if (i > 0) output.append("\r\n");
@@ -426,7 +426,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 					output.append(`\x1b[${clearStartOffset}B`);
 				}
 				for (let i = 0; i < extraLines; i++) {
-					output.append("\r\x1b[2K");
+					output.append("\r\x1b[0m\x1b[2K");
 					if (i < extraLines - 1) output.append("\x1b[1B");
 				}
 				const moveBack = Math.max(0, extraLines - 1 + clearStartOffset);
@@ -503,9 +503,9 @@ export class TuiMainScreen extends TuiBase implements TUI {
 					return;
 				}
 
-				output.append("\x1b[2K");
+				output.append("\x1b[0m\x1b[2K");
 				for (let row = 1; row < imageReservedRows; row++) {
-					output.append("\r\n\x1b[2K");
+					output.append("\r\n\x1b[0m\x1b[2K");
 				}
 				output.append(`\x1b[${imageReservedRows - 1}A`);
 				output.append(line);
@@ -514,7 +514,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 				continue;
 			}
 
-			output.append("\x1b[2K"); // Clear current line
+			output.append("\x1b[0m\x1b[2K"); // Clear current line
 			if (!isImage && visibleWidth(line) > width) {
 				// Log all lines to crash file for debugging
 				const crashLogPath = path.join(this.logDirectory ?? os.tmpdir(), "pi-tui-crash.log");
@@ -559,7 +559,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 			}
 			const extraLines = this.previousLines.length - newLines.length;
 			for (let i = newLines.length; i < this.previousLines.length; i++) {
-				output.append("\r\n\x1b[2K");
+				output.append("\r\n\x1b[0m\x1b[2K");
 			}
 			// Move cursor back to end of new content
 			output.append(`\x1b[${extraLines}A`);

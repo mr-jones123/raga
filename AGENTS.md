@@ -101,9 +101,10 @@ For testing pi's interactive mode, load and follow [.pi/skills/interactive-testi
 
 ## Changelog
 
-Raga's changelog is the root `CHANGELOG.md`. `scripts/raga-release.mjs` generates it from commit headers at release time. Never edit it by hand. The commit header is the changelog entry, so write it for a reader of the changelog.
+Raga's changelog is the root `CHANGELOG.md`. Semantic-release generates it in CI from conventional commits. Never edit it by hand. Write commit headers for readers of the changelog.
 
-- `feat` becomes **Added**, `fix` becomes **Fixed**, and `perf` and `revert` become **Changed**. A `!` or a `BREAKING CHANGE:` footer puts the commit under **Breaking Changes**. Other types do not appear.
+- `feat` bumps minor; `fix` and `perf` bump patch. A `!` or `BREAKING CHANGE:` footer bumps major, including below 1.0. Other non-breaking types do not release.
+- The release job creates `raga-vX.Y.Z` tags and GitHub Releases after CI passes on `main`. Npm publishing remains manual. Local commits do not release.
 - `packages/*/CHANGELOG.md` and the `vX.Y.Z` tags belong to upstream pi. Never edit those files outside an upstream merge. The `.husky/commit-msg` hook rejects commits that stage them.
 - Land raga work by rebase or squash. The only merge commits allowed on the raga branch are merges from upstream pi.
 

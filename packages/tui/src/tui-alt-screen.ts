@@ -381,7 +381,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 				? ENABLE_BUTTON_MOTION_MOUSE
 				: ENABLE_ALL_MOTION_MOUSE;
 		this.terminal.write(
-			`${ENTER_ALT_SCREEN}${DISABLE_AUTOWRAP}${this.mouseEnabled ? mouseSequence : ""}\x1b[2J\x1b[H\x1b[?25l`,
+			`${ENTER_ALT_SCREEN}${DISABLE_AUTOWRAP}${this.mouseEnabled ? mouseSequence : ""}\x1b[0m\x1b[2J\x1b[H\x1b[?25l`,
 		);
 	}
 
@@ -410,13 +410,18 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 			const documentLines = this.resolveFakeCursors(this.render(width)).map((line) =>
 				line.replace(OSC133_ZONE_PREFIX, ""),
 			);
-			this.lastDocument = this.applyLineResets(documentLines.map((line) => line.replaceAll(CURSOR_MARKER, ""))).map(
-				(line) => (isImageLine(line) || visibleWidth(line) <= width ? line : sliceByColumn(line, 0, width, true)),
+			this.lastDocument = this.applyLineResets(
+				documentLines.map((line) => {
+					const withoutCursor = line.replaceAll(CURSOR_MARKER, "");
+					return isImageLine(withoutCursor) || visibleWidth(withoutCursor) <= width
+						? withoutCursor
+						: sliceByColumn(withoutCursor, 0, width, true);
+				}),
 			);
 			let buffer = `${BEGIN_SYNCHRONIZED_OUTPUT}${EXIT_ALT_SCREEN}${DISABLE_AUTOWRAP}`;
 			for (let row = 0; row < this.lastDocument.length; row++) {
 				if (row > 0) buffer += "\r\n";
-				buffer += `\r\x1b[2K${this.lastDocument[row] ?? ""}`;
+				buffer += `\r\x1b[0m\x1b[2K${this.lastDocument[row] ?? ""}`;
 			}
 			buffer += `\x1b[0m${ENABLE_AUTOWRAP}\r\n\x1b[?25h${END_SYNCHRONIZED_OUTPUT}`;
 			this.terminal.write(buffer);
@@ -1706,10 +1711,13 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		screen = this.compositeFlashes(screen, width, height);
 
 		const cursorPos = this.extractCursorPosition(screen, height);
-		screen = this.applyLineResets(screen).map((line) => {
-			if (isImageLine(line) || visibleWidth(line) <= width) return line;
-			return sliceByColumn(line, 0, width, true);
-		});
+		// Clipping can discard trailing SGR resets. Close styles only after the final width clamp.
+		screen = this.applyLineResets(
+			screen.map((line) => {
+				if (isImageLine(line) || visibleWidth(line) <= width) return line;
+				return sliceByColumn(line, 0, width, true);
+			}),
+		);
 
 		const fullRedraw =
 			this.previousScreen.length === 0 || this.previousScreenWidth !== width || this.previousScreenHeight !== height;
@@ -1746,9 +1754,9 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 				this.imageProtocol === "kitty" && hadUploadedKittyImages
 					? deleteAllKittyPlacements()
 					: this.deleteKittyImages();
-			buffer += `${clearImages}\x1b[2J`;
+			buffer += `${clearImages}\x1b[0m\x1b[2J`;
 		} else if (imagesNeedRedraw) {
-			if (this.imageProtocol === "iterm2") buffer += "\x1b[2J";
+			if (this.imageProtocol === "iterm2") buffer += "\x1b[0m\x1b[2J";
 			else if (this.imageProtocol === "kitty") buffer += deleteAllKittyPlacements();
 		}
 		buffer += preparedKittyScreen.evictedImageDeletion;
@@ -1761,7 +1769,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		if (drawKittyImagesLast) {
 			for (let row = 0; row < height; row++) {
 				if (!fullRedraw && !imagesNeedRedraw && screen[row] === this.previousScreen[row]) continue;
-				buffer += `\x1b[${row + 1};1H\x1b[2K`;
+				buffer += `\x1b[${row + 1};1H\x1b[0m\x1b[2K`;
 			}
 			for (let row = 0; row < height; row++) {
 				if (!fullRedraw && !imagesNeedRedraw && screen[row] === this.previousScreen[row]) continue;
@@ -1776,7 +1784,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		} else {
 			for (let row = 0; row < height; row++) {
 				if (!fullRedraw && !imagesNeedRedraw && screen[row] === this.previousScreen[row]) continue;
-				buffer += `\x1b[${row + 1};1H\x1b[2K${preparedKittyScreen.lines[row] ?? ""}`;
+				buffer += `\x1b[${row + 1};1H\x1b[0m\x1b[2K${preparedKittyScreen.lines[row] ?? ""}`;
 			}
 		}
 

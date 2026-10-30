@@ -65,6 +65,10 @@ On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~
 
 Without `--rlm`, raga behaves like pi, with `read`, `bash`, `edit`, and `write` as model tools.
 
+## Local models
+
+On macOS and Linux, `/local-models` searches Hugging Face, asks before downloading missing weights, and starts models locally. The first recommendation is the official LFM3-1.7B GGUF Q4_K_M build through llama.cpp. The same command detects MLX models automatically on Apple Silicon; no separate backend command is needed. See [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) for setup, cache behavior, and limits.
+
 ## What the model does in RLM mode
 
 The kernel already exists when the model's first turn starts. Each `python` call runs a cell, and variables stay defined for the whole session. The model sees at most `rlm.outputLimit` characters of each cell's output. The full output stays in `cells`.
@@ -113,6 +117,7 @@ print(counts.most_common(5))
 | [docs/RLM.md](docs/RLM.md) | The RLM runtime reference. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
+| [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) | Search, download, and run local Hugging Face models with llama.cpp or MLX. |
 | [docs/RELEASING.md](docs/RELEASING.md) | Versioning, the generated changelog, and merging upstream pi. |
 | [packages/coding-agent/docs/](packages/coding-agent/docs/) | Pi's own docs, which still apply to everything raga inherits. |
 
@@ -123,10 +128,10 @@ npm run check                                     # Lint, format, and type check
 ./test.sh                                         # Tests without API keys
 uv run --no-project --with pytest --with dill \
   pytest packages/coding-agent/python/tests -q     # Python kernel tests
-node scripts/raga-release.mjs check               # Commit headers since the last release
+node scripts/raga-release.mjs version             # Version from raga release tags
 ```
 
-Commit headers follow Conventional Commits, and `scripts/raga-release.mjs` builds `CHANGELOG.md` from them. [AGENTS.md](AGENTS.md) has the rules for humans and agents.
+Commit headers follow Conventional Commits. Semantic-release generates `CHANGELOG.md`, version tags, and GitHub Releases after CI passes on `main`. See [docs/RELEASING.md](docs/RELEASING.md). [AGENTS.md](AGENTS.md) has the rules for humans and agents.
 
 ## Credits
 

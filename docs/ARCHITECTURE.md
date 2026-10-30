@@ -115,4 +115,4 @@ Revision changes go through one gate. A candidate becomes active only when super
 
 ## Versioning
 
-Raga's version is the newest annotated `raga-vX.Y.Z` tag behind `HEAD`. `scripts/raga-release.mjs` builds the root `CHANGELOG.md` from the conventional commit headers on the first-parent history since that tag. Upstream pi commits never become entries. A merge from upstream becomes one line under **Upstream**. [RELEASING.md](RELEASING.md) has the commands.
+Raga's version comes from reachable `raga-vX.Y.Z` tags, separate from upstream pi's `vX.Y.Z` tags. Semantic-release runs after CI passes on `main`, analyzes conventional commits, updates the root `CHANGELOG.md`, and publishes a tag and GitHub Release. It includes newly merged upstream commits in its analysis. Local commits do not release; npm publishing remains manual. [RELEASING.md](RELEASING.md) describes the workflow.

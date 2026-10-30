@@ -11,7 +11,7 @@ Status values are `done`, `in progress`, `not started`, and `blocked`.
 | Fork pi at upstream `14c8118` (2026-10-23) | done | Branch `raga/foundation`. Pi package names are unchanged. |
 | `docs/ARCHITECTURE.md` | done | |
 | `docs/PROGRESS.md` | done | |
-| Raga versioning and changelog generation | done | `scripts/raga-release.mjs` and [RELEASING.md](RELEASING.md). Baseline tag `raga-v0.0.0` on `14c8118`. Pi's remote is renamed to `upstream`. |
+| Raga versioning and changelog generation | done | `release.config.mjs` and [RELEASING.md](RELEASING.md). Semantic-release publishes `raga-v*` tags and GitHub Releases after CI passes on `main`. |
 
 ## Step 1. Native RLM runtime
 
