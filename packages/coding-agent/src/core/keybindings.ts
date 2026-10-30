@@ -23,6 +23,18 @@ export function useWindowsKeybindings(
 const windowsKeybindings = useWindowsKeybindings();
 
 const APP_KEYBINDINGS = {
+	"app.diff.commits": { defaultKeys: "c", description: "Diff dashboard: browse commits" },
+	"app.diff.working": { defaultKeys: "w", description: "Diff dashboard: working-tree changes" },
+	"app.diff.staged": { defaultKeys: "s", description: "Diff dashboard: staged changes" },
+	"app.diff.file": { defaultKeys: "o", description: "Diff dashboard: toggle diff and full file" },
+	"app.diff.zoom": { defaultKeys: "f", description: "Diff dashboard: toggle fullscreen viewer" },
+	"app.diff.refresh": { defaultKeys: "r", description: "Diff dashboard: refresh" },
+	"app.diff.nextCategory": { defaultKeys: "tab", description: "Diff dashboard: next category" },
+	"app.diff.previousCategory": { defaultKeys: "shift+tab", description: "Diff dashboard: previous category" },
+	"app.diff.left": { defaultKeys: "left", description: "Diff dashboard: scroll left" },
+	"app.diff.right": { defaultKeys: "right", description: "Diff dashboard: scroll right" },
+	"app.diff.start": { defaultKeys: "home", description: "Diff dashboard: first line" },
+	"app.diff.end": { defaultKeys: "end", description: "Diff dashboard: last line" },
 	"app.interrupt": { defaultKeys: "escape", description: "Cancel or abort" },
 	"app.clear": { defaultKeys: "ctrl+c", description: "Clear editor" },
 	"app.exit": { defaultKeys: "ctrl+d", description: "Exit when editor is empty" },

@@ -69,6 +69,10 @@ Without `--rlm`, raga behaves like pi, with `read`, `bash`, `edit`, and `write` 
 
 On macOS and Linux, `/local-models` searches Hugging Face, asks before downloading missing weights, and starts models locally. The first recommendation is the official LFM3-1.7B GGUF Q4_K_M build through llama.cpp. The same command detects MLX models automatically on Apple Silicon; no separate backend command is needed. See [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) for setup, cache behavior, and limits.
 
+## Review changes
+
+`/diff` opens a read-only Git review dashboard. Browse changes by category (tests, modules, GitHub workflows, documentation, dependencies, configuration), inspect staged or working-tree changes, or pick a commit from history. Open a file to scroll its diff, and toggle to its full contents without leaving raga. See [docs/DIFF.md](docs/DIFF.md) for controls.
+
 ## What the model does in RLM mode
 
 The kernel already exists when the model's first turn starts. Each `python` call runs a cell, and variables stay defined for the whole session. The model sees at most `rlm.outputLimit` characters of each cell's output. The full output stays in `cells`.
