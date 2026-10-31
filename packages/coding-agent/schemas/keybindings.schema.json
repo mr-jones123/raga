@@ -195,6 +195,54 @@
       "$ref": "#/$defs/KeybindingValue",
       "description": "Scroll viewport to bottom"
     },
+    "app.diff.commits": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: browse commits"
+    },
+    "app.diff.working": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: working-tree changes"
+    },
+    "app.diff.staged": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: staged changes"
+    },
+    "app.diff.file": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: toggle diff and full file"
+    },
+    "app.diff.zoom": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: toggle fullscreen viewer"
+    },
+    "app.diff.refresh": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: refresh"
+    },
+    "app.diff.nextCategory": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: next category"
+    },
+    "app.diff.previousCategory": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: previous category"
+    },
+    "app.diff.left": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: scroll left"
+    },
+    "app.diff.right": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: scroll right"
+    },
+    "app.diff.start": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: first line"
+    },
+    "app.diff.end": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Diff dashboard: last line"
+    },
     "app.interrupt": {
       "$ref": "#/$defs/KeybindingValue",
       "description": "Cancel or abort"
