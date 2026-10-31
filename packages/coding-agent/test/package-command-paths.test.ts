@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
+import { APP_NAME, ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
 import { DefaultPackageManager, type ResolvedPaths } from "../src/core/package-manager.ts";
 import { InMemorySettingsStorage, SettingsManager } from "../src/core/settings-manager.ts";
@@ -456,6 +456,14 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 			logSpy.mockRestore();
 			errorSpy.mockRestore();
 		}
+	});
+
+	it("brands self-update help for the active CLI", async () => {
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		await runPackageCommandDirectly(["update", "--help"]);
+		const output = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
+		expect(output).toContain(`Update ${APP_NAME}, installed packages, or model catalogs.`);
+		expect(output).toContain(`${APP_NAME} update self`);
 	});
 
 	it("refreshes only model catalogs with update --models", async () => {

@@ -58,8 +58,10 @@ test("CI gates releases on all checks, restricts publishing, and fetches full hi
 	assert.match(release.if, /github.event_name == 'push'/);
 	assert.match(release.if, /github.ref == 'refs\/heads\/main'/);
 	assert.match(release.if, /github.repository == 'mr-jones123\/raga'/);
-	assert.deepEqual(release.permissions, { contents: "write" });
+	assert.deepEqual(release.permissions, { contents: "write", "id-token": "write" });
 	assert.equal(release.steps[0].with["fetch-depth"], 0);
-	assert.equal(release.steps.at(-1).run, "npx --no-install semantic-release");
+	assert.equal(release.steps.at(-2).run, "npx --no-install semantic-release");
+	assert.equal(release.steps.at(-1).run, "node scripts/raga-publish.mjs");
+	assert.equal(release.steps.find((step) => step.name === "Setup Node.js").with["node-version"], 24);
 	assert.equal(workflow.concurrency["cancel-in-progress"], "${{ github.event_name == 'pull_request' }}");
 });

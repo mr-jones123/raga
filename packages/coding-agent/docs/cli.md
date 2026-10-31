@@ -270,6 +270,12 @@ See [Pi Packages](packages.md) for source formats, filtering, installation, and 
 
 Add `--local` or `-l` to `install`, `remove`, `uninstall`, or `config` to use project settings instead of global settings.
 
+### Update raga
+
+When using the `raga` command, run `raga update` in your terminal to update the CLI from the latest published `raga-cli` npm release. `raga update --self` does the same thing. Restart raga afterward. If an older CLI cannot update itself, use `npm install -g raga-cli@latest`.
+
+Use `raga update --extensions` for installed packages, `raga update --models` for model catalogs, or `raga update --all` for the CLI and packages. Model catalog refreshes do not download local model weights. Run `raga update --help` for all options. Settings, authentication, and sessions remain in the separate raga user directory.
+
 ### Update Pi or packages
 
 Running `pi update` without a target updates Pi itself.

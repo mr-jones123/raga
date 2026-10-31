@@ -38,7 +38,20 @@ npm install -g raga-cli
 raga
 ```
 
-`raga update` installs the newest `raga-cli` release. To run from source instead:
+### Update
+
+Exit raga, then run:
+
+```bash
+raga update
+raga --version
+```
+
+This installs the latest published `raga-cli` release without deleting your settings or sessions. Restart raga afterward. If an older version cannot update itself, run `npm install -g raga-cli@latest`. See [docs/UPDATING.md](docs/UPDATING.md) for other update targets, source checkouts, and troubleshooting.
+
+### Run from source
+
+To run from source instead:
 
 ```bash
 git clone https://github.com/mr-jones123/raga.git
@@ -122,7 +135,8 @@ print(counts.most_common(5))
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
 | [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) | Search, download, and run local Hugging Face models with llama.cpp or MLX. |
-| [docs/RELEASING.md](docs/RELEASING.md) | Versioning, the generated changelog, and merging upstream pi. |
+| [docs/UPDATING.md](docs/UPDATING.md) | Install and update the CLI, extensions, and model catalogs. |
+| [docs/RELEASING.md](docs/RELEASING.md) | Automatic npm publishing, versioning, and merging upstream pi. |
 | [packages/coding-agent/docs/](packages/coding-agent/docs/) | Pi's own docs, which still apply to everything raga inherits. |
 
 ## Development

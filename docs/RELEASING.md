@@ -11,8 +11,9 @@ Push conventional commits to `main`. After both CI jobs pass, the release job:
 3. Updates the root `CHANGELOG.md` and commits only that file as `chore(release): raga vX.Y.Z [skip ci]`.
 4. Pushes the release commit and the `raga-vX.Y.Z` tag.
 5. Creates a GitHub Release with the generated notes.
+6. Builds and packs the tagged release, then publishes `raga-cli` to npm with provenance through npm trusted publishing. Already-published versions are skipped; pushes that create no release skip npm publication.
 
-Configuration lives in `release.config.mjs`; the job lives in `.github/workflows/ci.yml`. The job runs only for pushes to the raga repository's `main` branch, never for pull requests. It uses the built-in `GITHUB_TOKEN` with `contents: write`; no npm token is needed. If branch or tag rules prevent the bot from pushing, repository administrators must explicitly allow the release bot under those rules. Do not disable protections globally.
+Configuration lives in `release.config.mjs`; the job lives in `.github/workflows/ci.yml`. The job runs only for pushes to the raga repository's `main` branch, never for pull requests. It uses the built-in `GITHUB_TOKEN` with `contents: write` for GitHub and `id-token: write` for npm trusted publishing; no npm token is needed. If branch or tag rules prevent the bot from pushing, repository administrators must explicitly allow the release bot under those rules. Do not disable protections globally.
 
 The local `post-commit` release hook has been removed. Local commits no longer create release commits or tags. Run `npx husky` once per clone to enable the remaining commit validation hooks.
 
@@ -60,11 +61,32 @@ Between releases the output looks like `0.8.0+3.g1a2b3c4`. Both older annotated 
 
 ## Publish to npm
 
-Npm publishing remains manual. CI creates GitHub releases, not npm packages, and does not change upstream workspace versions.
+Raga is published as `raga-cli`, which installs the `raga` command. It bundles `packages/coding-agent` and raga's copies of the pi packages. Publishing does not change upstream workspace versions. Users install with `npm install -g raga-cli` and update with `raga update`; see [UPDATING.md](UPDATING.md).
 
-Raga is published as `raga-cli`, which installs the `raga` command. It bundles `packages/coding-agent` and raga's copies of the pi packages.
+### One-time npm trusted publisher setup
 
-1. Fetch the new release tag and check it out in a clean checkout. Use the tag, not an unreleased commit.
+On npmjs.com, open **raga-cli → Settings → Trusted Publisher**, choose **GitHub Actions**, and enter:
+
+| Field | Value |
+|---|---|
+| Organization or user | `mr-jones123` |
+| Repository | `raga` |
+| Workflow filename | `ci.yml` (not `.github/workflows/ci.yml`) |
+| Environment name | Leave empty; the release job does not declare an environment |
+
+You must have permission to manage the npm package. If it has never been published, publish its first version manually before configuring the trusted publisher. The package and GitHub repository must be public for provenance.
+
+The release job uses a GitHub-hosted Ubuntu runner and Node 24, which supplies npm with trusted publishing support. npm requires at least npm 11.5.1 and Node 22.14.0 for this authentication method. `scripts/raga-publish.mjs` verifies the npm version before building and publishing. Do not configure `NPM_TOKEN` or `NODE_AUTH_TOKEN` for this job; GitHub's short-lived OIDC identity supplies authentication.
+
+Save this configuration before the first publishing run. npm does not validate the settings when you save them; a filename or repository mismatch will fail at publication. See [npm trusted publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+
+### Publication and recovery
+
+After semantic-release completes, `scripts/raga-publish.mjs` requires an exact `raga-vX.Y.Z` tag at `HEAD`. It checks whether that version is already on npm, runs `scripts/raga-pack.mjs`, and publishes the resulting tarball with `--access public --provenance --ignore-scripts`. Registry failures other than a missing version fail the job rather than being treated as permission to publish.
+
+If npm publication fails after GitHub release creation, the GitHub release remains published. Fix the trusted publisher configuration first. Do not delete the tag, reuse an npm version, or assume semantic-release will recreate an existing release on a retry. To recover, publish the existing tagged version manually from a clean checkout using an npm account authorized to publish:
+
+1. Fetch the new release tag and check it out in a clean checkout. Use the tag, not an unreleased commit. Install dependencies with `npm ci --ignore-scripts`.
 2. Build and pack:
 
    ```sh
@@ -76,7 +98,7 @@ Raga is published as `raga-cli`, which installs the `raga` command. It bundles `
 
    ```sh
    npm login
-   npm publish packages/coding-agent/dist/raga-cli-X.Y.Z.tgz
+   npm publish packages/coding-agent/dist/raga-cli-X.Y.Z.tgz --access public --ignore-scripts
    ```
 
 A published npm version cannot be reused.
