@@ -65,7 +65,6 @@ import {
 	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "../../config.ts";
-import { agentCommand } from "../../core/agent-command.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
 import { type AgentSessionRuntime, SessionImportFileNotFoundError } from "../../core/agent-session-runtime.ts";
 import type { AgentSessionRuntimeDiagnostic } from "../../core/agent-session-services.ts";
@@ -95,15 +94,6 @@ import type {
 } from "../../core/extensions/index.ts";
 import { FooterDataProvider, type ReadonlyFooterDataProvider } from "../../core/footer-data-provider.ts";
 import { configureHttpDispatcher, formatHttpIdleTimeoutMs } from "../../core/http-dispatcher.ts";
-import {
-	checkBendFormal,
-	draftBendFormal,
-	existingBendFiles,
-	scaffoldBendFiles,
-	writeBendDraft,
-} from "../../core/instances/bend-formal.ts";
-import { resolveInstancePin } from "../../core/instances/session.ts";
-import { installedBend, readVerificationConfig } from "../../core/instances/verification.ts";
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.ts";
 import type { McpHttpServerConfig } from "../../core/mcp-servers.ts";
 import { createCompactionSummaryMessage, createCustomMessage } from "../../core/messages.ts";
@@ -3281,11 +3271,6 @@ export class InteractiveMode {
 			if (text === "/new") {
 				this.editor.setText("");
 				await this.handleClearCommand();
-				return;
-			}
-			if (text === "/bend-formal") {
-				this.editor.setText("");
-				await this.handleBendFormalCommand();
 				return;
 			}
 			if (text === "/compact" || text.startsWith("/compact ")) {
@@ -7096,93 +7081,6 @@ export class InteractiveMode {
 
 		this.bashComponent = undefined;
 		this.ui.requestRender();
-	}
-
-	/**
-	 * `/bend-formal`: scaffold laws, draft them on request, then check them with the pinned
-	 * Bend release. Drafts are written only after a confirmation; enabling is a separate one.
-	 */
-	private async handleBendFormalCommand(): Promise<void> {
-		const cwd = this.sessionManager.getCwd();
-		const pin = await resolveInstancePin(cwd, undefined, this.sessionManager);
-		if (!pin) {
-			this.showStatus("Bend formal needs a raga instance in this project. Run `raga init` first.");
-			return;
-		}
-		const root = pin.instanceRoot;
-		const choice = await this.showExtensionSelector("Bend formal verification", [
-			"Write the laws myself",
-			"Describe the rules and let the agent draft them",
-			"Check the current laws",
-		]);
-		if (!choice) return;
-		try {
-			if (choice === "Write the laws myself") {
-				const scaffold = await scaffoldBendFiles(root);
-				const state = scaffold.created.length
-					? `Created ${scaffold.created.join(" and ")}.`
-					: "Both files already exist.";
-				this.showStatus(
-					`Bend formal: ${state}\nEdit ${scaffold.lawsPath} and ${scaffold.proofPath}, then run /bend-formal to check.`,
-				);
-				return;
-			}
-			if (choice.startsWith("Describe")) {
-				const rules = await this.showExtensionInput(
-					"Rules that must never break",
-					"For example: no player can reach the flag",
-				);
-				if (!rules?.trim()) return;
-				this.showStatus("Bend formal: drafting laws with the agent. This can take a few minutes.");
-				const draft = await draftBendFormal(agentCommand(), { projectRoot: cwd, request: rules });
-				if (!draft.parsed) {
-					this.showStatus(`Bend formal: the agent returned no laws block.\n${draft.notes.slice(0, 1500)}`);
-					return;
-				}
-				const truncated = draft.laws.length > 1200 || draft.proof.length > 800;
-				const preview = `${draft.laws.slice(0, 1200)}\n\n--- proof ---\n${draft.proof.slice(0, 800)}${
-					truncated ? "\n\n(Preview truncated. The full draft will be written.)" : ""
-				}`;
-				if (!(await this.showExtensionConfirm("Save these laws?", preview))) return;
-				const existing = await existingBendFiles(root);
-				if (existing.length > 0) {
-					const replace = await this.showExtensionConfirm(
-						"Replace the existing law files?",
-						`${existing.join(" and ")} will be overwritten. Their current contents are not backed up.`,
-					);
-					if (!replace) return;
-				}
-				const written = await writeBendDraft(root, draft, { approved: true, overwrite: existing.length > 0 });
-				this.showStatus(`Bend formal: saved ${written.lawsPath} and ${written.proofPath}.`);
-			}
-			const tool = await installedBend(root);
-			if (!tool) {
-				const download = await this.showExtensionConfirm(
-					"Download pinned Bend 2.0.39?",
-					"About 37 MB from GitHub. The archive checksum is verified before it is used.",
-				);
-				if (!download) return;
-			}
-			if (!(await readVerificationConfig(root))?.enabled) {
-				const enable = await this.showExtensionConfirm(
-					"Enable verification?",
-					"Once enabled, activating a harness revision requires a passing proof.",
-				);
-				if (!enable) return;
-			}
-			this.showStatus("Bend formal: checking proofs in the sandbox.");
-			const check = await checkBendFormal(root, {
-				instanceId: pin.instanceId,
-				revision: pin.revision,
-				install: !tool,
-				network: true,
-				enable: true,
-			});
-			const output = (check.result.stdout || check.result.stderr).trim();
-			this.showStatus(`Bend formal: ${check.record.verdict.toUpperCase()}.\n${output.slice(0, 2000)}`);
-		} catch (error) {
-			this.showStatus(`Bend formal: ${error instanceof Error ? error.message : String(error)}`);
-		}
 	}
 
 	private async handleCompactCommand(customInstructions?: string): Promise<void> {

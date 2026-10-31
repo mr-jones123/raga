@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Deck title</title>
+<style>
+
+	/* Theme. Change these variables to restyle text, slides, code, and Pele diagrams together. */
+	:root {
+		--font-sans: "Inter", "SF Pro Text", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+		--font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+		--bg: #fbfaf7;
+		--fg: #17171a;
+		--muted: #6b6b73;
+		--surface: #f1efe9;
+		--surface-alt: #e6e3da;
+		--border: #d8d4c8;
+		--accent: #3554d1;
+		--accent-soft: #e4e9fb;
+		--good: #1f8a5b;
+		--warn: #b7791f;
+		--bad: #c2412d;
+	}
+	:root[data-theme="dark"] {
+		--bg: #111114;
+		--fg: #ececf1;
+		--muted: #9a9aa6;
+		--surface: #1b1b20;
+		--surface-alt: #26262d;
+		--border: #34343c;
+		--accent: #7b93ff;
+		--accent-soft: #1e2440;
+		--good: #4cc38a;
+		--warn: #e0a84a;
+		--bad: #ef6f5c;
+	}
+	:root[data-theme="ink"] {
+		--bg: #ffffff;
+		--fg: #0b0b0c;
+		--muted: #5c5c63;
+		--surface: #f4f4f5;
+		--surface-alt: #e8e8ea;
+		--border: #d4d4d8;
+		--accent: #0b0b0c;
+		--accent-soft: #f0f0f1;
+	}
+	* { box-sizing: border-box; }
+	html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+	body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-feature-settings: "ss01", "cv11"; -webkit-font-smoothing: antialiased; }
+	h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.4em; font-weight: 700; }
+	p, li { line-height: 1.55; }
+	a { color: var(--accent); text-decoration: none; }
+	code { font-family: var(--font-mono); font-size: 0.88em; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 0.08em 0.35em; }
+	pre.code { margin: 0; padding: 18px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; white-space: pre-wrap; }
+	pre.code code { background: none; border: 0; padding: 0; font-size: 0.82em; line-height: 1.6; }
+	.hljs-keyword, .hljs-built_in, .hljs-selector-tag { color: var(--accent); font-weight: 600; }
+	.hljs-string, .hljs-attr, .hljs-template-tag { color: var(--good); }
+	.hljs-number, .hljs-literal, .hljs-symbol { color: var(--warn); }
+	.hljs-comment, .hljs-quote { color: var(--muted); font-style: italic; }
+	.hljs-title, .hljs-function .hljs-title, .hljs-class .hljs-title { color: var(--bad); }
+	table { width: 100%; border-collapse: collapse; font-size: 0.92em; }
+	th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+	th { font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+	.kicker { font-size: 0.8em; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8em; }
+	.muted { color: var(--muted); }
+	.callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 14px 18px; border-radius: 0 10px 10px 0; }
+	.callout.good { border-color: var(--good); }
+	.callout.warn { border-color: var(--warn); }
+	.callout.bad { border-color: var(--bad); }
+	.tag { display: inline-block; font-size: 0.75em; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--surface-alt); color: var(--fg); }
+	.cols { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 40px; align-items: start; }
+	.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+	.stat .value { font-size: 3.2em; font-weight: 750; letter-spacing: -0.04em; line-height: 1; }
+	.stat .label { color: var(--muted); margin-top: 0.4em; }
+	figure.diagram { margin: 0; display: flex; justify-content: center; }
+	figure.diagram svg { max-width: 100%; height: auto; }
+	figcaption { color: var(--muted); font-size: 0.85em; text-align: center; margin-top: 0.6em; }
+	/* Pele reads these variables, so diagrams follow the theme. */
+	.pele {
+		--pele-bg: var(--bg); --pele-fg: var(--fg); --pele-muted: var(--muted); --pele-line: var(--muted);
+		--pele-surface: var(--surface); --pele-surface-alt: var(--surface-alt); --pele-border: var(--border);
+		--pele-accent: var(--accent); --pele-critical: var(--bad); --pele-font: var(--font-sans); --pele-font-mono: var(--font-mono);
+		--pele-radius: 8px;
+	}
+
+	/* Slides: 1600x900, one slide per PDF page. Keep each slide's content inside its frame. */
+	@page { size: 1600px 900px; margin: 0; }
+	body { font-size: 30px; }
+	.slide { position: relative; width: 1600px; height: 900px; padding: 96px 120px; overflow: hidden; break-after: page; display: flex; flex-direction: column; justify-content: center; background: var(--bg); }
+	.slide h1 { font-size: 2.8em; }
+	.slide h2 { font-size: 1.9em; margin-bottom: 0.7em; }
+	.slide ul { margin: 0; padding-left: 1.1em; }
+	.slide li + li { margin-top: 0.45em; }
+	.slide .footer { position: absolute; left: 120px; right: 120px; bottom: 44px; display: flex; justify-content: space-between; font-size: 0.55em; color: var(--muted); }
+	.slide.title { justify-content: flex-end; padding-bottom: 140px; }
+	.slide.title h1 { font-size: 3.6em; max-width: 13em; }
+	.slide.title .subtitle { font-size: 1.15em; color: var(--muted); max-width: 32em; }
+	.slide.section { background: var(--accent); color: var(--bg); }
+	.slide.section .kicker, .slide.section .footer { color: var(--bg); opacity: 0.75; }
+	.slide.statement h2 { font-size: 2.4em; max-width: 18em; }
+	.slide figure.diagram svg { max-height: 560px; }
+	@media screen {
+		body { background: var(--surface-alt); padding: 40px 0; }
+		.slide { margin: 0 auto 40px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12); border-radius: 6px; }
+	}
+</style>
+</head>
+<body>
+
+<section class="slide title">
+	<div class="kicker">Project · Month Year</div>
+	<h1>Deck title that states the point</h1>
+	<p class="subtitle">One sentence on what the audience will take away.</p>
+	<div class="footer"><span>Author</span><span>1</span></div>
+</section>
+
+<section class="slide">
+	<div class="kicker">Context</div>
+	<h2>A slide title that says the conclusion</h2>
+	<ul>
+		<li>One idea per bullet, at most five bullets.</li>
+		<li>Use a diagram or a number when it explains faster than words.</li>
+	</ul>
+	<div class="footer"><span>Deck title</span><span>2</span></div>
+</section>
+
+<section class="slide">
+	<div class="kicker">How it works</div>
+	<h2>Diagrams are Mermaid, rendered by Pele</h2>
+	<pre class="mermaid">
+flowchart LR
+  A[Source] --> B[Build] --> C[PDF]
+	</pre>
+	<div class="footer"><span>Deck title</span><span>3</span></div>
+</section>
+
+</body>
+</html>

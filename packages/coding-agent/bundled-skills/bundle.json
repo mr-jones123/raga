@@ -24,9 +24,19 @@
   ],
   "skills": [
     {
+      "name": "bend",
+      "path": "skills/bend/SKILL.md",
+      "source": "raga"
+    },
+    {
       "name": "peak",
       "path": "skills/peak/SKILL.md",
       "source": "pstack"
+    },
+    {
+      "name": "raga-artifacts",
+      "path": "skills/raga-artifacts/SKILL.md",
+      "source": "raga"
     }
   ],
   "files": [
@@ -242,10 +252,24 @@
     },
     {
       "path": "README.md",
-      "sha256": "f49df779e23215fded1a5d1d99ce247bd4f763411689c382bcfe674386672b08",
+      "sha256": "f58c9364c2f5a4b25f589ae4bbef0557f2d7fc60a16d87fd087cee3b13013154",
       "source": "raga bundle maintenance guide",
-      "sourceSha256": "f49df779e23215fded1a5d1d99ce247bd4f763411689c382bcfe674386672b08",
+      "sourceSha256": "f58c9364c2f5a4b25f589ae4bbef0557f2d7fc60a16d87fd087cee3b13013154",
       "adaptation": "raga bundle maintenance guide"
+    },
+    {
+      "path": "skills/bend/bend_tool.py",
+      "sha256": "cee21f9e40c1d95702f09bd635db3046683f95c3d78f18bd1e68e30e192ed968",
+      "source": "raga native adaptation",
+      "sourceSha256": "cee21f9e40c1d95702f09bd635db3046683f95c3d78f18bd1e68e30e192ed968",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/bend/SKILL.md",
+      "sha256": "89001ac986846444f277ab806c5f92f994924569e418f3da327d61c94b028d2e",
+      "source": "raga native adaptation",
+      "sourceSha256": "89001ac986846444f277ab806c5f92f994924569e418f3da327d61c94b028d2e",
+      "adaptation": "raga native adaptation"
     },
     {
       "path": "skills/peak/playbooks/authoring-a-skill.md",
@@ -858,16 +882,16 @@
     },
     {
       "path": "skills/peak/references/raga-runtime/raga_runtime.py",
-      "sha256": "5bb5fda3cb481df3dc149b88867a75c1efb27c612a0d3ee194d96c134035e638",
+      "sha256": "bb2d22512d55f9acf9e2480efc6aa55f8e28ccd3d9a8e98f5c14a1ee591f7538",
       "source": "raga native Python adapter",
-      "sourceSha256": "5bb5fda3cb481df3dc149b88867a75c1efb27c612a0d3ee194d96c134035e638",
+      "sourceSha256": "bb2d22512d55f9acf9e2480efc6aa55f8e28ccd3d9a8e98f5c14a1ee591f7538",
       "adaptation": "raga native Python adapter"
     },
     {
       "path": "skills/peak/references/raga-runtime/SKILL.md",
-      "sha256": "ef2891819b052f701bbd28b253612ffb76b46538d3f9c35ed4d5a7ef2f3fe342",
+      "sha256": "5249166b9afe12ecd202971f5dba602b1a0826b6089b5630488cfda510de0440",
       "source": "raga native adaptation",
-      "sourceSha256": "ef2891819b052f701bbd28b253612ffb76b46538d3f9c35ed4d5a7ef2f3fe342",
+      "sourceSha256": "5249166b9afe12ecd202971f5dba602b1a0826b6089b5630488cfda510de0440",
       "adaptation": "raga native adaptation"
     },
     {
@@ -1390,10 +1414,52 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "a45c66592cd4b3c5afcdac28e259ae37c76c43d006de664e6091dec0d778af83",
+      "sha256": "f3feb010706f5e125ef7b95059c1c939bf86c366ffc62f3b5d50faba3e864e94",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"
+    },
+    {
+      "path": "skills/raga-artifacts/artifact_tool.py",
+      "sha256": "5e4d7ca9db500877f6386a85ce7906cdff79f0c791cad4c5253c9c6d7043b721",
+      "source": "raga native adaptation",
+      "sourceSha256": "5e4d7ca9db500877f6386a85ce7906cdff79f0c791cad4c5253c9c6d7043b721",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/raga-artifacts/artifact.mjs",
+      "sha256": "a1affbf90bedc1809654b715d746ee2691de896043b919222d3cb35dd5369cc1",
+      "source": "raga native adaptation",
+      "sourceSha256": "a1affbf90bedc1809654b715d746ee2691de896043b919222d3cb35dd5369cc1",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/raga-artifacts/diagrams.md",
+      "sha256": "f5218754b25c7a441ee81ff6755a36320c559835edc574b00ac6eaf9c82b2de6",
+      "source": "raga native adaptation",
+      "sourceSha256": "f5218754b25c7a441ee81ff6755a36320c559835edc574b00ac6eaf9c82b2de6",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/raga-artifacts/SKILL.md",
+      "sha256": "e258a80cadf528f411ed25bc793a4b0963a38e0776485cb2df7e357fb277192a",
+      "source": "raga native adaptation",
+      "sourceSha256": "e258a80cadf528f411ed25bc793a4b0963a38e0776485cb2df7e357fb277192a",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/raga-artifacts/templates/doc.html",
+      "sha256": "a2f0ed6c3f7b4cbea5f5fa16436623a71ac49ad536a1129bb08911e4337eb9f6",
+      "source": "raga native adaptation",
+      "sourceSha256": "a2f0ed6c3f7b4cbea5f5fa16436623a71ac49ad536a1129bb08911e4337eb9f6",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/raga-artifacts/templates/slides.html",
+      "sha256": "1aa47336acfe08114464cf27e13131714c23d4f7667940a92620eb39fb626c3c",
+      "source": "raga native adaptation",
+      "sourceSha256": "1aa47336acfe08114464cf27e13131714c23d4f7667940a92620eb39fb626c3c",
+      "adaptation": "raga native adaptation"
     }
   ],
   "exclusions": [

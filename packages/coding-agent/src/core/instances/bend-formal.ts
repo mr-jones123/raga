@@ -1,40 +1,12 @@
 /**
- * The `/bend-formal` workflow: scaffold laws, draft them with an agent, then run the
- * pinned checker. Drafts never become active without an explicit approval flag, and the
- * agent only ever returns text; it cannot write into `.raga`.
+ * Agent-drafted Bend laws for `verify suggest`. The agent only returns text; drafts land in
+ * the suggestions directory and never become active on their own. Interactive sessions use
+ * the bundled `bend` skill instead.
  */
 import { spawn } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { AgentCommand } from "../agent-command.ts";
-import type { CommandResult } from "./types.ts";
-import {
-	installBend,
-	installedBend,
-	readVerificationConfig,
-	runVerification,
-	setVerificationEnabled,
-	type VerificationRecord,
-	type VerificationTool,
-	verificationPaths,
-} from "./verification.ts";
 
 const MAX_DRAFT_CHARS = 200_000;
-
-const LAWS_TEMPLATE = `import Base
-
-# LAW: state one rule that must never break. Each law needs a proof in PROOF.bend.
-# Example:
-# law add_zero:
-#   for value: Nat
-#   {value + 0n == value : Nat}
-`;
-
-const PROOF_TEMPLATE = `import ./LAWS.bend as Laws
-
-# Prove every law here with a def of the same name. Run \`bend guide\` for the syntax.
-# A law with no def stays open, so \`bend PROOF.bend\` reports SOME PROOFS FAIL.
-`;
 
 export interface BendDraft {
 	laws: string;
@@ -42,18 +14,6 @@ export interface BendDraft {
 	notes: string;
 	/** False when the agent returned no parseable laws block; the raw notes are still kept. */
 	parsed: boolean;
-}
-
-export interface BendScaffold {
-	lawsPath: string;
-	proofPath: string;
-	created: string[];
-}
-
-export interface BendCheck {
-	tool: VerificationTool;
-	record: VerificationRecord;
-	result: CommandResult;
 }
 
 function draftPrompt(projectRoot: string, request: string | undefined): string {
@@ -145,80 +105,7 @@ export function parseBendDraft(output: string): BendDraft {
 	return { laws, proof, notes: output.trim().slice(0, 64_000), parsed: Boolean(laws) };
 }
 
-/** Law and proof file names come from the instance config, so a custom pair works everywhere. */
-export async function bendFileNames(instanceRoot: string): Promise<{ laws: string; proof: string }> {
-	const config = await readVerificationConfig(instanceRoot);
-	return { laws: config?.laws ?? "LAWS.bend", proof: config?.proof ?? "PROOF.bend" };
-}
-
-/** Which configured law files already exist, so callers can ask before replacing them. */
-export async function existingBendFiles(instanceRoot: string): Promise<string[]> {
-	const names = await bendFileNames(instanceRoot);
-	const directory = verificationPaths(instanceRoot).directory;
-	const existing: string[] = [];
-	for (const name of [names.laws, names.proof]) {
-		try {
-			await readFile(join(directory, name));
-			existing.push(name);
-		} catch (error) {
-			if ((error as { code?: string }).code !== "ENOENT") throw error;
-		}
-	}
-	return existing;
-}
-
-/** Write the two template files if they are missing. Existing files are never touched. */
-export async function scaffoldBendFiles(instanceRoot: string): Promise<BendScaffold> {
-	const paths = verificationPaths(instanceRoot);
-	const names = await bendFileNames(instanceRoot);
-	await mkdir(paths.directory, { recursive: true, mode: 0o700 });
-	const created: string[] = [];
-	for (const [name, template] of [
-		[names.laws, LAWS_TEMPLATE],
-		[names.proof, PROOF_TEMPLATE],
-	] as const) {
-		const path = join(paths.directory, name);
-		try {
-			await writeFile(path, template, { mode: 0o600, flag: "wx" });
-			created.push(name);
-		} catch (error) {
-			if ((error as { code?: string }).code !== "EEXIST") throw error;
-		}
-	}
-	return { lawsPath: join(paths.directory, names.laws), proofPath: join(paths.directory, names.proof), created };
-}
-
-/** Save an agent draft into the active directory. Requires approval and explicit overwrite consent. */
-export async function writeBendDraft(
-	instanceRoot: string,
-	draft: BendDraft,
-	options: { approved: boolean; overwrite: boolean },
-): Promise<{ lawsPath: string; proofPath: string }> {
-	if (options.approved !== true) throw new Error("Saving drafted laws requires explicit approval");
-	const paths = verificationPaths(instanceRoot);
-	const names = await bendFileNames(instanceRoot);
-	await mkdir(paths.directory, { recursive: true, mode: 0o700 });
-	const lawsPath = join(paths.directory, names.laws);
-	const proofPath = join(paths.directory, names.proof);
-	if (!options.overwrite) {
-		for (const path of [lawsPath, proofPath]) {
-			try {
-				await readFile(path);
-				throw new Error(`${path} already exists; approve replacing it`);
-			} catch (error) {
-				if ((error as { code?: string }).code !== "ENOENT") throw error;
-			}
-		}
-	}
-	const proof = /^\s*import\b/m.test(draft.proof)
-		? draft.proof.trim()
-		: `import ./${names.laws} as Laws\n\n${draft.proof.trim()}`;
-	await writeFile(lawsPath, `${draft.laws.trim()}\n`, { mode: 0o600 });
-	await writeFile(proofPath, `${proof}\n`, { mode: 0o600 });
-	return { lawsPath, proofPath };
-}
-
-/** Ask an agent for a draft. The result is inert until a human calls writeBendDraft. */
+/** Ask an agent for a draft. The result is inert text; the caller decides where it goes. */
 export async function draftBendFormal(
 	agent: AgentCommand,
 	options: { projectRoot: string; request?: string; timeoutMs?: number },
@@ -230,31 +117,4 @@ export async function draftBendFormal(
 		options.timeoutMs,
 	);
 	return parseBendDraft(output);
-}
-
-/**
- * Install if approved, enable if requested, then run the checker for one revision.
- * Every step is approval-gated by its caller.
- */
-export async function checkBendFormal(
-	instanceRoot: string,
-	options: {
-		instanceId: string;
-		revision: string;
-		install: boolean;
-		network: boolean;
-		enable: boolean;
-	},
-): Promise<BendCheck> {
-	let tool = await installedBend(instanceRoot);
-	if (!tool) {
-		if (!options.install) throw new Error("The pinned Bend release is not installed; approve the download first");
-		tool = await installBend(instanceRoot, { approved: true, network: options.network });
-	}
-	if (options.enable) await setVerificationEnabled(instanceRoot, { approved: true, enabled: true });
-	const { record, result } = await runVerification(instanceRoot, {
-		instanceId: options.instanceId,
-		revision: options.revision,
-	});
-	return { tool, record, result };
 }

@@ -4,11 +4,21 @@ import os
 import shlex
 from pathlib import PurePosixPath
 
+ORDINARY_READ_ONLY = "This child shares the parent's checkout in an ordinary raga session, and raga does not enforce read-only access here. Do not create, edit, delete, format, stage, or commit files. Do not run commands that write to the project."
+
+
+def harness_mode():
+    return "instance" if os.environ.get("RAGA_INSTANCE_ID") else "ordinary"
+
+
 async def run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False):
     if spec not in ("worker", "poteto-agent", "comment-sicko"):
         raise ValueError("Unknown bundled child specification")
     if not read_only and not details:
         raise ValueError("Writing children require details=True for supervisor-owned change evidence")
+    ordinary = harness_mode() == "ordinary"
+    if ordinary and not read_only:
+        raise ValueError("Ordinary raga sessions have no isolated child workspaces. Make the change in this session and use read_only=True children for exploration and review")
     root = resource_root.rstrip("/")
     definition = json.loads(await read(root + "/agents/" + spec + ".json"))
     definition_path = PurePosixPath(definition["instructions"])
@@ -21,7 +31,8 @@ async def run_child(spec, task, resource_root, context_data=None, model=None, ma
     roles = json.loads(await read(root + "/agents/model-roles.json"))
     if model is None:
         model = roles.get(definition["modelRole"])
-    prompt = instructions + "\n\nPinned resource root: " + root + "\n\n# Assignment\n" + task
+    notice = "\n\n" + ORDINARY_READ_ONLY if ordinary else ""
+    prompt = instructions + "\n\nPinned resource root: " + root + notice + "\n\n# Assignment\n" + task
     return await rlm_query(prompt, context=context_data, model=model, max_turns=max_turns, read_only=read_only, details=details)
 
 async def capability_report():

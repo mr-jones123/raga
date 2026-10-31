@@ -2,9 +2,9 @@
 
 New instances copy this pack into their first accepted revision. Each session reads its pinned copy. Updating package assets does not rewrite an existing instance.
 
-The pack installs one skill, peak. Its 62 references hold 55 portable pstack workflows, four companion workflows, the native create-skill and raga-runtime adapters, and the managed no-mistakes workflow. It excludes make-bot-ui and editor-only services. The original public no-mistakes text stays unchanged under skills/peak/references/no-mistakes/upstream.
+The pack installs three skills. raga-artifacts makes slides and documents with Pele diagrams and exports them as HTML and PDF. bend turns rules the user states into Bend laws and proofs and checks them with the bend CLI. peak is the engineering workflow. Its 62 references hold 55 portable pstack workflows, four companion workflows, the native create-skill and raga-runtime adapters, and the managed no-mistakes workflow. It excludes make-bot-ui and editor-only services. The original public no-mistakes text stays unchanged under skills/peak/references/no-mistakes/upstream.
 
-Read [peak](skills/peak/SKILL.md) to pick a reference. Read [the native runtime](skills/peak/references/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for the reference map. Workers return supervisor-owned workspace changes rather than Git commits. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
+Read [peak](skills/peak/SKILL.md) to pick a reference. Read [the native runtime](skills/peak/references/raga-runtime/SKILL.md) for the Python API. Read [the workflow guide](docs/guide/README.md) for the reference map. In instance sessions, workers return supervisor-owned workspace changes rather than Git commits. Ordinary sessions keep code changes in the parent session and use read-only children. Skill changes go through candidate_read, candidate_write, and candidate_commit. Promotion remains a trusted operator operation.
 
 ## Sources and regeneration
 

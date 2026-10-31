@@ -369,10 +369,13 @@ Each probe replay builds a fresh project workspace from one snapshot, runs a rea
 
 `pi instance verify install --approved --network` downloads Bend 2.0.39 for the current platform, checks the pinned SHA-256, keeps the release tree, and records the executable hash. `pi instance verify run [--revision REV]` copies the user's files into a private workspace and runs `bend PROOF.bend` under bubblewrap with no network. A pass requires exit code 0 and `ALL PROOFS CHECK`. The record binds the instance, revision, law digest, proof digest, and tool digest. `activateRevision` refuses a revision with no passing record, or with a record invalidated by an edited law, proof, or tool. `--verdict` is not used because it needs a Lean kernel; run it yourself for that second check.
 
-Inside an interactive session, `/bend-formal` offers three choices: write the laws
-yourself (raga creates `LAWS.bend` and `PROOF.bend` templates), describe the rules in
-natural language (an agent drafts both files for your review), or check the current laws.
-Drafts are written only after you confirm, and enabling remains a separate confirmation.
+Inside a session, the bundled `bend` skill replaces the old `/bend-formal` command. Ask the agent to
+verify a rule, or run `/skill:bend`. The agent asks which rules must never break, writes `LAWS.bend`, and
+shows each law with a plain reading for your approval. It then writes `PROOF.bend` and runs the `bend` CLI
+until it prints `ALL PROOFS CHECK` or reports which laws stay open. Its Python helper `bend_tool.py` runs
+from the REPL and uses the `bend` on `PATH` or in `~/.bend/bin`. An instance session cannot write `.raga`,
+so it drafts under `verification-draft/` for you to copy. Enabling the gate and recording a check stay
+operator commands: `raga verify enable --approved` and `raga verify run`.
 
 `pi instance verify suggest` asks the configured agent for law drafts and writes them under `.raga/verification/suggestions/` with `verified: false`. Suggestions carry no proof, never reach the active directory, and cannot satisfy the gate. A human decides what to promote.
 
