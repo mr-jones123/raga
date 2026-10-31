@@ -1,12 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { discoverExtensionsInDir } from "../extensions/loader.ts";
 import type { ModelRuntime } from "../model-runtime.ts";
 import { DefaultResourceLoader, type DefaultResourceLoaderOptions, type ResourceLoader } from "../resource-loader.ts";
 import type { SessionManager } from "../session-manager.ts";
 import { SettingsManager } from "../settings-manager.ts";
 import { createMemoryExtension } from "./memory-extension.ts";
+import type { MemoryService } from "./memory-service.ts";
 import { createRefinementExtension } from "./model-refinement.ts";
+import { overlaps, SandboxPolicyError } from "./sandbox.ts";
 import { openInstance } from "./store.ts";
 import type { HarnessPin, SandboxPolicy } from "./types.ts";
 
@@ -69,8 +71,8 @@ export function instanceSettings(pin: HarnessPin): SettingsManager {
 export async function instanceResources(
 	pin: HarnessPin,
 	settingsManager: SettingsManager,
-	extensionFactories?: DefaultResourceLoaderOptions["extensionFactories"],
-	memoryEnabled = true,
+	extensionFactories: DefaultResourceLoaderOptions["extensionFactories"] | undefined,
+	memory: MemoryService | undefined,
 	modelRuntime?: ModelRuntime,
 ): Promise<ResourceLoader> {
 	const instructions = join(pin.resourceRoot, "AGENTS.md");
@@ -80,7 +82,7 @@ export async function instanceResources(
 		settingsManager,
 		extensionFactories: [
 			createRefinementExtension(pin, modelRuntime),
-			...(memoryEnabled ? [createMemoryExtension(pin)] : []),
+			...(memory ? [createMemoryExtension(pin, memory)] : []),
 			...(extensionFactories ?? []),
 		],
 		noExtensions: true,
@@ -131,6 +133,31 @@ export function recordInstancePin(pin: HarnessPin, sessionManager: SessionManage
 	});
 }
 
+/**
+ * Host dependency roots every instance sandbox mounts read-only, such as a project interpreter outside the
+ * system runtime. Only the host environment names them, never a harness revision, so a revision cannot widen
+ * its own sandbox. A root overlapping the project or the instance would expose another actor's checkout or state.
+ */
+function dependencyRoots(pin: HarnessPin): string[] {
+	const value = process.env.RAGA_SANDBOX_READ_ONLY?.trim();
+	if (!value) return [];
+	const protectedRoots = [realpathSync(pin.projectRoot), realpathSync(pin.instanceRoot)];
+	return value.split(delimiter).map((path) => {
+		let real: string | undefined;
+		try {
+			real = realpathSync(path);
+		} catch {}
+		if (real !== path) {
+			throw new SandboxPolicyError(
+				`RAGA_SANDBOX_READ_ONLY entry must be an existing canonical absolute path: ${path}`,
+			);
+		}
+		const overlap = protectedRoots.find((root) => overlaps(path, root));
+		if (overlap) throw new SandboxPolicyError(`RAGA_SANDBOX_READ_ONLY entry ${path} overlaps ${overlap}`);
+		return path;
+	});
+}
+
 export function instanceSandbox(
 	pin: HarnessPin,
 	cwd: string,
@@ -138,12 +165,16 @@ export function instanceSandbox(
 	workspaceRoot = cwd,
 ): SandboxPolicy {
 	const snapshots = join(pin.stateRoot, "kernels", sessionManager.getSessionId());
-	mkdirSync(snapshots, { recursive: true, mode: 0o700 });
+	// Each session (root, child, fork) owns its cache, so tool caches persist across commands
+	// without sharing writable state between actors or making a read-only workspace writable.
+	const cache = join(snapshots, "cache");
+	mkdirSync(cache, { recursive: true, mode: 0o700 });
 	return {
 		workspace: realpathSync(workspaceRoot),
 		cwd: realpathSync(cwd),
-		readOnly: [realpathSync(pin.resourceRoot)],
+		readOnly: [realpathSync(pin.resourceRoot), ...dependencyRoots(pin)],
 		writable: [realpathSync(snapshots)],
 		network: false,
+		env: { XDG_CACHE_HOME: realpathSync(cache) },
 	};
 }

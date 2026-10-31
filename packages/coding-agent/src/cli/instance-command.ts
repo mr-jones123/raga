@@ -14,7 +14,8 @@ import {
 import { draftBendFormal } from "../core/instances/bend-formal.ts";
 import { getBundledHarnessPath } from "../core/instances/bundle.ts";
 import { runModelCheckpoint } from "../core/instances/checkpoint.ts";
-import { InstanceMemory, type MemoryEntry, type MemoryInput } from "../core/instances/memory.ts";
+import type { MemoryEntry, MemoryInput } from "../core/instances/memory.ts";
+import { selectMemoryService } from "../core/instances/memory-service.ts";
 import { migrateProjectConfig } from "../core/instances/migration.ts";
 import { runModelRefinement } from "../core/instances/model-refinement.ts";
 import { getNoMistakesBackend, NoMistakesBackend } from "../core/instances/no-mistakes.ts";
@@ -197,6 +198,7 @@ Migration preserves .pi and requires explicit trust before importing project con
 Memory input files contain JSON MemoryInput objects with text, scope, evidence, and kind.
 Memory import files contain exported entry arrays. Retrieval scope defaults to the instance project path.
 Import --scope deliberately remaps only lessons explicitly exported as reusable.
+RAGA_MEMORY_BACKEND selects local (default) or hindsight search for memory commands and sessions; see docs/INSTANCE-PLAN.md.
 Refinement checks are JSON argv arrays, never shell strings. Promotion requires supervisor evidence and explicit approval.
 No-mistakes setup and gate lifecycle are manual. Run skips push, PR, and CI unless individually authorized.
 Use --help with any instance command to show this help. No command changes global user configuration.`);
@@ -517,12 +519,25 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 	}
 	if (name.startsWith("memory ")) {
 		await readInstance(root);
-		const memory = new InstanceMemory(root);
+		const selected = selectMemoryService(root);
+		if (selected.kind === "proxy")
+			throw new UsageError("Memory commands administer this host's archive; a memory proxy has none.");
+		const service = selected;
+		const memory = service.archive;
+		// The archive acknowledges a write before the selected backend indexes it, so a failed index names what was kept.
+		const indexed = async <T extends MemoryEntry | MemoryEntry[]>(written: T): Promise<T> => {
+			const entries: MemoryEntry[] = Array.isArray(written) ? written : [written];
+			const failed = (await service.index(entries)).flatMap((ingestion) =>
+				ingestion.status === "failed" ? [`${ingestion.documentId}: ${ingestion.error}`] : [],
+			);
+			if (failed.length) throw new Error(`Archived, but the ${service.kind} index failed for ${failed.join("; ")}`);
+			return written;
+		};
 		switch (name) {
 			case "memory observe":
-				return memory.observe(memoryInput(parseJson(await readText(value("input")))));
+				return indexed(await memory.observe(memoryInput(parseJson(await readText(value("input"))))));
 			case "memory revise":
-				return memory.revise(operands[0], memoryInput(parseJson(await readText(value("input")))));
+				return indexed(await memory.revise(operands[0], memoryInput(parseJson(await readText(value("input"))))));
 			case "memory retire":
 				return memory.retire(operands[0], value("reason"));
 			case "memory get":
@@ -532,7 +547,7 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 			case "memory history":
 				return memory.history(operands[0]);
 			case "memory retrieve":
-				return memory.retrieve({
+				return service.search({
 					query: value("query"),
 					scope: values.get("scope") ?? (await readInstance(root)).projectRoot,
 					taskType: values.get("task-type"),
@@ -552,9 +567,11 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 				if (!Array.isArray(entries))
 					throw new UsageError("Memory import must be a JSON array of exported entries.");
 				for (const entry of entries) memoryInput(entry);
-				return memory.importEntries(
-					entries as MemoryEntry[],
-					values.has("scope") ? { scope: value("scope") } : undefined,
+				return indexed(
+					await memory.importEntries(
+						entries as MemoryEntry[],
+						values.has("scope") ? { scope: value("scope") } : undefined,
+					),
 				);
 			}
 		}

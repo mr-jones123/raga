@@ -214,10 +214,10 @@ project/.raga/
 		refinement/<run>/      # Probe workspaces of a running refinement
 	state/
 		sessions/              # Instance session files
-		kernels/<session>/     # Kernel snapshots
+		kernels/<session>/     # Kernel snapshots; cache/ is the session's private XDG_CACHE_HOME
 		children/<uuid>/       # Writer child checkouts
 		integrations/<uuid>/   # Integration workspaces
-		memory/<id>/<n>.json   # Immutable memory versions
+		memory.sqlite         # Append-only memory versions in a transactional SQLite archive
 		backends/no-mistakes/  # Pinned binary, HOME, NM_HOME, daemon log, run authorizations
 		refinement-sessions/   # Session scratch of a running model refinement
 	evidence/
@@ -280,6 +280,7 @@ The bundle ships the generated public skill, which drives `no-mistakes axi`, not
 An instance session always runs in RLM mode with `python` as its only model tool. MCP tools are excluded. The Python kernel runs inside bubblewrap.
 
 - The bubblewrap sandbox starts from an empty root with `--unshare-all`, `--die-with-parent`, `--new-session`, and `--cap-drop ALL`. It mounts system runtime directories and the interpreter's runtime read-only, the pinned harness read-only, and the session's kernel snapshot directory writable. It masks `.git` and `.raga` under every mounted root. It has no network unless a trusted caller sets `network: true`, and no instance session does.
+- The host can add read-only dependency roots through `RAGA_SANDBOX_READ_ONLY`, a platform-path-delimited list, for example `/opt/task-runtime`. Entries must be existing canonical absolute paths outside the project and instance, with no ancestor overlap. The same roots apply to root sessions and children; normal sandbox safety checks still apply. Harness settings do not configure these host mounts.
 - The root session's writable workspace is the project checkout. A writing child's workspace is its own checkout. `bash()` runs `/bin/bash --noprofile --norc -c` in a fresh sandbox with the session's policy. `edit()` and `write()` run inside the kernel, and the host refuses its own `edit` and `write` tools.
 - Sandboxed processes inherit no host environment variables, so credentials do not reach them. Model calls from `llm_query`, `llm_batch`, and children go through the host's model runtime.
 - Learned-skill validation adds a seccomp filter to the bubblewrap boundary. A fresh `python -I -B` runner installs the filter before it imports skill code, and the filter refuses process creation and socket creation for the rest of that interpreter's life. The kernel of an ordinary session has no seccomp filter, so its code can start subprocesses inside the sandbox.
@@ -323,9 +324,15 @@ Children open settings and resources from the same pin as their parent, not from
 
 ### M12. Structured memory and promotion
 
-**Delivered.** `src/core/instances/memory.ts` stores every entry version as an immutable file under `.raga/state/memory/`, outside the harness repository. An entry has a stable ID, scope, kind (`observation` or `lesson`), evidence references, an epistemic status (`observed`, `hypothesis`, or `guidance`), a trust level (`unreviewed` or `curated`), applicability conditions, sharing (`project` or `reusable`), and supersession links. `revise` takes an optional `expectedVersion` and fails on a concurrent change. Revision cannot change scope.
+**Delivered.** `src/core/instances/memory.ts` stores every entry version as an append-only row in `.raga/state/memory.sqlite`, outside the harness repository. One database belongs to each instance; children use the host's memory service, not direct SQL access. An entry has a stable ID, scope, kind (`observation` or `lesson`), evidence references, an epistemic status (`observed`, `hypothesis`, or `guidance`), a trust level (`unreviewed` or `curated`), applicability conditions, sharing (`project` or `reusable`), and supersession links. `revise` takes an optional `expectedVersion` and fails on a concurrent change. Revision cannot change scope.
 
-A session's `memory.observe` always records an `unreviewed` `hypothesis` in the project's scope. The operator promotes it by revising it through `pi instance memory revise` with curated trust and a stronger epistemic status. Reusable guidance enters the harness only as a `lessons/` file in a candidate revision, which then needs evidence and approval. Cross-project transfer is an explicit `memory export` and `memory import`. Import assigns new IDs, records `importedFrom`, refuses retired entries, and remaps scope only for reusable lessons.
+A session's `memory.observe` always records an `unreviewed` `hypothesis` in the project's scope. It is bound to the session's harness revision unless the model passes `portable=True`; either way `origin` records the revision and session, as provenance that applicability never reads. Entries recorded earlier keep their revision binding. The operator promotes an observation by revising it through `pi instance memory revise` with curated trust and a stronger epistemic status. Reusable guidance enters the harness only as a `lessons/` file in a candidate revision, which then needs evidence and approval. Cross-project transfer is an explicit `memory export` and `memory import`. Import assigns new IDs, records `importedFrom`, refuses retired entries, and remaps scope only for reusable lessons. `snapshot` and `restore` copy a whole archive instead: restore keeps every ID, version, timestamp, and history, publishes only missing versions, and rejects a snapshot that differs from or is older than a stored history before writing anything.
+
+SQLite uses the runtime's built-in driver on Node and Bun, with a short-lived connection per operation. Revisions, imports, and restores use write transactions; snapshots and retrievals each read one consistent transaction. Rollback journaling (`DELETE`), `synchronous=EXTRA`, and `fullfsync=ON` protect acknowledged writes without a live WAL file. Database and journal paths must be private regular files, not symlinks or hard links. SQLite lock waits are synchronous, bounded to five seconds, and cannot be interrupted by a session abort signal.
+
+Stop all older Raga hosts before the first memory access after upgrading. That access imports legacy `.raga/state/memory/<id>/<version>.json` histories in one transaction, preserving IDs, versions, timestamps, provenance, and policies. Malformed or gapped histories reject the migration; repair the source files and retry. Empty legacy history directories contain no records and are skipped. The original JSON files remain untouched, but after migration only SQLite is authoritative: an older host's later JSON writes will not be read. Unsupported database schemas fail closed.
+
+JSON remains the portable `MemorySnapshot` interchange format for checkpoints and independent targets. Use `snapshot` and `restore` rather than copying an open database file. This storage migration does not change lexical ranking, applicability checks, trust, scope, or read-only permissions; it is not evidence of improved learning.
 
 **Acceptance.** Concurrent proposals do not lose updates. Superseded guidance is not treated as current. Project A's facts do not appear in Project B without explicit export. Evidence survives a restart and can be traced from a promoted lesson to its source execution.
 
@@ -333,9 +340,17 @@ A session's `memory.observe` always records an `unreviewed` `hypothesis` in the 
 
 **Delivered.** `InstanceMemory.retrieve` filters by scope first, then excludes retired, superseded, unreviewed, hypothesis, task-mismatched, revision-mismatched, and tool-mismatched entries. It ranks the rest lexically, flags declared conflicts and entries that share a `conflictKey` with different text, and selects within a limit and a character budget. Every exclusion is reported with its reason. An empty selection is a valid result. Selected text starts with a header that marks it as untrusted reference data that cannot override goals, policy, acceptance criteria, or limits.
 
-Sessions retrieve at task start (4,000 characters, five entries) and after a failing cell, and the model can call `memory.search` and `memory.get`. Each retrieval is recorded in the session as `raga-memory-retrieval`. A child retrieves for its own task. Refinement sessions turn live memory off and receive only the frozen `probeMemory` text.
+Sessions retrieve at task start (4,000 characters, five entries) and after a failing cell, and the model can call `memory.search` and `memory.get`. Automatic retrieval and default search select reviewed guidance; `memory.search(..., include_unverified=True)` also selects unreviewed and hypothesis entries, labelled with their trust and epistemic status. Each retrieval, including a failed one, is recorded in the session as `raga-memory-retrieval`. A child retrieves for its own task from its parent's memory. Writing children inherit that service's access; read-only children cannot record observations, and a read-only parent service remains read-only for all descendants. Refinement sessions turn live memory off and receive only the frozen `probeMemory` text.
 
 **Acceptance.** Relevant lessons are found despite unrelated stored material. Wrong-project, wrong-version, superseded, and contradictory entries are excluded or explicitly flagged. Empty retrieval is valid. Context stays within the configured bound. A comparison of the gate against simple scoped retrieval detects useful lessons it wrongly excludes.
+
+#### Memory backends
+
+`src/core/instances/memory-service.ts` gives each session exactly one memory service, which automatic retrieval, failure retrieval, the `memory.*` requests, children, and the `memory` CLI commands share. `RAGA_MEMORY_BACKEND` selects it. A setting of a backend that is not selected is an error, and no backend falls back to another. An empty or whitespace setting counts as unset.
+
+- `local` (default) ranks the archive lexically and needs no service.
+- `hindsight` keeps the archive as the exact record store and asks a [Hindsight](https://hindsight.vectorize.io/developer/installation) bank only which records match. `RAGA_HINDSIGHT_URL` and `RAGA_HINDSIGHT_BANK` are required; `RAGA_HINDSIGHT_API_KEY` is optional, stays in the host process, and is sent only over HTTPS or to a loopback host. Each record is one document, `raga-memory:<id>`, which every indexed version replaces synchronously; its metadata carries the record ID and version, not the project path. Recalled facts only name records: the archive supplies each record's current version, text, and evidence, and applicability, conflict, limit, and budget policy still decide, so a retired record stays excluded even while the bank still holds its text. A fact from another document, or one naming a record the archive lacks, fails the search, as does any HTTP failure. An observation whose retention fails is still archived, and its result reports `ingestion.status: "failed"`; the CLI's `memory observe`, `revise`, and `import` exit with an error that says the entry was archived. Search is bounded to the first 400 bytes of the query.
+- `proxy` forwards to a service another host owns over the Unix socket `RAGA_MEMORY_PROXY_SOCKET`, one JSON line `{"v":2,"type":"memory","method","params"}` and one reply `{"type":"memory_result","result"}` or `{"type":"memory_error","error"}` per connection. The host answers with `handleMemoryProxyRequest`, whose binding fixes the scope, the service, an explicit `readOnly`, an optional applicability `context` (task type, harness revision, tool versions) that replaces the client's in searches and bounds an observation's hard bindings, an optional `origin` that replaces the client's, and evidence appended to every observation. Client evidence may not use a host attestation prefix (`benchmark-trial:`, `origin-harness-revision:`, or a prefix of the binding's own evidence). Clients may record only unreviewed hypothesis observations. A record of another scope reads as not found, and filesystem errors reach the client only as `Memory <method> failed`. The coding benchmark uses it so a network-less container's observations land in a host-owned archive.
 
 ### M14. Portable executable skills
 
@@ -408,7 +423,7 @@ Update [RLM.md](RLM.md), [ARCHITECTURE.md](ARCHITECTURE.md), [PROGRESS.md](PROGR
 - Agent-written changes to the Node engine, supervisor, permissions, or evaluator.
 - Automatic in-process loading of generated host extensions.
 - Live, unreviewed replacement of a running session's harness.
-- A vector database before scoped lexical retrieval is measured.
+- A vector database before scoped lexical retrieval is measured. Hindsight is an optional ranking over the same archive, not a second record store.
 - Full evolutionary population search before candidate evaluation is reliable.
 - Automatic publishing of private harnesses or project memory.
 - A scheduler that triggers checkpoint refinement on its own.

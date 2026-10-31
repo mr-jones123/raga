@@ -206,19 +206,35 @@ class Context:
 
 
 class Memory:
-    """Scoped retrieval and unreviewed observations. Entries never grant permissions."""
+    """Scoped retrieval and unreviewed observations. Entries never grant permissions.
 
-    async def search(self, query: str, *, task_type: str | None = None, max_chars: int = 4000, limit: int = 5) -> dict[str, Any]:
+    Search returns reviewed guidance only. `include_unverified=True` also returns unreviewed and hypothesis
+    entries, such as observations, with their `trust` and `epistemicStatus` labels. An observation is bound to
+    this harness revision unless `portable=True`; its origin records the revision either way.
+    """
+
+    async def search(
+        self,
+        query: str,
+        *,
+        task_type: str | None = None,
+        max_chars: int = 4000,
+        limit: int = 5,
+        include_unverified: bool = False,
+    ) -> dict[str, Any]:
         return await host_request({
             "type": "memory.search",
             **_drop_none(query=query, task_type=task_type, max_chars=max_chars, limit=limit),
+            "include_unverified": include_unverified,
         })
 
     async def get(self, entry_id: str) -> dict[str, Any]:
         return await host_request({"type": "memory.get", "id": entry_id})
 
-    async def observe(self, text: str, evidence: list[str]) -> dict[str, Any]:
-        return await host_request({"type": "memory.observe", "text": text, "evidence": evidence})
+    async def observe(self, text: str, evidence: list[str], *, portable: bool = False) -> dict[str, Any]:
+        """Record an unreviewed hypothesis. Returns {"entry", "ingestion"}: the archived record and whether the
+        selected search backend accepted it."""
+        return await host_request({"type": "memory.observe", "text": text, "evidence": evidence, "portable": portable})
 
 
 class Instance:

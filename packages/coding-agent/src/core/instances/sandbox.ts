@@ -91,7 +91,7 @@ function isWithin(path: string, root: string): boolean {
 	return rel !== "" && !rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel);
 }
 
-function overlaps(a: string, b: string): boolean {
+export function overlaps(a: string, b: string): boolean {
 	return isWithin(a, b) || isWithin(b, a);
 }
 

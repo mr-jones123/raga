@@ -2,8 +2,15 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type * as NodeSqlite from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { InstanceMemory, type MemoryInput, MemoryVersionConflict } from "../src/core/instances/memory.ts";
+import {
+	InstanceMemory,
+	type MemoryEntry,
+	type MemoryInput,
+	type MemorySnapshot,
+	MemoryVersionConflict,
+} from "../src/core/instances/memory.ts";
 
 function lesson(overrides: Partial<MemoryInput> = {}): MemoryInput {
 	return {
@@ -13,6 +20,73 @@ function lesson(overrides: Partial<MemoryInput> = {}): MemoryInput {
 		evidence: ["execution/session-a/transaction-4"],
 		...overrides,
 	};
+}
+
+function legacySnapshot(): MemorySnapshot {
+	const initial: MemoryEntry = {
+		...lesson(),
+		schemaVersion: 1,
+		id: "11111111-1111-4111-8111-111111111111",
+		version: 1,
+		status: "active",
+		createdAt: "2026-01-01T00:00:00.000Z",
+		epistemicStatus: "guidance",
+		sharing: "reusable",
+		trust: "curated",
+		origin: { harnessRevision: "legacy-revision", sessionId: "legacy-session" },
+		importedFrom: {
+			id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+			version: 3,
+			scope: "source-project",
+		},
+	};
+	const revised: MemoryEntry = {
+		...initial,
+		version: 2,
+		text: "Retry database transactions with bounded backoff.",
+		createdAt: "2026-01-02T00:00:00.000Z",
+		supersedes: { id: initial.id, version: 1 },
+	};
+	const alternative: MemoryEntry = {
+		...initial,
+		id: "22222222-2222-4222-8222-222222222222",
+		text: "Never retry database transactions.",
+		conflictsWith: [initial.id],
+	};
+	const obsolete: MemoryEntry = {
+		...initial,
+		id: "33333333-3333-4333-8333-333333333333",
+		text: "Use the obsolete database recovery procedure.",
+	};
+	const retired: MemoryEntry = {
+		...obsolete,
+		version: 2,
+		status: "retired",
+		createdAt: "2026-01-03T00:00:00.000Z",
+		supersedes: { id: obsolete.id, version: 1 },
+		retirementReason: "The recovery procedure was replaced.",
+	};
+	return { schemaVersion: 1, histories: [[initial, revised], [alternative], [obsolete, retired]] };
+}
+
+async function writeLegacySnapshot(root: string, snapshot: MemorySnapshot): Promise<void> {
+	for (const history of snapshot.histories) {
+		const directory = join(root, "state", "memory", history[0].id);
+		await mkdir(directory, { recursive: true });
+		for (const entry of history) {
+			await writeFile(join(directory, `${entry.version}.json`), `${JSON.stringify(entry)}\n`);
+		}
+	}
+}
+
+function executeSql(root: string, sql: string): void {
+	const { DatabaseSync } = process.getBuiltinModule("node:sqlite") as typeof NodeSqlite;
+	const database = new DatabaseSync(join(root, "state", "memory.sqlite"));
+	try {
+		database.exec(sql);
+	} finally {
+		database.close();
+	}
 }
 
 function childRevision(root: string, id: string, input: MemoryInput): Promise<void> {
@@ -73,8 +147,6 @@ describe("InstanceMemory", () => {
 	it("preserves every immutable version, evidence, and supersession across restarts", async () => {
 		const input = lesson();
 		const initial = await memory.observe(input);
-		const initialPath = join(root, "state", "memory", initial.id, "1.json");
-		const originalBytes = await readFile(initialPath, "utf8");
 		input.evidence.push("not-persisted");
 		initial.text = "caller mutation";
 		const revised = await memory.revise(
@@ -87,7 +159,6 @@ describe("InstanceMemory", () => {
 		);
 		expect(revised.version).toBe(2);
 		expect(revised.supersedes).toEqual({ id: initial.id, version: 1 });
-		expect(await readFile(initialPath, "utf8")).toBe(originalBytes);
 		const reopened = new InstanceMemory(root);
 		expect((await reopened.get(initial.id, 1)).text).toBe(
 			"Retry database transactions after a serialization failure.",
@@ -219,13 +290,19 @@ describe("InstanceMemory", () => {
 		const relevant = await memory.observe(lesson({ text: "Postgres serialization transactions require retry." }));
 		const selection = await memory.retrieve({ query: "postgres serialization", scope: "project-a", limit: 1 });
 		expect(selection.selected.map((entry) => entry.id)).toEqual([relevant.id]);
-		expect(selection.cost.lexicalCandidates).toBe(1);
+		expect(selection.cost.rankedCandidates).toBe(1);
 		for (const query of ["unmentioned astronomy", "", "the and with"]) {
 			const empty = await memory.retrieve({ query, scope: "project-a" });
 			expect(empty.selected).toEqual([]);
 			expect(empty.text).toBe("");
 			expect(empty.cost.selectedChars).toBe(0);
 		}
+	});
+
+	it("retrieves an exact identifier from a single-record archive", async () => {
+		const entry = await memory.observe(lesson({ text: "Call decode_frame_header before reading the payload." }));
+		const result = await memory.retrieve({ query: "decode_frame_header", scope: "project-a" });
+		expect(result.selected).toEqual([entry]);
 	});
 
 	it("enforces full-context budgets and limits without truncating or inventing lessons", async () => {
@@ -356,9 +433,188 @@ describe("InstanceMemory", () => {
 		await expect(memory.get("../../escape")).rejects.toThrow("ID");
 	});
 
-	it("stores raw history outside harness Git and rejects symlink escape paths", async () => {
-		const entry = await memory.observe(lesson({ kind: "observation" }));
-		expect(await readFile(join(root, "state", "memory", entry.id, "1.json"), "utf8")).toContain(entry.id);
+	it("migrates legacy identities, histories, retirement, provenance, and conflicts without changing snapshots", async () => {
+		const snapshot = legacySnapshot();
+		await writeLegacySnapshot(root, snapshot);
+		expect(await memory.snapshot()).toEqual(snapshot);
+		const reopened = new InstanceMemory(root);
+		for (const history of snapshot.histories) {
+			expect(await reopened.history(history[0].id)).toEqual(history);
+			for (const entry of history) {
+				expect(await readFile(join(root, "state", "memory", entry.id, `${entry.version}.json`), "utf8")).toBe(
+					`${JSON.stringify(entry)}\n`,
+				);
+			}
+		}
+		const selection = await reopened.retrieve({ scope: "project-a", query: "database" });
+		expect(selection.selected).toEqual([]);
+		expect(selection.conflicts).toHaveLength(1);
+		expect(selection.conflicts[0].ids.sort()).toEqual(snapshot.histories.slice(0, 2).map(([entry]) => entry.id));
+		expect(selection.excluded).toContainEqual({
+			id: snapshot.histories[2][0].id,
+			version: 2,
+			reason: "retired",
+		});
+		const restored = new InstanceMemory(join(temporary, "restored"));
+		await restored.restore(await reopened.snapshot());
+		expect(await restored.snapshot()).toEqual(snapshot);
+
+		const first = snapshot.histories[0][0];
+		await writeFile(join(root, "state", "memory", first.id, "1.json"), "obsolete legacy input");
+		expect(await new InstanceMemory(root).snapshot()).toEqual(snapshot);
+		const revised = await reopened.revise(first.id, lesson({ expectedVersion: 2 }));
+		expect(revised.version).toBe(3);
+		expect((await new InstanceMemory(root).history(first.id)).slice(0, 2)).toEqual(snapshot.histories[0]);
+		expect(await readFile(join(root, "state", "memory", first.id, "1.json"), "utf8")).toBe("obsolete legacy input");
+	});
+
+	it.each(["malformed", "gapped"] as const)(
+		"rejects a %s legacy history without accepting a partial archive and retries after repair",
+		async (corruption) => {
+			const snapshot = legacySnapshot();
+			await writeLegacySnapshot(root, snapshot);
+			const last = snapshot.histories[2];
+			const directory = join(root, "state", "memory", last[0].id);
+			if (corruption === "malformed") await writeFile(join(directory, "2.json"), "{invalid json");
+			else await rm(join(directory, "1.json"));
+			await expect(memory.snapshot()).rejects.toThrow();
+			await expect(new InstanceMemory(root).list()).rejects.toThrow();
+			await expect(
+				memory.observe(lesson({ text: "Must not be accepted during a failed migration." })),
+			).rejects.toThrow();
+
+			snapshot.histories[0][0].text = "Repaired legacy database evidence.";
+			await writeLegacySnapshot(root, snapshot);
+			expect(await new InstanceMemory(root).snapshot()).toEqual(snapshot);
+			expect(await memory.snapshot()).toEqual(snapshot);
+		},
+	);
+
+	it("migrates existing histories once when fresh host processes open and revise concurrently", async () => {
+		const snapshot = legacySnapshot();
+		await writeLegacySnapshot(root, snapshot);
+		const id = snapshot.histories[0][0].id;
+		await Promise.all(
+			Array.from({ length: 4 }, (_, index) =>
+				childRevision(root, id, lesson({ text: `Concurrent migration revision ${index}` })),
+			),
+		);
+		const reopened = new InstanceMemory(root);
+		const history = await reopened.history(id);
+		expect(history.slice(0, 2)).toEqual(snapshot.histories[0]);
+		expect(history.map((entry) => entry.version)).toEqual([1, 2, 3, 4, 5, 6]);
+		expect(
+			history
+				.slice(2)
+				.map((entry) => entry.text)
+				.sort(),
+		).toEqual(Array.from({ length: 4 }, (_, index) => `Concurrent migration revision ${index}`));
+		for (const untouched of snapshot.histories.slice(1)) {
+			expect(await reopened.history(untouched[0].id)).toEqual(untouched);
+		}
+		expect((await reopened.snapshot()).histories).toHaveLength(3);
+	}, 20_000);
+
+	it("rejects future database schemas without reading or changing the accepted archive", async () => {
+		const entry = await memory.observe(lesson());
+		const before = await memory.snapshot();
+		executeSql(root, "PRAGMA user_version = 2");
+		const reopened = new InstanceMemory(root);
+		await expect(reopened.snapshot()).rejects.toThrow(/schema/i);
+		await expect(reopened.get(entry.id)).rejects.toThrow(/schema/i);
+		await expect(reopened.revise(entry.id, lesson())).rejects.toThrow(/schema/i);
+		executeSql(root, "PRAGMA user_version = 1");
+		expect(await new InstanceMemory(root).snapshot()).toEqual(before);
+	});
+
+	it("leaves all histories unchanged when a later snapshot history conflicts", async () => {
+		const snapshot = legacySnapshot();
+		const existing = snapshot.histories[1];
+		await memory.restore({ schemaVersion: 1, histories: [existing] });
+		const before = await memory.snapshot();
+		const conflicting = structuredClone(snapshot);
+		conflicting.histories[1][0].text = "A different database policy with the same identity.";
+		await expect(memory.restore(conflicting)).rejects.toThrow();
+		expect(await new InstanceMemory(root).snapshot()).toEqual(before);
+		await memory.restore(snapshot);
+		expect(await memory.snapshot()).toEqual(snapshot);
+		expect(await memory.restore(snapshot)).toEqual({ published: [] });
+	});
+
+	it.each(["restore", "import"] as const)(
+		"rolls back every accepted record when %s fails on a later insertion and permits a clean retry",
+		async (operation) => {
+			await memory.observe(lesson({ text: "Existing database guidance must survive." }));
+			const before = await memory.snapshot();
+			const snapshot = legacySnapshot();
+			const transfer = snapshot.histories.slice(0, 2).map((history) => history[history.length - 1]);
+			executeSql(
+				root,
+				`CREATE TRIGGER fail_later_memory_insert BEFORE INSERT ON memory_versions
+WHEN (SELECT COUNT(*) FROM memory_versions) >= 2
+BEGIN SELECT RAISE(ABORT, 'injected late insertion failure'); END`,
+			);
+			try {
+				await expect(
+					operation === "restore" ? memory.restore(snapshot) : memory.importEntries(transfer),
+				).rejects.toThrow("injected late insertion failure");
+				expect(await new InstanceMemory(root).snapshot()).toEqual(before);
+			} finally {
+				executeSql(root, "DROP TRIGGER fail_later_memory_insert");
+			}
+			if (operation === "restore") {
+				await memory.restore(snapshot);
+				expect(await new InstanceMemory(root).snapshot()).toEqual({
+					schemaVersion: 1,
+					histories: [...before.histories, ...snapshot.histories].sort((a, b) => a[0].id.localeCompare(b[0].id)),
+				});
+			} else {
+				const imported = await memory.importEntries(transfer);
+				expect(imported).toHaveLength(2);
+				expect(imported.map((entry) => entry.importedFrom)).toEqual(
+					transfer.map(({ id, version, scope }) => ({ id, version, scope })),
+				);
+				expect(imported[1].conflictsWith).toEqual([imported[0].id]);
+				const after = await new InstanceMemory(root).snapshot();
+				expect(after.histories).toHaveLength(3);
+				for (const history of [...before.histories, ...imported.map((entry) => [entry])]) {
+					expect(after.histories).toContainEqual(history);
+				}
+			}
+		},
+	);
+
+	it("rejects a symlinked database without exposing or modifying another archive", async () => {
+		const destinationRoot = join(temporary, "external-instance");
+		const external = new InstanceMemory(destinationRoot);
+		await external.observe(lesson({ text: "Private external database guidance.", scope: "external" }));
+		const before = await external.snapshot();
+		await mkdir(join(root, "state"), { recursive: true });
+		await symlink(join(destinationRoot, "state", "memory.sqlite"), join(root, "state", "memory.sqlite"));
+		await expect(memory.snapshot()).rejects.toThrow(/symlink/i);
+		await expect(memory.observe(lesson())).rejects.toThrow(/symlink/i);
+		expect(await external.snapshot()).toEqual(before);
+	});
+
+	it.each(["-journal", "-wal", "-shm"])(
+		"rejects a symlinked SQLite %s companion without modifying either destination",
+		async (suffix) => {
+			const entry = await memory.observe(lesson());
+			const before = await memory.snapshot();
+			const destination = join(temporary, "external-data");
+			await writeFile(destination, "private external contents");
+			const companion = join(root, "state", `memory.sqlite${suffix}`);
+			await symlink(destination, companion);
+			await expect(memory.get(entry.id)).rejects.toThrow(/symlink/i);
+			await expect(memory.revise(entry.id, lesson())).rejects.toThrow(/symlink/i);
+			expect(await readFile(destination, "utf8")).toBe("private external contents");
+			await rm(companion);
+			expect(await new InstanceMemory(root).snapshot()).toEqual(before);
+		},
+	);
+
+	it("rejects harness Git and symlinked state directories", async () => {
+		await memory.observe(lesson({ kind: "observation" }));
 		const harness = join(root, "harness");
 		await mkdir(join(harness, ".git"), { recursive: true });
 		await expect(new InstanceMemory(harness).observe(lesson())).rejects.toThrow("outside the harness Git");
@@ -368,13 +624,5 @@ describe("InstanceMemory", () => {
 		await mkdir(destination);
 		await symlink(destination, join(unsafeRoot, "state"));
 		await expect(new InstanceMemory(unsafeRoot).observe(lesson())).rejects.toThrow("symlink");
-		await symlink(destination, join(root, "state", "memory", "11111111-1111-1111-1111-111111111111"));
-		await expect(memory.get("11111111-1111-1111-1111-111111111111")).rejects.toThrow("history directory");
-		await expect(memory.revise("11111111-1111-1111-1111-111111111111", lesson())).rejects.toThrow(
-			"history directory",
-		);
-		await expect(memory.retire("11111111-1111-1111-1111-111111111111", "Invalid source")).rejects.toThrow(
-			"history directory",
-		);
 	});
 });

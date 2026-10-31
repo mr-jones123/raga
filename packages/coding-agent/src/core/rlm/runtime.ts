@@ -17,7 +17,7 @@ import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { type Static, Type } from "typebox";
 import type { ToolDefinition } from "../extensions/types.ts";
 import { instanceHostHandlers } from "../instances/host-api.ts";
-import { InstanceMemory } from "../instances/memory.ts";
+import type { MemoryService } from "../instances/memory-service.ts";
 import { sandboxCommand } from "../instances/sandbox.ts";
 import type { HarnessPin, SandboxPolicy } from "../instances/types.ts";
 import { bashExecutionToText } from "../messages.ts";
@@ -60,7 +60,8 @@ export interface RlmSessionOptions {
 	/** The tree's child slots. Omitted for a root session, which creates them. */
 	childSlots?: RlmChildSlots;
 	instance?: HarnessPin;
-	instanceMemory?: boolean;
+	/** The instance's selected memory service; absent when live memory is off. */
+	memory?: MemoryService;
 	sandbox?: SandboxPolicy;
 }
 
@@ -73,7 +74,7 @@ export interface RlmHost {
 	/** The tree's child slots; a root session passes none and gets new ones. */
 	childSlots?: RlmChildSlots;
 	instance?: HarnessPin;
-	instanceMemory?: boolean;
+	memory?: MemoryService;
 	sandbox?: SandboxPolicy;
 	settingsManager: SettingsManager;
 	modelRuntime: ModelRuntime;
@@ -256,7 +257,7 @@ export class RlmRuntime {
 			addUsage: (usage) => this.addCellUsage(usage),
 			childSlots: host.childSlots ?? new RlmChildSlots(),
 			instance: host.instance,
-			instanceMemory: host.instanceMemory,
+			memory: host.memory,
 			sandbox: host.sandbox,
 		});
 		const handlers = new Map<string, HostHandler>([
@@ -272,8 +273,9 @@ export class RlmRuntime {
 				host.sessionManager,
 				host.appendCustomEntry,
 				host.cwd,
+				host.memory,
 			)) {
-				if (host.instanceMemory !== false || !name.startsWith("memory.")) handlers.set(name, handler);
+				handlers.set(name, handler);
 			}
 		}
 		this.memoryLimitMb = kernelMemoryLimitMb(process.platform, host.settingsManager.getRlmSettings().memoryLimitMb);
@@ -391,21 +393,33 @@ export class RlmRuntime {
 			} catch (error) {
 				return this.failure(`The Python kernel is unavailable: ${errorMessage(error)}`);
 			}
-			if (this.host.instance && this.host.instanceMemory !== false && output.error) {
+			if (this.host.instance && this.host.memory && output.error) {
 				const failure = `${output.error.ename}: ${output.error.evalue}`.slice(0, 1000);
 				if (failure !== this.lastMemoryFailure) {
 					this.lastMemoryFailure = failure;
+					const query = {
+						text: `${this.getTask()}\n${failure}`,
+						trigger: "failure",
+						includeUnverified: false,
+						maxChars: 4000,
+						limit: 5,
+					};
 					try {
-						const retrieved = await new InstanceMemory(this.host.instance.instanceRoot).retrieve({
-							query: `${this.getTask()}\n${failure}`,
+						const retrieved = await this.host.memory.search({
+							query: query.text,
 							scope: this.host.instance.projectRoot,
 							harnessRevision: this.host.instance.revision,
-							maxChars: 4000,
-							limit: 5,
+							maxChars: query.maxChars,
+							limit: query.limit,
 						});
-						this.host.appendCustomEntry("raga-memory-retrieval", { trigger: "failure", ...retrieved });
+						this.host.appendCustomEntry("raga-memory-retrieval", { trigger: "failure", query, ...retrieved });
 						if (retrieved.text) notices.push(retrieved.text);
 					} catch (error) {
+						this.host.appendCustomEntry("raga-memory-retrieval", {
+							trigger: "failure",
+							query,
+							error: errorMessage(error),
+						});
 						notices.push(`[Memory retrieval failed: ${errorMessage(error)}]`);
 					}
 				}
@@ -567,9 +581,17 @@ export class RlmRuntime {
 				signal,
 				maxOutputBytes: 64 * 1024,
 			});
+			const output = `${result.stdout}${result.stderr}`;
+			const status = result.aborted
+				? "Command aborted"
+				: result.timedOut
+					? `Command timed out after ${timeout} seconds`
+					: result.exitCode !== 0
+						? `Command exited with code ${result.exitCode}`
+						: undefined;
 			return {
-				text: `${result.stdout}${result.stderr}`,
-				is_error: result.exitCode !== 0 || result.timedOut || result.aborted,
+				text: status ? `${output}${output ? "\n\n" : ""}${status}` : output,
+				is_error: status !== undefined,
 			};
 		}
 		if (!this.currentToolCallId) throw new Error("tool.call outside a python call");

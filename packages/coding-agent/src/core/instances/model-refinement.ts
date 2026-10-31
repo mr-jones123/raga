@@ -866,6 +866,7 @@ export async function runModelRefinement(
 			await createAgentSessionServices({
 				cwd: pin.projectRoot,
 				instance: pin,
+				instanceMemory: false,
 				modelRuntimeSignal: signal,
 			})
 		).modelRuntime;

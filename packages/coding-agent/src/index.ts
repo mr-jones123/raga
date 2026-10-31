@@ -226,7 +226,23 @@ export {
 	type MemoryInput,
 	type MemoryQuery,
 	type MemoryRetrieval,
+	type MemorySnapshot,
 } from "./core/instances/memory.ts";
+export {
+	type ArchiveMemoryService,
+	createMemoryService,
+	createProxyMemoryService,
+	type HindsightOptions,
+	handleMemoryProxyRequest,
+	type MemoryIngestion,
+	type MemoryObservation,
+	type MemoryProxyBinding,
+	type MemoryService,
+	type MemoryServiceOptions,
+	type ProxyMemoryService,
+	readOnlyMemoryService,
+	selectMemoryService,
+} from "./core/instances/memory-service.ts";
 export { migrateProjectConfig, type ProjectMigrationResult } from "./core/instances/migration.ts";
 export {
 	type ModelRefinementOptions,

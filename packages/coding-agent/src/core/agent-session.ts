@@ -529,7 +529,7 @@ export class AgentSession {
 				data: config.rlm.data,
 				childSlots: config.rlm.childSlots,
 				instance: config.rlm.instance,
-				instanceMemory: config.rlm.instanceMemory,
+				memory: config.rlm.memory,
 				sandbox: config.rlm.sandbox,
 				depth: this._rlmDepth,
 				settingsManager: this.settingsManager,

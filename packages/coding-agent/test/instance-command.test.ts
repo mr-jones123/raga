@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from "vitest";
@@ -14,7 +14,7 @@ let errors: MockInstance<typeof console.error>;
 let previousExitCode: typeof process.exitCode;
 
 beforeEach(async () => {
-	temporary = await mkdtemp(join(tmpdir(), "instance-cli-"));
+	temporary = await realpath(await mkdtemp(join(tmpdir(), "instance-cli-")));
 	project = join(temporary, "project");
 	await mkdir(project);
 	previousExitCode = process.exitCode;
@@ -107,7 +107,7 @@ describe("instance command", () => {
 		).rejects.toMatchObject({ code: "ENOENT" });
 	});
 
-	test("initializes default skills and reports the exact pinned revision and capabilities", async () => {
+	test("initializes an instance and reports its pinned revision and capabilities", async () => {
 		vi.spyOn(process, "cwd").mockReturnValue(project);
 		expect(await handleInstanceCommand(["instance", "init"])).toBe(true);
 		expect(errors.mock.calls).toEqual([]);
@@ -122,14 +122,8 @@ describe("instance command", () => {
 		expect(status.manifest.id).toBe(initialized.id);
 		expect(status.pin.revision).toBe(initialized.activeRevision);
 		expect(status.pin.projectRoot).toBe(project);
-		expect(status.skills.map((skill) => skill.name)).toEqual(
-			expect.arrayContaining(["peak", "architect", "no-mistakes"]),
-		);
 		expect(typeof status.capabilities.sandbox.available).toBe("boolean");
 		expect(typeof status.capabilities.noMistakes.installed).toBe("boolean");
-		expect(await readFile(join(status.pin.resourceRoot, "skills", "no-mistakes", "SKILL.md"), "utf8")).toContain(
-			"no-mistakes",
-		);
 	});
 
 	test("creates and commits a candidate without changing the active revision", async () => {

@@ -153,8 +153,72 @@ describe("pinned instance sessions", () => {
 		expect(
 			sessionManager
 				.getEntries()
-				.some((entry) => entry.type === "custom" && entry.customType === "raga-memory-retrieval"),
-		).toBe(true);
+				.find((entry) => entry.type === "custom" && entry.customType === "raga-memory-retrieval"),
+		).toMatchObject({
+			data: {
+				trigger: "task",
+				query: {
+					text: "Review ledger currency grouping",
+					trigger: "task",
+					includeUnverified: false,
+					maxChars: 4000,
+					limit: 5,
+				},
+			},
+		});
+	});
+
+	it("records the failure query once without surfacing unreviewed hypotheses", async (ctx) => {
+		if (!sandboxAvailable) ctx.skip("bubblewrap unavailable");
+		const { pin, project, session, sessionManager, faux } = await setup();
+		const note = await new InstanceMemory(pin.instanceRoot).observe({
+			text: "Ledger hypothesis contains private unreviewed advice.",
+			scope: project,
+			kind: "observation",
+			evidence: ["prior-cell"],
+			trust: "unreviewed",
+			epistemicStatus: "hypothesis",
+		});
+		faux.setResponses([
+			python("raise ValueError('ledger failure')"),
+			python("raise ValueError('ledger failure')"),
+			fauxAssistantMessage("Inspected the failure."),
+		]);
+		await session.prompt("Review ledger grouping");
+		const retrievals = sessionManager
+			.getEntries()
+			.filter((entry) => entry.type === "custom" && entry.customType === "raga-memory-retrieval");
+		expect(retrievals).toHaveLength(2);
+		expect(retrievals[1]).toMatchObject({
+			data: {
+				trigger: "failure",
+				query: {
+					text: "Review ledger grouping\nValueError: ledger failure",
+					trigger: "failure",
+					includeUnverified: false,
+					maxChars: 4000,
+					limit: 5,
+				},
+				selected: [],
+				excluded: [{ id: note.id, version: note.version, reason: "unreviewed" }],
+			},
+		});
+		expect(texts(session.messages)).not.toContain(note.text);
+	});
+
+	it("distinguishes sandbox command timeouts from exits without discarding partial output", async (ctx) => {
+		if (!sandboxAvailable) ctx.skip("bubblewrap unavailable");
+		const { session, faux } = await setup();
+		faux.setResponses([
+			python(
+				"import json\nfailures = {}\nfor name, command, timeout in [('deadline', \"printf 'partial-output'; sleep 5\", 1), ('exit', \"printf 'exit-output'; exit 7\", 10)]:\n    try:\n        await bash(command, timeout=timeout)\n        raise AssertionError('failed command returned successfully')\n    except ToolError as error:\n        failures[name] = str(error)\nprint(json.dumps(failures))",
+			),
+			fauxAssistantMessage("Inspected command failures."),
+		]);
+		await session.prompt("Inspect the deadline and exit failures");
+		const output = texts(session.messages.filter((message) => message.role === "toolResult"));
+		expect(output).toMatch(/partial-output[\s\S]*timed out/i);
+		expect(output).toMatch(/exit-output[\s\S]*code 7/);
 	});
 
 	it("continues using the pinned harness and provider after reload", async (ctx) => {
@@ -300,6 +364,51 @@ describe("pinned instance sessions", () => {
 		expect(output).toContain("memory.search");
 		expect(output).not.toContain("live memory accessible");
 		expect(output).toContain("child memory denied");
+	});
+
+	it("lets children search the parent's unverified experience but not record into it", async (ctx) => {
+		if (!sandboxAvailable) ctx.skip("bubblewrap unavailable");
+		const { pin, session, faux } = await setup(true, { git: false });
+		faux.setResponses(
+			Array.from({ length: 4 }, () => (context) => {
+				if (context.messages.some((message) => message.role === "assistant")) return fauxAssistantMessage("Done.");
+				const first = context.messages.find((message) => message.role === "user");
+				return texts(first ? [first] : []).endsWith("ledger parent")
+					? python(
+							"recorded = await memory.observe('Ledger exports need sorted currency keys.', ['cell-1'])\nassert recorded['ingestion'] == {'backend': 'local', 'status': 'archived'}\nprint(await rlm_query('ledger child', read_only=True))",
+						)
+					: python(
+							"found = await memory.search('ledger currency keys', include_unverified=True)\nassert [entry['trust'] for entry in found['selected']] == ['unreviewed']\ntry:\n    await memory.observe('Child note.', ['cell-2'])\n    raise AssertionError('child recorded')\nexcept Exception as error:\n    assert 'read-only' in str(error)\nanswer['content'] = 'child read parent experience only'\nanswer['ready'] = True",
+						);
+			}),
+		);
+		await session.prompt("ledger parent");
+		expect(texts(session.messages.filter((message) => message.role === "toolResult"))).toContain(
+			"child read parent experience only",
+		);
+		expect((await new InstanceMemory(pin.instanceRoot).list()).map((entry) => entry.text)).toEqual([
+			"Ledger exports need sorted currency keys.",
+		]);
+	});
+
+	it("preserves observation writes from writable children", async (ctx) => {
+		if (!sandboxAvailable) ctx.skip("bubblewrap unavailable");
+		const { pin, session, faux } = await setup();
+		faux.setResponses(
+			Array.from({ length: 4 }, () => (context) => {
+				if (context.messages.some((message) => message.role === "assistant")) return fauxAssistantMessage("Done.");
+				const first = context.messages.find((message) => message.role === "user");
+				return texts(first ? [first] : []).endsWith("ledger writer parent")
+					? python("print(await rlm_query('ledger writer'))")
+					: python(
+							"await memory.observe('Ledger writer checked currency ordering.', ['writer-cell'])\nanswer['content'] = 'writer observation saved'\nanswer['ready'] = True",
+						);
+			}),
+		);
+		await session.prompt("ledger writer parent");
+		expect((await new InstanceMemory(pin.instanceRoot).list()).map((entry) => entry.text)).toEqual([
+			"Ledger writer checked currency ordering.",
+		]);
 	});
 
 	it("restores forked state without mounting the parent's private snapshot directory", async (ctx) => {

@@ -3,7 +3,7 @@ import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { HostHandler, HostRequest } from "../rlm/kernel.ts";
 import type { SessionManager } from "../session-manager.ts";
-import { InstanceMemory } from "./memory.ts";
+import type { MemoryService } from "./memory-service.ts";
 import { getNoMistakesBackend } from "./no-mistakes.ts";
 import { commitCandidate, createCandidate, getCandidate } from "./store.ts";
 import type { ChildChange, ChildWorkspace, HarnessPin } from "./types.ts";
@@ -31,6 +31,12 @@ function count(data: HostRequest, key: string, fallback: number, maximum: number
 	return value;
 }
 
+function flag(data: HostRequest, key: string): boolean {
+	const value = data[key] ?? false;
+	if (typeof value !== "boolean") throw new Error(`${key} must be a boolean`);
+	return value;
+}
+
 async function candidateFile(root: string, input: string): Promise<string> {
 	if (isAbsolute(input) || input.includes("\0")) throw new Error("Candidate paths must be relative");
 	const path = resolve(root, input);
@@ -53,13 +59,14 @@ async function candidateFile(root: string, input: string): Promise<string> {
 	return path;
 }
 
+/** Host requests of an instance session. Without `memory`, the `memory.*` requests are absent. */
 export function instanceHostHandlers(
 	pin: HarnessPin,
 	sessionManager: SessionManager,
 	record: (type: string, data: unknown) => void,
 	cwd = pin.projectRoot,
+	memory?: MemoryService,
 ): Map<string, HostHandler> {
-	const memory = new InstanceMemory(pin.instanceRoot);
 	const owned = new Set<string>();
 	for (const entry of sessionManager.getBranch()) {
 		if (entry.type !== "custom" || entry.customType !== "raga-candidate-owned") continue;
@@ -80,7 +87,7 @@ export function instanceHostHandlers(
 		if (entry?.type !== "custom") throw new Error("This session does not own a collected change for that child");
 		return entry.data as { workspace: ChildWorkspace; change: ChildChange };
 	};
-	return new Map<string, HostHandler>([
+	const handlers = new Map<string, HostHandler>([
 		[
 			"instance.info",
 			async () => ({
@@ -170,49 +177,6 @@ export function instanceHostHandlers(
 			},
 		],
 		[
-			"memory.search",
-			async (data) => {
-				const result = await memory.retrieve({
-					query: text(data, "query"),
-					scope: pin.projectRoot,
-					harnessRevision: pin.revision,
-					maxChars: count(data, "max_chars", 4000, 16000),
-					limit: count(data, "limit", 5, 20),
-					...(typeof data.task_type === "string" ? { taskType: data.task_type } : {}),
-				});
-				record("raga-memory-retrieval", result);
-				return result;
-			},
-		],
-		[
-			"memory.get",
-			async (data) => {
-				const entry = await memory.get(text(data, "id"));
-				if (entry.scope !== pin.projectRoot) throw new Error("Memory belongs to a different project scope");
-				return entry;
-			},
-		],
-		[
-			"memory.observe",
-			async (data) => {
-				const evidence = data.evidence;
-				if (!Array.isArray(evidence) || !evidence.every((item): item is string => typeof item === "string")) {
-					throw new Error("evidence must be an array of strings");
-				}
-				const entry = await memory.observe({
-					text: text(data, "text"),
-					scope: pin.projectRoot,
-					kind: "observation",
-					evidence,
-					harnessRevision: pin.revision,
-					epistemicStatus: "hypothesis",
-					trust: "unreviewed",
-				});
-				record("raga-memory-observation", { id: entry.id, version: entry.version });
-				return entry;
-			},
-		],
-		[
 			"instance.candidate.create",
 			async () => {
 				const created = await createCandidate(pin.instanceRoot);
@@ -250,4 +214,70 @@ export function instanceHostHandlers(
 			},
 		],
 	]);
+	if (!memory) return handlers;
+	handlers.set("memory.search", async (data, context) => {
+		const query = {
+			text: text(data, "query"),
+			trigger: "explicit",
+			includeUnverified: flag(data, "include_unverified"),
+			maxChars: count(data, "max_chars", 4000, 16000),
+			limit: count(data, "limit", 5, 20),
+		};
+		try {
+			const result = await memory.search(
+				{
+					query: query.text,
+					scope: pin.projectRoot,
+					harnessRevision: pin.revision,
+					maxChars: query.maxChars,
+					limit: query.limit,
+					...(typeof data.task_type === "string" ? { taskType: data.task_type } : {}),
+					...(query.includeUnverified ? { includeUnreviewed: true, includeHypotheses: true } : {}),
+				},
+				context.signal,
+			);
+			record("raga-memory-retrieval", { trigger: "explicit", query, ...result });
+			return result;
+		} catch (error) {
+			record("raga-memory-retrieval", {
+				trigger: "explicit",
+				query,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
+		}
+	});
+	handlers.set("memory.get", async (data, context) => {
+		const entry = await memory.get(text(data, "id"), undefined, context.signal);
+		if (entry.scope !== pin.projectRoot) throw new Error("Memory belongs to a different project scope");
+		record("raga-memory-read", { id: entry.id, version: entry.version });
+		return entry;
+	});
+	handlers.set("memory.observe", async (data, context) => {
+		const evidence = data.evidence;
+		if (!Array.isArray(evidence) || !evidence.every((item): item is string => typeof item === "string")) {
+			throw new Error("evidence must be an array of strings");
+		}
+		// A portable observation drops only the hard revision binding; its origin still records the revision.
+		const observation = await memory.observe(
+			{
+				text: text(data, "text"),
+				scope: pin.projectRoot,
+				kind: "observation",
+				evidence,
+				...(flag(data, "portable") ? {} : { harnessRevision: pin.revision }),
+				origin: { harnessRevision: pin.revision, sessionId: sessionManager.getSessionId() },
+				epistemicStatus: "hypothesis",
+				trust: "unreviewed",
+			},
+			context.signal,
+		);
+		record("raga-memory-observation", {
+			id: observation.entry.id,
+			version: observation.entry.version,
+			ingestion: observation.ingestion,
+		});
+		return observation;
+	});
+	return handlers;
 }

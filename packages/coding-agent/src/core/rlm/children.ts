@@ -10,6 +10,7 @@ import { join, relative, sep } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { createExtensionRuntime } from "../extensions/loader.ts";
+import { type MemoryService, readOnlyMemoryService } from "../instances/memory-service.ts";
 import { instanceSandbox } from "../instances/session.ts";
 import type { ChildChange, ChildWorkspace, HarnessPin, SandboxPolicy } from "../instances/types.ts";
 import {
@@ -145,7 +146,7 @@ export class RlmChildSlots {
 export interface RlmChildHost {
 	cwd: string;
 	instance?: HarnessPin;
-	instanceMemory?: boolean;
+	memory?: MemoryService;
 	sandbox?: SandboxPolicy;
 	/** Depth of the parent session: 0 for a root session. */
 	depth: number;
@@ -270,7 +271,7 @@ async function runChild(
 	const { session: child } = await createAgentSession({
 		cwd,
 		instance: host.instance,
-		instanceMemory: host.instanceMemory,
+		instanceMemory: host.memory ? (options.readOnly ? readOnlyMemoryService(host.memory) : host.memory) : false,
 		sandbox,
 		modelRuntime: host.modelRuntime,
 		settingsManager: host.instance ? undefined : host.settingsManager,

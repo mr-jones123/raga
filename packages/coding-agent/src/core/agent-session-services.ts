@@ -4,6 +4,7 @@ import type { Model } from "@earendil-works/pi-ai";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import type { SessionStartEvent, ToolDefinition } from "./extensions/index.ts";
+import { type MemoryService, selectMemoryService } from "./instances/memory-service.ts";
 import { instanceResources, instanceSettings, resolveInstancePin } from "./instances/session.ts";
 import type { HarnessPin } from "./instances/types.ts";
 import { ModelRuntime } from "./model-runtime.ts";
@@ -40,6 +41,8 @@ export interface CreateAgentSessionServicesOptions {
 	cwd: string;
 	agentDir?: string;
 	instance?: HarnessPin | string;
+	/** Instance memory as {@link CreateAgentSessionOptions.instanceMemory}. Default: the environment's selection. */
+	instanceMemory?: MemoryService | false;
 	sessionManager?: SessionManager;
 	settingsManager?: SettingsManager;
 	modelRuntime?: ModelRuntime;
@@ -80,6 +83,8 @@ export interface AgentSessionServices {
 	cwd: string;
 	agentDir: string;
 	instance?: HarnessPin;
+	/** The selected memory of {@link instance}; absent when live memory is off or there is no instance. */
+	instanceMemory?: MemoryService;
 	modelRuntime: ModelRuntime;
 	settingsManager: SettingsManager;
 	resourceLoader: ResourceLoader;
@@ -155,12 +160,16 @@ export async function createAgentSessionServices(
 	const settingsManager = instance
 		? instanceSettings(instance)
 		: (options.settingsManager ?? SettingsManager.create(cwd, agentDir));
+	const instanceMemory =
+		instance && options.instanceMemory !== false
+			? (options.instanceMemory ?? selectMemoryService(instance.instanceRoot))
+			: undefined;
 	const resourceLoader = instance
 		? await instanceResources(
 				instance,
 				settingsManager,
 				options.resourceLoaderOptions?.extensionFactories,
-				true,
+				instanceMemory,
 				modelRuntime,
 			)
 		: new DefaultResourceLoader({
@@ -216,6 +225,7 @@ export async function createAgentSessionServices(
 		cwd,
 		agentDir,
 		instance,
+		instanceMemory,
 		modelRuntime,
 		settingsManager,
 		resourceLoader,
@@ -237,6 +247,7 @@ export async function createAgentSessionFromServices(
 		cwd: options.services.cwd,
 		agentDir: options.services.agentDir,
 		instance: options.services.instance,
+		instanceMemory: options.services.instance ? (options.services.instanceMemory ?? false) : undefined,
 		modelRuntime: options.services.modelRuntime,
 		settingsManager: options.services.settingsManager,
 		resourceLoader: options.services.resourceLoader,

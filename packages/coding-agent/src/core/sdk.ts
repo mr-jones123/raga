@@ -10,6 +10,7 @@ import { CacheWarmer } from "./cache-warmer.ts";
 import { getClientIdentity } from "./client-identity.ts";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.ts";
 import type { ExtensionRunner, LoadExtensionsResult, SessionStartEvent, ToolDefinition } from "./extensions/index.ts";
+import { type MemoryService, selectMemoryService } from "./instances/memory-service.ts";
 import {
 	instanceResources,
 	instanceSandbox,
@@ -130,8 +131,12 @@ export interface CreateAgentSessionOptions {
 	rlmChildSlots?: RlmChildSlots;
 	/** Instance identity or an already pinned internal execution revision. */
 	instance?: string | HarnessPin;
-	/** Disable live memory when a trusted evaluator supplies a frozen context. Propagates to children. */
-	instanceMemory?: boolean;
+	/**
+	 * Instance memory: a selected service, or `false` to turn live memory off when a trusted evaluator supplies a
+	 * frozen context. Default: the service `RAGA_MEMORY_BACKEND` selects, local when unset. Writing `rlm_query`
+	 * children inherit the service; `read_only` children, and every child of a read-only service, cannot write.
+	 */
+	instanceMemory?: MemoryService | false;
 	/** Explicit execution boundary for trusted callers such as candidate evaluators. */
 	sandbox?: SandboxPolicy;
 }
@@ -223,6 +228,10 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	const cwd = resolvePath(options.cwd ?? options.sessionManager?.getCwd() ?? process.cwd());
 	const agentDir = options.agentDir ? resolvePath(options.agentDir) : getDefaultAgentDir();
 	const instance = await resolveInstancePin(cwd, options.instance, options.sessionManager);
+	const memory =
+		instance && options.instanceMemory !== false
+			? (options.instanceMemory ?? selectMemoryService(instance.instanceRoot))
+			: undefined;
 	let resourceLoader = options.resourceLoader;
 
 	const authPath = options.agentDir && !instance ? join(agentDir, "auth.json") : undefined;
@@ -241,13 +250,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 
 	if (!resourceLoader) {
 		if (instance) {
-			resourceLoader = await instanceResources(
-				instance,
-				settingsManager,
-				undefined,
-				options.instanceMemory !== false,
-				modelRuntime,
-			);
+			resourceLoader = await instanceResources(instance, settingsManager, undefined, memory, modelRuntime);
 		} else {
 			resourceLoader = new DefaultResourceLoader({ cwd, agentDir, settingsManager });
 			await resourceLoader.reload();
@@ -525,7 +528,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 					childSlots: options.rlmChildSlots,
 					instance,
 					sandbox,
-					instanceMemory: options.instanceMemory,
+					memory,
 				}
 			: undefined,
 		rlmDepth: options.rlmDepth,
