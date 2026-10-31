@@ -84,7 +84,17 @@ Save this configuration before the first publishing run. npm does not validate t
 
 After semantic-release completes, `scripts/raga-publish.mjs` requires an exact `raga-vX.Y.Z` tag at `HEAD`. It checks whether that version is already on npm, runs `scripts/raga-pack.mjs`, and publishes the resulting tarball with `--access public --provenance --ignore-scripts`. Registry failures other than a missing version fail the job rather than being treated as permission to publish.
 
-If npm publication fails after GitHub release creation, the GitHub release remains published. Fix the trusted publisher configuration first. Do not delete the tag, reuse an npm version, or assume semantic-release will recreate an existing release on a retry. To recover, publish the existing tagged version manually from a clean checkout using an npm account authorized to publish:
+If npm publication fails after GitHub release creation, the GitHub release remains published. Fix the trusted publisher configuration first. Do not delete the tag, reuse an npm version, or assume semantic-release will recreate an existing release on a retry.
+
+To retry through trusted publishing, open **Actions → CI → Run workflow**, select the `main` branch, and enter the existing release tag (for example `raga-v0.9.0`). Or use:
+
+```sh
+gh workflow run ci.yml --ref main -f release_tag=raga-v0.9.0
+```
+
+This reruns the checks on that tag, verifies the release checkout, skips semantic-release, and publishes the tagged npm package. It uses the same trusted publisher (`ci.yml`); no npm token is needed. A plain rerun of an earlier push may skip publishing because that push predates the release commit.
+
+If GitHub Actions is unavailable, publish the existing tagged version manually from a clean checkout using an npm account authorized to publish:
 
 1. Fetch the new release tag and check it out in a clean checkout. Use the tag, not an unreleased commit. Install dependencies with `npm ci --ignore-scripts`.
 2. Build and pack:

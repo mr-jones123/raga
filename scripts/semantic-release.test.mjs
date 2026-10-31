@@ -56,12 +56,28 @@ test("CI gates releases on all checks, restricts publishing, and fetches full hi
 	const release = workflow.jobs.release;
 	assert.deepEqual(release.needs, ["build-check-test", "mcp-conformance"]);
 	assert.match(release.if, /github.event_name == 'push'/);
+	assert.match(release.if, /github.event_name == 'workflow_dispatch'/);
 	assert.match(release.if, /github.ref == 'refs\/heads\/main'/);
 	assert.match(release.if, /github.repository == 'mr-jones123\/raga'/);
 	assert.deepEqual(release.permissions, { contents: "write", "id-token": "write" });
 	assert.equal(release.steps[0].with["fetch-depth"], 0);
 	assert.equal(release.steps.at(-2).run, "npx --no-install semantic-release");
+	assert.equal(release.steps.at(-2).if, "github.event_name == 'push'");
 	assert.equal(release.steps.at(-1).run, "node scripts/raga-publish.mjs");
 	assert.equal(release.steps.find((step) => step.name === "Setup Node.js").with["node-version"], 24);
 	assert.equal(workflow.concurrency["cancel-in-progress"], "${{ github.event_name == 'pull_request' }}");
+});
+
+
+test("manual npm recovery tests the requested tag and does not create another release", () => {
+    const workflow = parse(readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8"));
+    assert.equal(workflow.on.workflow_dispatch.inputs.release_tag.required, true);
+    for (const name of ["build-check-test", "mcp-conformance", "release"]) {
+        assert.equal(workflow.jobs[name].steps[0].with.ref, "${{ inputs.release_tag || github.sha }}");
+    }
+    const validation = workflow.jobs.release.steps.find((step) => step.name === "Validate recovery tag");
+    assert.equal(validation.if, "github.event_name == 'workflow_dispatch'");
+    assert.equal(validation.env.RELEASE_TAG, "${{ inputs.release_tag }}");
+    assert.match(validation.run, /refs\/tags\/\$RELEASE_TAG/);
+    assert.match(validation.run, /git rev-parse HEAD/);
 });
