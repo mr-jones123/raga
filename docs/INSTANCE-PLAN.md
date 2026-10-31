@@ -16,24 +16,24 @@ Bare `raga` opens the interactive session for the project's instance. The `pi` e
 keeps `pi instance ...` for the same commands. `raga` reads credentials from `~/.raga/agent` and `pi` from `~/.pi/agent`.
 
 
-An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or newer. Writing children, refinement, and skill proposals also need the project to be a Git repository with a commit at `HEAD`. Every `pi instance` command prints JSON, except `run`. `--project PATH` selects the project, and the default is the current directory. `pi instance --help` lists every command and flag.
+An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or newer. Writing children, refinement, and skill proposals also need the project to be a Git repository with a commit at `HEAD`. Every instance command prints JSON, except `run`. `--project PATH` selects the project, and the default is the current directory. `raga --help` lists every instance command and flag.
 
 1. Create the instance.
 
 	```bash
 	cd ~/src/atlas
-	pi instance init
+	raga init
 	```
 
 	`init` creates `.raga/` and commits the bundled default skills as the first accepted revision. If the project already has a `.raga/` directory, `init` imports `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`, `agents/`, and `lessons/` from it. `init --trust` also imports `settings.json`, `SYSTEM.md`, `APPEND_SYSTEM.md`, `skills/`, `prompts/`, `themes/`, and `extensions/`. A file that differs from a bundled file fails `init` with a conflict list, and nothing is published.
 
-	To move a pi project first, run `pi instance migrate --trust`, then `pi instance init --trust`. Migration copies reviewed `.pi` resources into a new `.raga/` without loading them and leaves `.pi` unchanged. It refuses an existing `.raga/`, symlinks, credential files, credential-bearing or executable settings, `sessionDir`, and resource paths outside the migrated directories.
+	To move a pi project first, run `raga migrate --trust`, then `raga init --trust`. Migration copies reviewed `.pi` resources into a new `.raga/` without loading them and leaves `.pi` unchanged. It refuses an existing `.raga/`, symlinks, credential files, credential-bearing or executable settings, `sessionDir`, and resource paths outside the migrated directories.
 
 2. Inspect the instance.
 
 	```bash
-	pi instance status
-	pi instance revisions
+	raga status
+	raga revisions
 	```
 
 	`status` prints the manifest, the pinned resource root, the discovered skills, skill diagnostics, whether the bubblewrap sandbox works, and what no-mistakes still needs. `revisions` lists accepted revisions, committed candidates, and fork bases, newest first.
@@ -41,17 +41,17 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 3. Run a task.
 
 	```bash
-	pi instance run -- -p "Make the failing parser test pass"
-	pi instance run --revision 1f0c... -- -p "Reproduce yesterday's run"
+	raga run -- -p "Make the failing parser test pass"
+	raga run --revision 1f0c... -- -p "Reproduce yesterday's run"
 	```
 
-	Arguments after `--` go to `pi`. `run` stores sessions under `.raga/state/sessions/` and rejects `--session`, `--session-dir`, `--session-id`, `--fork`, `--resume`, `--continue`, `-r`, and `-c`. Running plain `pi` anywhere inside the project also finds `.raga/instance.json` and starts on the active revision. A resumed session reopens on the revision recorded in its session file, even after a newer revision was activated.
+	Arguments after `--` go to `raga`. `run` stores sessions under `.raga/state/sessions/` and rejects `--session`, `--session-dir`, `--session-id`, `--fork`, `--resume`, `--continue`, `-r`, and `-c`. Running plain `raga` anywhere inside the project also finds `.raga/instance.json` and starts on the active revision. A resumed session reopens on the revision recorded in its session file, even after a newer revision was activated.
 
 4. Fork the harness into a second project.
 
 	```bash
 	cd ~/src/beacon
-	pi instance fork --from ~/src/atlas
+	raga fork --from ~/src/atlas
 	```
 
 	`fork` copies one accepted revision of the source harness, the active one unless `--revision` names another. It never copies credentials, memory, sessions, kernel snapshots, evidence, or candidates. The two instances then evolve independently.
@@ -73,12 +73,12 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 
 	```bash
 	cd ~/src/atlas
-	pi instance memory observe --input lesson.json
-	pi instance memory retrieve --query "accept writer changes" --task-type integration
-	pi instance memory export --ids <entry-id> > /tmp/atlas-lessons.json
+	raga memory observe --input lesson.json
+	raga memory retrieve --query "accept writer changes" --task-type integration
+	raga memory export --ids <entry-id> > /tmp/atlas-lessons.json
 	cd ~/src/beacon
-	pi instance memory import --input /tmp/atlas-lessons.json --scope /home/me/src/beacon
-	pi instance memory retrieve --query "accept writer changes" --task-type integration
+	raga memory import --input /tmp/atlas-lessons.json --scope /home/me/src/beacon
+	raga memory retrieve --query "accept writer changes" --task-type integration
 	```
 
 	Without `--scope`, an imported entry keeps the source scope, and retrieval in the second project does not select it. `memory revise ID --input FILE` publishes a new version that supersedes the old one, and `memory retire ID --reason TEXT` removes an entry from retrieval. `memory get`, `memory list`, and `memory history` read entries and their versions.
@@ -88,7 +88,7 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 	`--evaluator DIR` is required. Put the evaluator in an absolute directory outside `.raga/`. The evaluator command runs after each solver replay, in the sandbox, with the probe's fresh project copy as its working directory. It reads the project path from `RAGA_PROJECT`, the measured harness from `RAGA_HARNESS`, and its own directory from `RAGA_EVALUATOR`. A last stdout line `RAGA_SCORE=n` sets the score. Otherwise exit code 0 scores 1 and any failure scores 0.
 
 	```bash
-	pi instance refine \
+	raga refine \
 		--goal "Make writers run the public check before they answer" \
 		--check '["python3", "/home/me/evaluators/atlas/check.py"]' \
 		--evaluator /home/me/evaluators/atlas \
@@ -98,7 +98,7 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 	The result's `refinement.outcome.kind` is `improved`, `no-improvement`, `insufficient-evidence`, `blocked`, or `cancelled`. The active revision does not change. To activate an `improved` result, copy its `revision`, its `evidenceId`, and `refinement.baseRevision`:
 
 	```bash
-	pi instance activate <revision> --approved --evidence <evidenceId> --expected-base <baseRevision>
+	raga activate <revision> --approved --evidence <evidenceId> --expected-base <baseRevision>
 	```
 
 	`refine --approved` performs the same activation at the end of the run when the outcome is `improved`. Inside a session, `/refine` takes the same flags plus `--probe-task`, `--max-candidates`, `--repetitions`, and `--max-probe-runs`, and asks for confirmation before it activates.
@@ -108,17 +108,17 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 	A skill directory holds `SKILL.md` and `raga-skill.json`. The manifest declares the entry function, exact dependency versions, permitted file writes, and behavior cases.
 
 	```bash
-	pi instance skill verify --directory ./skills/normalize-rows
-	pi instance skill propose --directory ./skills/normalize-rows
-	pi instance skill verify --revision <revision> --skill normalize-rows
+	raga skill verify --directory ./skills/normalize-rows
+	raga skill propose --directory ./skills/normalize-rows
+	raga skill verify --revision <revision> --skill normalize-rows
 	```
 
-	`propose` commits the skill into a new candidate, validates that exact commit, and prints the candidate and an `evidenceId`. Activate it with `pi instance activate` as in step 6.
+	`propose` commits the skill into a new candidate, validates that exact commit, and prints the candidate and an `evidenceId`. Activate it with `raga activate` as in step 6.
 
 8. Roll back.
 
 	```bash
-	pi instance rollback <earlier-accepted-revision> --expected-base <current-active-revision>
+	raga rollback <earlier-accepted-revision> --expected-base <current-active-revision>
 	```
 
 	New sessions start on the earlier revision. Running sessions keep their pins. Project files, memory, and external side effects stay as they are.
@@ -139,34 +139,34 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 	```
 
 	```bash
-	pi instance automation enable --limits limits.json --approved
-	pi instance automation checkpoint \
+	raga automation enable --limits limits.json --approved
+	raga automation checkpoint \
 		--goal "Make writers run the public check before they answer" \
 		--check '["python3", "/home/me/evaluators/atlas/check.py"]' \
 		--evaluator /home/me/evaluators/atlas
-	pi instance automation status
-	pi instance automation disable --reason "pausing"
+	raga automation status
+	raga automation disable --reason "pausing"
 	```
 
-	Each `checkpoint` call runs at most one bounded refinement, clipped to the per-run and daily limits, and refuses to start while another run is active or the interval has not passed. Raga does not schedule checkpoints. Call the command from your own task runner or job loop. After `maxConsecutiveNoProgress` runs without progress, automation disables itself. A measured improvement still needs `pi instance activate` unless automatic promotion is on.
+	Each `checkpoint` call runs at most one bounded refinement, clipped to the per-run and daily limits, and refuses to start while another run is active or the interval has not passed. Raga does not schedule checkpoints. Call the command from your own task runner or job loop. After `maxConsecutiveNoProgress` runs without progress, automation disables itself. A measured improvement still needs `raga activate` unless automatic promotion is on.
 
-	`pi instance automation approve --report FILE --margin N --min-trials N --approved` turns on automatic promotion only when the held-out report, stored outside the project, shows the adaptive arm beating both the fixed arm and the equal-budget retry arm by at least the margin. A weak or negative report leaves promotion with you. Changes to `extensions/` or `settings.json` always need your approval. `pi instance automation manual` returns promotion to approval mode.
+	`raga automation approve --report FILE --margin N --min-trials N --approved` turns on automatic promotion only when the held-out report, stored outside the project, shows the adaptive arm beating both the fixed arm and the equal-budget retry arm by at least the margin. A weak or negative report leaves promotion with you. Changes to `extensions/` or `settings.json` always need your approval. `raga automation manual` returns promotion to approval mode.
 
 10. Enable no-mistakes for one repository.
 
 	Each step needs its own approval flag:
 
 	```bash
-	pi instance no-mistakes inspect
-	pi instance no-mistakes provision --approved
-	pi instance no-mistakes enable --approved --network
-	pi instance no-mistakes start --approved
-	pi instance no-mistakes run --intent-file intent.txt --approved --network
-	pi instance no-mistakes respond --action approve --approved
-	pi instance no-mistakes stop --approved
+	raga no-mistakes inspect
+	raga no-mistakes provision --approved
+	raga no-mistakes enable --approved --network
+	raga no-mistakes start --approved
+	raga no-mistakes run --intent-file intent.txt --approved --network
+	raga no-mistakes respond --action approve --approved
+	raga no-mistakes stop --approved
 	```
 
-	`provision` downloads the pinned v1.84.0 archive and checks its SHA-256. `enable` verifies the current `pi` executable as the pipeline agent, runs upstream `init` in the project, and starts the backend daemon. The adapter check sends a probe prompt in JSON mode, so it makes model calls. `run` skips push, PR creation, and CI unless you add `--push`, `--pr`, or `--ci`. `--pr` requires `--push`, and `--ci` requires both. `--yes` passes upstream's automatic yes mode.
+	`provision` downloads the pinned v1.84.0 archive and checks its SHA-256. `enable` verifies the current `raga` executable as the pipeline agent, runs upstream `init` in the project, and starts the backend daemon. The adapter check sends a probe prompt in JSON mode, so it makes model calls. `run` skips push, PR creation, and CI unless you add `--push`, `--pr`, or `--ci`. `--pr` requires `--push`, and `--ci` requires both. `--yes` passes upstream's automatic yes mode.
 
 	For a custom provider or credential setup, add `--agent-config /absolute/path/agent.json` to `enable`. The file contains `{"executable":"/absolute/path/to/approved-wrapper","version":"1.4.0","args":[]}`. Use the version printed by that executable. The wrapper supplies any explicitly authorized provider configuration. Raga validates the adapter with real model calls and persists its executable, hash, arguments, and version. It does not copy ambient credentials or accept environment values in this configuration file. The wrapper and backend run as trusted external processes, not as sandboxed instance children.
 
@@ -178,9 +178,9 @@ An instance session needs Linux with bubblewrap (`bwrap`) and Python 3.11 or new
 	mkdir -p .raga/verification
 	$EDITOR .raga/verification/LAWS.bend      # you write the laws
 	$EDITOR .raga/verification/PROOF.bend     # proofs can be drafted, but you review them
-	pi instance verify install --approved --network
-	pi instance verify enable --approved
-	pi instance verify run --revision REV
+	raga verify install --approved --network
+	raga verify enable --approved
+	raga verify run --revision REV
 	```
 
 	`verify suggest` asks the configured agent for draft laws. Drafts land in `.raga/verification/suggestions/`, are marked unverified, and never become active on their own. A law proves only the Bend code it imports; for other languages, treat a pass as evidence about the model.
@@ -294,7 +294,7 @@ Each milestone delivers an exercised behavior, not just interfaces or directory 
 
 ### M9. Instance identity and `.raga` discovery
 
-**Delivered.** `src/core/instances/store.ts` initializes, opens, inspects, and forks instances. `PROJECT_CONFIG_DIR_NAME` in `src/config.ts` is `.raga`, and project discovery of settings, skills, prompts, extensions, packages, MCP configuration, and trust uses it. User configuration stays in `~/.raga/agent` under `raga` and `~/.pi/agent` under `pi`. `src/core/instances/migration.ts` performs the explicit `.pi` migration. `createAgentSession` and `createAgentSessionServices` accept `instance`, open the pin, and load resources only from the pinned checkout. Instance sessions disable project resource discovery, so project files cannot override the pin. `src/cli/instance-command.ts` provides `pi instance`.
+**Delivered.** `src/core/instances/store.ts` initializes, opens, inspects, and forks instances. `PROJECT_CONFIG_DIR_NAME` in `src/config.ts` is `.raga`, and project discovery of settings, skills, prompts, extensions, packages, MCP configuration, and trust uses it. User configuration stays in `~/.raga/agent` under `raga` and `~/.pi/agent` under `pi`. `src/core/instances/migration.ts` performs the explicit `.pi` migration. `createAgentSession` and `createAgentSessionServices` accept `instance`, open the pin, and load resources only from the pinned checkout. Instance sessions disable project resource discovery, so project files cannot override the pin. `src/cli/instance-command.ts` provides the top-level `raga` instance commands and the compatible `pi instance` surface.
 
 **Acceptance.** Two temporary projects load different instructions and skills and keep separate sessions. A harness-only fork contains no credentials, raw memory, or kernel snapshots. Migration with both source and destination present reports the conflict without data loss. Untrusted project extensions remain inactive.
 
@@ -308,7 +308,7 @@ On an explicitly enabled temporary repository with an authorized test remote and
 
 ### M10. Git-backed revisions and pinned loading
 
-**Delivered.** The harness is a bare Git repository with accepted revisions under `refs/raga/accepted/`. Candidates are writable checkouts committed with `pi instance candidate commit` or by the supervisor. Recommitting unchanged content returns the same revision, and changed content gets a new one, so evidence never covers edited content. `activateRevision` requires explicit approval, the caller's expected active revision, and supervisor evidence whose base is the active revision and whose candidate is the exact commit. The manifest rename under `instance.lock` publishes the new revision, and each decision is recorded first. Pins are read-only plain checkouts. A session's resource loader rejects `extendResources`, and its recorded pin wins over a newer active revision on resume. Changing instances or revisions during a resume fails.
+**Delivered.** The harness is a bare Git repository with accepted revisions under `refs/raga/accepted/`. Candidates are writable checkouts committed with `raga candidate commit` or by the supervisor. Recommitting unchanged content returns the same revision, and changed content gets a new one, so evidence never covers edited content. `activateRevision` requires explicit approval, the caller's expected active revision, and supervisor evidence whose base is the active revision and whose candidate is the exact commit. The manifest rename under `instance.lock` publishes the new revision, and each decision is recorded first. Pins are read-only plain checkouts. A session's resource loader rejects `extendResources`, and its recorded pin wins over a newer active revision on resume. Changing instances or revisions during a resume fails.
 
 A manual candidate has no evidence of its own. Run `refine` or `skill propose` to produce evidence that `activate` accepts.
 
@@ -326,7 +326,7 @@ Children open settings and resources from the same pin as their parent, not from
 
 **Delivered.** `src/core/instances/memory.ts` stores every entry version as an append-only row in `.raga/state/memory.sqlite`, outside the harness repository. One database belongs to each instance; children use the host's memory service, not direct SQL access. An entry has a stable ID, scope, kind (`observation` or `lesson`), evidence references, an epistemic status (`observed`, `hypothesis`, or `guidance`), a trust level (`unreviewed` or `curated`), applicability conditions, sharing (`project` or `reusable`), and supersession links. `revise` takes an optional `expectedVersion` and fails on a concurrent change. Revision cannot change scope.
 
-A session's `memory.observe` always records an `unreviewed` `hypothesis` in the project's scope. It is bound to the session's harness revision unless the model passes `portable=True`; either way `origin` records the revision and session, as provenance that applicability never reads. Entries recorded earlier keep their revision binding. The operator promotes an observation by revising it through `pi instance memory revise` with curated trust and a stronger epistemic status. Reusable guidance enters the harness only as a `lessons/` file in a candidate revision, which then needs evidence and approval. Cross-project transfer is an explicit `memory export` and `memory import`. Import assigns new IDs, records `importedFrom`, refuses retired entries, and remaps scope only for reusable lessons. `snapshot` and `restore` copy a whole archive instead: restore keeps every ID, version, timestamp, and history, publishes only missing versions, and rejects a snapshot that differs from or is older than a stored history before writing anything.
+A session's `memory.observe` always records an `unreviewed` `hypothesis` in the project's scope. It is bound to the session's harness revision unless the model passes `portable=True`; either way `origin` records the revision and session, as provenance that applicability never reads. Entries recorded earlier keep their revision binding. The operator promotes an observation by revising it through `raga memory revise` with curated trust and a stronger epistemic status. Reusable guidance enters the harness only as a `lessons/` file in a candidate revision, which then needs evidence and approval. Cross-project transfer is an explicit `memory export` and `memory import`. Import assigns new IDs, records `importedFrom`, refuses retired entries, and remaps scope only for reusable lessons. `snapshot` and `restore` copy a whole archive instead: restore keeps every ID, version, timestamp, and history, publishes only missing versions, and rejects a snapshot that differs from or is older than a stored history before writing anything.
 
 SQLite uses the runtime's built-in driver on Node and Bun, with a short-lived connection per operation. Revisions, imports, and restores use write transactions; snapshots and retrievals each read one consistent transaction. Rollback journaling (`DELETE`), `synchronous=EXTRA`, and `fullfsync=ON` protect acknowledged writes without a live WAL file. Database and journal paths must be private regular files, not symlinks or hard links. SQLite lock waits are synchronous, bounded to five seconds, and cannot be interrupted by a session abort signal.
 
@@ -366,7 +366,7 @@ Sessions retrieve at task start (4,000 characters, five entries) and after a fai
 
 Each probe replay builds a fresh project workspace from one snapshot, runs a real solver session on a private copy of exactly the harness being measured, and then runs your evaluator command in the sandbox. The baseline gets the same replays. Every arm runs at least two replays. With the default zero noise tolerance, any score spread within an arm marks it flaky. A candidate is an improvement only when every replay succeeds and its lowest score exceeds the baseline's highest. Two or more improving proposals are composed, committed, and measured as one exact revision. Outcomes are `improved`, `no-improvement`, `insufficient-evidence`, `blocked` (probes with uncontrolled external effects), and `cancelled`, and the baseline stays eligible in all of them.
 
-`--evaluator` is required for `pi instance refine`, `/refine`, and `pi instance automation checkpoint`. The evaluator directory is absolute, outside the instance, mounted read-only only for the evaluator, and digest-checked during the run, so a change to it ends the run as `insufficient-evidence`. One metered model runtime counts every proposal, composition, solver turn, `llm_query`, `llm_batch`, child, and compaction call against `--max-model-calls` and disables provider retries. Defaults are 30 minutes, 40 model calls, two candidates, two replays, and five minutes per probe. Evidence records what the probe does not cover, such as other tasks, network behavior, live memory, and host extensions. Activation needs `--approved` or a confirmed `/refine`.
+`--evaluator` is required for `raga refine`, `/refine`, and `raga automation checkpoint`. The evaluator directory is absolute, outside the instance, mounted read-only only for the evaluator, and digest-checked during the run, so a change to it ends the run as `insufficient-evidence`. One metered model runtime counts every proposal, composition, solver turn, `llm_query`, `llm_batch`, child, and compaction call against `--max-model-calls` and disables provider retries. Defaults are 30 minutes, 40 model calls, two candidates, two replays, and five minutes per probe. Evidence records what the probe does not cover, such as other tasks, network behavior, live memory, and host extensions. Activation needs `--approved` or a confirmed `/refine`.
 
 **Acceptance.** An improvement, a regression, a neutral edit, a flaky or inconclusive result, a failed composition, budget exhaustion, and an attempt to alter measurement are exercised. A denied or interrupted promotion leaves the active revision intact. Every accepted revision points to the tested commit and evidence. A long-running task can continue unchanged while a candidate is assessed separately.
 
@@ -380,9 +380,9 @@ Each probe replay builds a fresh project workspace from one snapshot, runs a rea
 
 ### Optional verification with Bend
 
-**Delivered.** An instance can require a proof before a harness revision becomes active. The layer stays off unless the operator creates `.raga/verification.json` with `enabled: true` and writes `.raga/verification/LAWS.bend` and `PROOF.bend`. None of those files belong to a harness revision, forks do not copy them, and the sandbox masks `.raga`. Agents therefore cannot enable the layer, weaken a law, or supply their own proof. `pi instance verify enable --approved` writes configuration only and refuses while either file is missing.
+**Delivered.** An instance can require a proof before a harness revision becomes active. The layer stays off unless the operator creates `.raga/verification.json` with `enabled: true` and writes `.raga/verification/LAWS.bend` and `PROOF.bend`. None of those files belong to a harness revision, forks do not copy them, and the sandbox masks `.raga`. Agents therefore cannot enable the layer, weaken a law, or supply their own proof. `raga verify enable --approved` writes configuration only and refuses while either file is missing.
 
-`pi instance verify install --approved --network` downloads Bend 2.0.39 for the current platform, checks the pinned SHA-256, keeps the release tree, and records the executable hash. `pi instance verify run [--revision REV]` copies the user's files into a private workspace and runs `bend PROOF.bend` under bubblewrap with no network. A pass requires exit code 0 and `ALL PROOFS CHECK`. The record binds the instance, revision, law digest, proof digest, and tool digest. `activateRevision` refuses a revision with no passing record, or with a record invalidated by an edited law, proof, or tool. `--verdict` is not used because it needs a Lean kernel; run it yourself for that second check.
+`raga verify install --approved --network` downloads Bend 2.0.39 for the current platform, checks the pinned SHA-256, keeps the release tree, and records the executable hash. `raga verify run [--revision REV]` copies the user's files into a private workspace and runs `bend PROOF.bend` under bubblewrap with no network. A pass requires exit code 0 and `ALL PROOFS CHECK`. The record binds the instance, revision, law digest, proof digest, and tool digest. `activateRevision` refuses a revision with no passing record, or with a record invalidated by an edited law, proof, or tool. `--verdict` is not used because it needs a Lean kernel; run it yourself for that second check.
 
 Inside a session, the bundled `bend` skill replaces the old `/bend-formal` command. Ask the agent to
 verify a rule, or run `/skill:bend`. The agent asks which rules must never break, writes `LAWS.bend`, and
@@ -392,7 +392,7 @@ from the REPL and uses the `bend` on `PATH` or in `~/.bend/bin`. An instance ses
 so it drafts under `verification-draft/` for you to copy. Enabling the gate and recording a check stay
 operator commands: `raga verify enable --approved` and `raga verify run`.
 
-`pi instance verify suggest` asks the configured agent for law drafts and writes them under `.raga/verification/suggestions/` with `verified: false`. Suggestions carry no proof, never reach the active directory, and cannot satisfy the gate. A human decides what to promote.
+`raga verify suggest` asks the configured agent for law drafts and writes them under `.raga/verification/suggestions/` with `verified: false`. Suggestions carry no proof, never reach the active directory, and cannot satisfy the gate. A human decides what to promote.
 
 **Limits.** A law proves only the Bend code it imports. For a TypeScript or Go project the agent must model the rule in Bend, so a pass is evidence about the model, not about the application. The gate runs on demand and at activation; it is not a commit hook, and it does not run inside every child.
 

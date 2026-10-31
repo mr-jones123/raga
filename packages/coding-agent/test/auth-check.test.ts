@@ -5,7 +5,8 @@ import { InMemoryModelsStore } from "@earendil-works/pi-ai";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { parseArgs } from "../src/cli/args.ts";
 import { checkProviderAuth, createAuthCheckModelRuntime, getProviderCredential } from "../src/cli/auth-check.ts";
-import { parseAuthCommand } from "../src/cli/auth-command.ts";
+import { parseAuthCommand, printAuthCommandHelp } from "../src/cli/auth-command.ts";
+import { APP_NAME } from "../src/config.ts";
 import { AuthStorage, ReadOnlyAuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
 
@@ -22,6 +23,19 @@ async function createRuntime(credentials: AuthStorage | ReadOnlyAuthStorage): Pr
 }
 
 describe("auth check command", () => {
+	test("uses the application name in auth help", () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			printAuthCommandHelp();
+			const help = log.mock.calls[0][0] as string;
+			for (const command of ["print-api-key", "print-bearer-token", "check"]) {
+				expect(help).toContain(`  ${APP_NAME} auth ${command} `);
+			}
+		} finally {
+			log.mockRestore();
+		}
+	});
+
 	beforeEach(() => {
 		if (existsSync(tempDir)) rmSync(tempDir, { recursive: true });
 		mkdirSync(tempDir, { recursive: true });

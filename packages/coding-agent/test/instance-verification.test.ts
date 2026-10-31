@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { APP_NAME } from "../src/config.ts";
 import { getBundledHarnessPath } from "../src/core/instances/bundle.ts";
 import { initializeInstance, readInstance } from "../src/core/instances/store.ts";
 import {
@@ -100,6 +101,7 @@ describe("verification layer", () => {
 		await setVerificationEnabled(instanceRoot, { approved: true, enabled: true });
 		const missing = await verificationActivationProblems(instanceRoot, { instanceId, revision });
 		expect(missing.join("\n")).toContain("has no recorded check");
+		expect(missing.join("\n")).toContain(`run "${APP_NAME} instance verify run --revision ${revision}"`);
 
 		const toolDigest = await installFakeBend();
 		const paths = verificationPaths(instanceRoot);
@@ -121,6 +123,7 @@ describe("verification layer", () => {
 		await writeFile(join(paths.directory, "LAWS.bend"), "import Base\nlaw weakened:\n  {1n == 1n : Nat}\n");
 		const changed = await verificationActivationProblems(instanceRoot, { instanceId, revision });
 		expect(changed.join("\n")).toContain("laws changed since the recorded check");
+		expect(changed).toContain(`run "${APP_NAME} instance verify run" again after reviewing the changes`);
 
 		await recordVerificationResult(instanceRoot, {
 			...record,

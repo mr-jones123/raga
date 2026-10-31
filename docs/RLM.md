@@ -2,7 +2,7 @@
 
 This document is the reference for raga's Recursive Language Model runtime. [ARCHITECTURE.md](ARCHITECTURE.md) explains why the runtime exists and where it sits. [PROGRESS.md](PROGRESS.md) tracks which parts are built.
 
-In RLM mode the model has one tool, `python`. Each `AgentSession` owns one Python kernel process. The kernel keeps one namespace for the whole session. Code in the kernel calls back into the TypeScript host to run pi's tools, call sub-LLMs, and start child sessions.
+In RLM mode the model has one tool, `python`. Each `AgentSession` owns one Python kernel process. The kernel keeps one namespace for the whole session. Code in the kernel calls back into the TypeScript host to run the host's tools, call sub-LLMs, and start child sessions.
 
 ## Files
 
@@ -100,7 +100,7 @@ Every `host_request` has `data.type`. The host replies with `{"status":"ok","res
 
 The `memory.*` and `instance.*` requests exist only in instance sessions, and the `memory.*` requests are removed when the session runs with `instanceMemory: false`. Candidate paths must be `AGENTS.md` or lie under `skills/`, `lessons/`, `agents/`, or `prompts/`, and hidden paths fail. A session can read, write, and commit only candidates it created. `instance.integrate` accepts 1 to 16 child IDs and a timeout of at most 3,600,000 ms, with 120,000 ms as the default. `instance.no_mistakes` allows `inspect` and `status`, allows `run` only after the operator has enabled the repository, and refuses every other action.
 
-`args` for `tool.call` match the parameter schemas of pi's built-in tools in `src/core/tools/`. `bash` takes `{command, timeout?}`. `edit` takes `{path, edits: [{oldText, newText}]}`. `write` takes `{path, content}`. Any other `name` is an error. The host runs the tool through `runToolCall` with the session's `beforeToolCall` and `afterToolCall` hooks, so extensions see a `tool_call` and `tool_result` event whose `parentToolCallId` is the `python` call. `text` is the tool result's text content joined with newlines.
+`args` for `tool.call` match the parameter schemas of the host's built-in tools in `src/core/tools/`. `bash` takes `{command, timeout?}`. `edit` takes `{path, edits: [{oldText, newText}]}`. `write` takes `{path, content}`. Any other `name` is an error. The host runs the tool through `runToolCall` with the session's `beforeToolCall` and `afterToolCall` hooks, so extensions see a `tool_call` and `tool_result` event whose `parentToolCallId` is the `python` call. `text` is the tool result's text content joined with newlines.
 
 In a session with a sandbox policy, which every instance session has, `tool.call` accepts only `bash`. The host runs `/bin/bash --noprofile --norc -c <command>` in a fresh bubblewrap sandbox with the session's policy, a timeout of at most 3,600 seconds (default 120), and 64 KiB of output per stream, without tool hooks. The Python `edit` and `write` functions then change files inside the kernel instead of calling the host.
 
@@ -130,10 +130,10 @@ The bootstrap binds these names in the kernel namespace. Every function is a cor
 
 | Name | Signature | Behavior |
 |---|---|---|
-| `bash` | `await bash(command, timeout=None) -> str` | Runs pi's `bash` tool. Raises `ToolError` with the output when the tool reports an error. |
-| `read` | `await read(path, offset=None, limit=None) -> str` | Reads the file in the kernel, without pi's `read` tool, so nothing is truncated. A relative path resolves against the session cwd; the text is decoded as UTF-8 with undecodable bytes replaced. With no `offset` or `limit` it returns the whole file; `offset` is the 1-indexed first line and `limit` a line count. |
+| `bash` | `await bash(command, timeout=None) -> str` | Runs the host's `bash` tool. Raises `ToolError` with the output when the tool reports an error. |
+| `read` | `await read(path, offset=None, limit=None) -> str` | Reads the file in the kernel, without the host's `read` tool, so nothing is truncated. A relative path resolves against the session cwd; the text is decoded as UTF-8 with undecodable bytes replaced. With no `offset` or `limit` it returns the whole file; `offset` is the 1-indexed first line and `limit` a line count. |
 | `edit` | `await edit(path, edits) -> str` | `edits` is a list of `(old, new)` tuples or `{"oldText","newText"}` dicts. |
-| `write` | `await write(path, content) -> str` | Runs pi's `write` tool. |
+| `write` | `await write(path, content) -> str` | Runs the host's `write` tool. |
 | `llm_query` | `await llm_query(prompt, system=None, model=None) -> str` | One sub-LLM call with no tools. |
 | `llm_batch` | `await llm_batch(prompts, system=None, model=None) -> list[str]` | Parallel sub-LLM calls. The host limits concurrency to 8. |
 | `rlm_query` | `await rlm_query(task, context=None, model=None, max_turns=None, *, read_only=False, details=False) -> str \| dict` | Runs a child RLM session on `task` and returns its answer (see "Child sessions"). `context` is any JSON value and becomes the child's `context.data`. Run several children at once with `await asyncio.gather(rlm_query(a), rlm_query(b))`. In an instance session a writing child works in its own checkout, and `read_only=True` mounts the parent's workspace read-only instead. `details=True` returns the whole `rlm.query` result, including `workspace` and `change`. |
@@ -160,7 +160,7 @@ Each kernel is a separate process. An idle kernel uses about 21 MiB of RSS. A tr
 1. Limit. The host starts every kernel with the environment variable `RAGA_RLM_MEMORY_LIMIT_MB` set to the effective limit: `rlm.memoryLimitMb` on Linux, and `0` on other platforms. On Linux, before the bootstrap, the kernel sets the soft and hard `RLIMIT_DATA` to that many MiB, or to the existing hard limit when that is lower. `0` sets no limit.
 2. Linux. `RLIMIT_DATA` covers the heap and private anonymous mappings, so an allocation past the limit raises `MemoryError` in the cell. The cell ends with `status: "error"`, the kernel keeps serving, and earlier variables stay in the namespace.
 3. Other platforms. The host passes `0` and the kernel sets no limit, so macOS and Windows have no hard limit and no memory lines in the `python` result.
-4. Subprocesses. A process started from Python code (`subprocess`, `os.system`) inherits the limit. `bash()` runs pi's `bash` tool in the host process, so its commands do not.
+4. Subprocesses. A process started from Python code (`subprocess`, `os.system`) inherits the limit. `bash()` runs the host's `bash` tool in the host process, so its commands do not.
 5. Visibility. The `done` of every `execute` carries `rss_mb`, and the `python` result warns from 75% of the limit (see "The python tool").
 6. Growth that the kernel bounds itself: `cells` keeps full output for at most 32 Mi characters (see "Python API"), a snapshot skips a large buffer without pickling it, and `restore` holds one pickle in memory at a time (see "Snapshot and restore").
 
@@ -176,7 +176,7 @@ The kernel namespace survives a resume and a fork through a `dill` snapshot.
 
 ## Instance sessions
 
-A session pinned to an instance revision changes the runtime as follows. [INSTANCE-PLAN.md](INSTANCE-PLAN.md) describes instances and the `pi instance` commands.
+A session pinned to an instance revision changes the runtime as follows. [INSTANCE-PLAN.md](INSTANCE-PLAN.md) describes instances and the top-level `raga` instance commands.
 
 1. Mode. RLM mode is always on, whatever `rlm.enabled` says. `python` is the only active tool, and MCP tools are excluded. Settings come from the pinned `settings.json`.
 2. Sandbox. The kernel runs inside bubblewrap (`src/core/instances/sandbox.ts`) with no network and no inherited host environment. The pinned harness and the interpreter's runtime directories are read-only. The workspace is writable: the project checkout for the root session, or the child's own checkout. The kernel snapshot directory is also writable. `.git` and `.raga` are masked under every mounted root. The kernel gets `RAGA_RESTRICTED=1`, `RAGA_HARNESS`, and `RAGA_INSTANCE_ID`. If the bubblewrap probe fails, the kernel does not start, and the first `python` result reports `Restricted execution is unavailable`.

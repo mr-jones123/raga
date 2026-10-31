@@ -27,7 +27,7 @@ The RLM runtime works end to end. The adaptive layer, which lets the harness rew
 | Goal and metric loop (`--goal`, `--gate`, `--metric`) | Not started |
 | Native engineering skills (pstack, no-mistakes) | Not started |
 
-The packages still use pi's names (`@earendil-works/pi-*`). The `raga` command keeps its own user directory, `~/.raga/agent`, for logins, settings, sessions, skills, extensions, and packages. Set `RAGA_CODING_AGENT_DIR` to move it. It does not read `~/.pi/agent` or the shared `~/.agents/skills` folder, so an existing pi setup does not carry over. The `pi` command still uses `~/.pi/agent`.
+User-facing commands and messages use Raga branding. The SDK packages retain their upstream names (`@earendil-works/pi-*`); imports, extension APIs, and protocol identifiers are not renamed. The `raga` command keeps its own user directory, `~/.raga/agent`, for logins, settings, sessions, skills, extensions, and packages. Set `RAGA_CODING_AGENT_DIR` to move it. It does not read `~/.pi/agent` or the shared `~/.agents/skills` folder, so an existing pi setup does not carry over. The `pi` command still uses `~/.pi/agent`.
 
 ## Run it
 

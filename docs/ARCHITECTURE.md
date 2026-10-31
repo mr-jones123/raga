@@ -2,7 +2,7 @@
 
 Raga is a coding harness for long tasks such as refactors, model training runs, and ports of legacy codebases. It keeps working until a goal or a metric is met, and it is built to get better at a task each time the task repeats. No measurement has shown that improvement yet. Raga is a fork of [pi](https://github.com/badlogic/pi-mono). This document explains how the pi base works and where raga's own layers attach to it. [PROGRESS.md](PROGRESS.md) tracks which of those layers exist today.
 
-The repository still uses pi's names: the `@earendil-works/pi-*` packages and the `pi` binary. The `raga` command keeps user configuration, credentials, models, and sessions in `~/.raga/agent/`, and the `pi` command keeps them in `~/.pi/agent/`. `getAgentDir` in `packages/coding-agent/src/config.ts` picks the directory from the launch name. Under `raga`, user skills come only from `~/.raga/agent/skills` and installed packages; the shared `~/.agents/skills` folder is not loaded. Project configuration moved from `.pi` to `.raga`, and `pi instance migrate --trust` copies an existing `.pi` directory. Package renaming is separate.
+Raga uses the `raga` executable. The upstream `@earendil-works/pi-*` SDK package names remain unchanged, and the `pi` executable is retained for compatibility. The `raga` command keeps user configuration, credentials, models, and sessions in `~/.raga/agent/`, and the `pi` command keeps them in `~/.pi/agent/`. `getAgentDir` in `packages/coding-agent/src/config.ts` picks the directory from the launch name. Under `raga`, user skills come only from `~/.raga/agent/skills` and installed packages; the shared `~/.agents/skills` folder is not loaded. Project configuration moved from `.pi` to `.raga`, and `raga migrate --trust` copies an existing `.pi` directory. An SDK package rename is not required for Raga branding.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Raga has three layers.
 2. The RLM runtime is a persistent Python REPL kernel owned by each session. The model works inside the kernel. Large inputs and history live in Python variables instead of the context window. Python code can call sub-LLMs and recursive sub-agents. This follows the Recursive Language Model design from [Zhang et al.](https://arxiv.org/abs/2512.24601) and the [Prime Agent](https://www.primeintellect.ai/blog/prime-agent) harness.
 3. The adaptive layer gives each project instance its own Git-versioned harness of instructions, extensions, skills, lessons, and child specs, plus separate memory and session state. A retrieval gate selects applicable memory. An evidence-driven refinement loop proposes harness revisions and measures them with real solver runs and an external evaluator. The goal and metric loop is still planned.
 
-The TypeScript host is the stable core and is not editable by the agent. Agents propose changes to harness artifacts in candidate checkouts. A trusted supervisor commits each candidate, measures the exact commit, and activates it only with approval and matching evidence. Running sessions stay on their pinned revision, and executable changes reach new sessions with fresh kernels and host processes. Host extensions require explicit approval because they execute with host permissions. Git rollback changes subsequent execution, not live objects, project files, or external side effects. [INSTANCE-PLAN.md](INSTANCE-PLAN.md) shows the `pi instance` workflow and describes each milestone, and [PROGRESS.md](PROGRESS.md) records what is verified.
+The TypeScript host is the stable core and is not editable by the agent. Agents propose changes to harness artifacts in candidate checkouts. A trusted supervisor commits each candidate, measures the exact commit, and activates it only with approval and matching evidence. Running sessions stay on their pinned revision, and executable changes reach new sessions with fresh kernels and host processes. Host extensions require explicit approval because they execute with host permissions. Git rollback changes subsequent execution, not live objects, project files, or external side effects. [INSTANCE-PLAN.md](INSTANCE-PLAN.md) shows the `raga` instance workflow and describes each milestone, and [PROGRESS.md](PROGRESS.md) records what is verified.
 
 ## Key concepts
 
@@ -28,9 +28,9 @@ The TypeScript host is the stable core and is not editable by the agent. Agents 
 
 **Host request.** A host request is a call from Python code back into the TypeScript host, such as `llm_query` or `bash`. The host answers it while the cell that made the call is still running.
 
-**Instance.** An instance is a project's `.raga/` directory. It binds one project path to a harness repository, the active revision, and instance state. Running `pi` inside the project, or `pi instance run`, starts an instance session.
+**Instance.** An instance is a project's `.raga/` directory. It binds one project path to a harness repository, the active revision, and instance state. Running `raga` inside the project, or `raga run`, starts an instance session.
 
-**Harness revision.** A harness revision is one commit in `.raga/harness/`. Accepted revisions are the only content that a session loads and that `pi instance fork` copies. A session records its revision in a `raga-instance-pin` entry and keeps it until it ends.
+**Harness revision.** A harness revision is one commit in `.raga/harness/`. Accepted revisions are the only content that a session loads and that `raga fork` copies. A session records its revision in a `raga-instance-pin` entry and keeps it until it ends.
 
 ## How a turn works
 
@@ -72,8 +72,8 @@ Tool output reaches the model shortened to a head and a tail. The full output st
 | `packages/coding-agent/src/core/rlm/` | The TypeScript side of the RLM runtime. `Kernel` in `kernel.ts` runs one kernel process. [RLM.md](RLM.md) lists every file. |
 | `packages/coding-agent/python/raga_rlm/` | The Python kernel (`raga_rlm.repl`) and the functions the model calls. |
 | `packages/coding-agent/src/core/instances/` | Instances. `store.ts` owns revisions and activation, `session.ts` pins sessions, `sandbox.ts` runs bubblewrap, `workspaces.ts` owns child checkouts and integration, `memory.ts` stores and retrieves memory, `skills.ts` validates learned skills, `refinement.ts` and `model-refinement.ts` run Propose-Probe-Compose, `automation.ts` and `checkpoint.ts` run opt-in checkpoint refinement, and `no-mistakes.ts` manages the pinned backend. |
-| `packages/coding-agent/src/cli/instance-command.ts` | The `pi instance` commands. |
-| `packages/coding-agent/bundled-skills/` | The default harness that `pi instance init` copies. `bundle.json` pins its sources and checksums. `scripts/raga-sync-skills.mjs` regenerates it. |
+| `packages/coding-agent/src/cli/instance-command.ts` | The top-level `raga` instance commands and compatible `pi instance` commands. |
+| `packages/coding-agent/bundled-skills/` | The default harness that `raga init` copies. `bundle.json` pins its sources and checksums. `scripts/raga-sync-skills.mjs` regenerates it. |
 | `bench/rlm/instances/` | The transfer benchmark and the deterministic two-project scenario. |
 | `packages/codemode`, `packages/durable`, `packages/env`, `packages/mcp`, `packages/chord`, `packages/tui`, `packages/telemetry` | Pi packages that raga keeps as they are. |
 | `docs/` | Raga docs. Pi's own docs are in `packages/coding-agent/docs/`. |
@@ -111,7 +111,7 @@ Revision changes go through one gate. A candidate becomes active only when super
 - System prompt changes reach the model as patch messages inside the transcript, not as a new system prompt. `diffSystemPromptSections` in `system-prompt.ts` builds them.
 - Pi's `packages/*/CHANGELOG.md` files and `vX.Y.Z` tags belong to upstream pi. Raga's version and changelog are separate. See [Versioning](#versioning).
 - An instance session needs Linux with a working `bwrap`. On other platforms its kernel does not start.
-- Running `pi` anywhere inside a project with `.raga/instance.json` starts an instance session, not an ordinary pi session.
+- Running `raga` anywhere inside a project with `.raga/instance.json` starts an instance session, not an ordinary standalone session.
 
 ## Versioning
 

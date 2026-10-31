@@ -1,5 +1,7 @@
 <a id="cli-and-modes-reference"></a>
 
+Raga uses the `raga` executable. In the upstream command examples below, replace `pi` with `raga`. SDK package names, extension APIs, and documented protocol identifiers retain their upstream names.
+
 # Command Line
 
 This page documents Pi's built-in command-line commands and options. Run `pi --help` or append `--help` to a command for the exact interface in your installed version. The top-level help also includes options registered by loaded extensions.

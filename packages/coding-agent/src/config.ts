@@ -342,7 +342,9 @@ export function getSelfUpdateUnavailableInstruction(
 	const method = detectInstallMethod();
 	const target = normalizeSelfUpdatePackageTarget(updatePackageTarget);
 	if (method === "bun-binary") {
-		return `Download from: https://github.com/earendil-works/pi/releases/latest`;
+		return IS_RAGA_CLI
+			? `This executable cannot self-update. To install the Raga npm distribution, run: npm install -g ${RAGA_PACKAGE_NAME}@latest`
+			: "Download from: https://github.com/earendil-works/pi/releases/latest";
 	}
 	const command = getSelfUpdateCommandForMethod(method, packageName, target, npmCommand);
 	if (command) {

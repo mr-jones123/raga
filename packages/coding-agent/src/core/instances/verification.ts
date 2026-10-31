@@ -13,6 +13,7 @@ import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 import { Compile } from "typebox/compile";
+import { APP_NAME, IS_RAGA_CLI } from "../../config.ts";
 import { sandboxCommand } from "./sandbox.ts";
 import type { CommandResult } from "./types.ts";
 
@@ -427,7 +428,7 @@ export async function verificationActivationProblems(
 	const record = await readVerificationRecord(instanceRoot, details.revision);
 	if (!record) {
 		return [
-			`verification is enabled but ${details.revision} has no recorded check; run "pi instance verify run --revision ${details.revision}"`,
+			`verification is enabled but ${details.revision} has no recorded check; run "${APP_NAME}${IS_RAGA_CLI ? "" : " instance"} verify run --revision ${details.revision}"`,
 		];
 	}
 	const problems: string[] = [];
@@ -445,7 +446,8 @@ export async function verificationActivationProblems(
 		if (!(await isFile(file))) problems.push(`${label} file is missing`);
 		else if ((await fileDigest(file)) !== recorded) problems.push(`${label} changed since the recorded check`);
 	}
-	if (problems.length) problems.push('run "pi instance verify run" again after reviewing the changes');
+	if (problems.length)
+		problems.push(`run "${APP_NAME}${IS_RAGA_CLI ? "" : " instance"} verify run" again after reviewing the changes`);
 	return problems;
 }
 

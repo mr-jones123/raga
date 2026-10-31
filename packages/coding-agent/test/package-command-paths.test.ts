@@ -760,7 +760,7 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 		expect(existsSync(npmRecordPath)).toBe(false);
 		expect(logSpy.mock.calls.map(([message]) => String(message)).join("\n")).not.toContain("Updated pi from");
 		expect(errorSpy.mock.calls.map(([message]) => String(message)).join("\n")).toContain(
-			"Another managed Pi update is already running.",
+			`Another managed ${APP_NAME} update is already running.`,
 		);
 		expect(process.exitCode).toBe(1);
 	});
