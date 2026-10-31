@@ -215,10 +215,12 @@ describe("AgentSession RLM mode", () => {
 	it.skipIf(process.platform !== "linux")(
 		"warns in the python result when the kernel uses 75% of rlm.memoryLimitMb",
 		async () => {
-			const harness = await setup({ settings: { rlm: { memoryLimitMb: 200 } } });
+			// Leave room for Python's heap and private mappings, which RLIMIT_DATA counts
+			// even when they are not resident. A 200 MiB cap can fail before the RSS warning.
+			const harness = await setup({ settings: { rlm: { memoryLimitMb: 1024 } } });
 			harness.setResponses([
 				pythonCall("small = 1"),
-				pythonCall("blob = b'x' * (145 * 1024 * 1024)"),
+				pythonCall("blob = b'x' * (768 * 1024 * 1024)"),
 				fauxAssistantMessage("done"),
 			]);
 			await harness.session.prompt("fill memory");
@@ -226,7 +228,7 @@ describe("AgentSession RLM mode", () => {
 			const results = harness.session.messages.filter((message) => message.role === "toolResult");
 			expect(getMessageText(results[0])).toBe("(no output)");
 			expect(getMessageText(results[1])).toMatch(
-				/^\(no output\)\n\[kernel memory: \d+ MiB of 200 MiB limit; free large variables with del\]$/,
+				/^\(no output\)\n\[kernel memory: \d+ MiB of 1024 MiB limit; free large variables with del\]$/,
 			);
 		},
 	);
