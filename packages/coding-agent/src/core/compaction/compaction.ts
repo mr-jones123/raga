@@ -104,7 +104,8 @@ function getMessagesFromProjectedEntryForCompaction(entry: ProjectedSessionEntry
 /** Result from compact() - SessionManager adds uuid/parentUuid when saving */
 export interface CompactionResult<T = unknown> {
 	summary: string;
-	firstKeptEntryId: string;
+	/** First entry kept from before the compaction. Null keeps no preceding entries. */
+	firstKeptEntryId: string | null;
 	tokensBefore: number;
 	estimatedTokensAfter?: number;
 	/** Usage from the LLM call(s) that generated this summary, if available */
@@ -962,7 +963,7 @@ export async function compact(
 	retry?: RetryPolicy,
 	callbacks?: RetryCallbacks,
 	sessionId?: string,
-): Promise<CompactionResult> {
+): Promise<CompactionResult & { firstKeptEntryId: string }> {
 	const {
 		firstKeptEntryId,
 		messagesToSummarize,

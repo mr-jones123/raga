@@ -83,6 +83,7 @@ CLI tool options override this setting for one invocation. `--tools` with only `
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `compaction.enabled` | boolean | `true` | Enable automatic compaction. |
+| `compaction.strategy` | `"summary" \| "archive"` | `"summary"` | `summary` replaces earlier context with an LLM summary. `archive` writes the earlier conversation to a plain-text log and keeps none of it in context, without a model call. See [Archive compaction](compaction.md#archive-compaction). |
 | `compaction.reserveTokens` | number | `16384` | Free context tokens below which automatic compaction starts. |
 | `compaction.keepRecentTokens` | number | `20000` | Recent tokens retained without summarization. |
 | `compaction.modelOverrides` | object | None | Per-model token settings keyed by exact `provider/modelId`. |

@@ -104,6 +104,20 @@
           "type": "boolean",
           "default": true
         },
+        "strategy": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "summary"
+            },
+            {
+              "type": "string",
+              "const": "archive"
+            }
+          ],
+          "description": "\"summary\" replaces earlier context with an LLM summary. \"archive\" writes the earlier conversation to a plain-text log, drops it from context without a model call, and tells the agent to search the log.",
+          "default": "summary"
+        },
         "reserveTokens": {
           "type": "integer",
           "minimum": 0,

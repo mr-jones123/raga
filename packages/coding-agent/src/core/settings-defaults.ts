@@ -8,6 +8,7 @@ export const SETTINGS_DEFAULTS = {
 	followUpMode: "one-at-a-time",
 	compaction: {
 		enabled: true,
+		strategy: "summary",
 		reserveTokens: 16384,
 		keepRecentTokens: 20000,
 	},

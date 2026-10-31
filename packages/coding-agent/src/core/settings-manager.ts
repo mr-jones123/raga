@@ -13,6 +13,7 @@ import { SETTINGS_DEFAULTS } from "./settings-defaults.ts";
 import type {
 	CacheWarmingMode,
 	CompactionModelOverride,
+	CompactionStrategy,
 	DefaultProjectTrust,
 	FullscreenExitOutput,
 	MermaidRenderingMode,
@@ -33,6 +34,7 @@ export type {
 	CodemodeSettings,
 	CompactionModelOverride,
 	CompactionSettings,
+	CompactionStrategy,
 	DefaultProjectTrust,
 	FullscreenExitOutput,
 	ImageSettings,
@@ -820,6 +822,14 @@ export class SettingsManager {
 
 	getCompactionEnabled(): boolean {
 		return this.settings.compaction?.enabled ?? SETTINGS_DEFAULTS.compaction.enabled;
+	}
+
+	getCompactionStrategy(): CompactionStrategy {
+		const strategy = this.settings.compaction?.strategy ?? SETTINGS_DEFAULTS.compaction.strategy;
+		if (strategy !== "summary" && strategy !== "archive") {
+			throw new Error(`Invalid compaction.strategy setting: ${String(strategy)}. Expected "summary" or "archive".`);
+		}
+		return strategy;
 	}
 
 	setCompactionEnabled(enabled: boolean): void {

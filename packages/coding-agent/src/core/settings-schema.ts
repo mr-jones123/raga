@@ -17,6 +17,13 @@ const CompactionModelOverrideSchema = Type.Object({
 
 const CompactionSettingsSchema = Type.Object({
 	enabled: Type.Optional(Type.Boolean({ default: SETTINGS_DEFAULTS.compaction.enabled })),
+	strategy: Type.Optional(
+		Type.Union([Type.Literal("summary"), Type.Literal("archive")], {
+			description:
+				'"summary" replaces earlier context with an LLM summary. "archive" writes the earlier conversation to a plain-text log, drops it from context without a model call, and tells the agent to search the log.',
+			default: SETTINGS_DEFAULTS.compaction.strategy,
+		}),
+	),
 	reserveTokens: Type.Optional(nonNegativeSafeInteger({ default: SETTINGS_DEFAULTS.compaction.reserveTokens })),
 	keepRecentTokens: Type.Optional(nonNegativeSafeInteger({ default: SETTINGS_DEFAULTS.compaction.keepRecentTokens })),
 	modelOverrides: Type.Optional(
@@ -495,6 +502,7 @@ type SettingsInput = Static<typeof SettingsSchema>;
 
 export interface CompactionModelOverride extends Static<typeof CompactionModelOverrideSchema> {}
 export interface CompactionSettings extends Static<typeof CompactionSettingsSchema> {}
+export type CompactionStrategy = NonNullable<CompactionSettings["strategy"]>;
 export interface BranchSummarySettings extends Static<typeof BranchSummarySettingsSchema> {}
 export interface ProviderRetrySettings extends Static<typeof ProviderRetrySettingsSchema> {}
 export interface RetrySettings extends Omit<Static<typeof RetrySettingsSchema>, "maxDelayMs"> {}

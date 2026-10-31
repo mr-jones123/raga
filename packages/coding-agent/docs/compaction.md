@@ -414,6 +414,30 @@ pi.on("session_before_tree", async (event, ctx) => {
 
 See `SessionBeforeTreeEvent` and `TreePreparation` in the types file.
 
+## Archive compaction
+
+Set `"compaction": { "strategy": "archive" }` to compact without a summarization request. Manual `/compact` and automatic compaction both use the strategy. An extension that returns its own compaction from `session_before_compact` still takes precedence.
+
+On compaction, raga:
+
+1. Writes the active branch, root to leaf, to a plain-text log beside the session file: `<session>.archive-<last entry id>.log`. An in-memory session writes to a private temporary directory.
+2. Appends a compaction entry that keeps no earlier entries (`firstKeptEntryId` is the entry's own ID). `details` is `{ strategy: "archive", archivePath, archivedEntries }`.
+3. Uses a fixed message as the compaction summary. It names the archive path and repeats the latest user request verbatim.
+4. Adds a `session_archive` section to the system prompt of later requests. It gives the path, explains the record format, and tells the agent to search the log with `rg` and read only the surrounding records. The section names the newest archive on the active branch. It disappears when the newest compaction on the branch is not an archive.
+
+Each record in the log starts with a header line:
+
+```text
+=== 3 tool_result bash call_1 4f2a1c9e 2026-10-30T12:01:44.000Z
+57 tests passed
+```
+
+The header holds the record number, the kind (`user`, `assistant`, `tool_result`, `user_bash`, `custom`, `compaction`, `branch_summary`, `model_change`, or `system_prompt_update`), any tool name and call ID, the session entry ID, and the timestamp. Assistant records include tool calls and their arguments. Thinking blocks, images, and system prompt contents are omitted. Text longer than 8,000 characters keeps its first 5,000 and last 2,000 characters and names the session entry that holds the full text.
+
+The JSONL session file remains the source of truth. The log is a copy written once per compaction. Delete it with the session. It contains everything the session recorded, including any secrets that appeared in tool output.
+
+`customInstructions` from `/compact <instructions>` have no effect in archive mode.
+
 ## Settings
 
 Configure compaction in `~/.pi/agent/settings.json` or `<project-dir>/.raga/settings.json`:
@@ -422,6 +446,7 @@ Configure compaction in `~/.pi/agent/settings.json` or `<project-dir>/.raga/sett
 {
   "compaction": {
     "enabled": true,
+    "strategy": "summary",
     "reserveTokens": 16384,
     "keepRecentTokens": 20000
   }
@@ -431,6 +456,7 @@ Configure compaction in `~/.pi/agent/settings.json` or `<project-dir>/.raga/sett
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `enabled` | `true` | Enable auto-compaction |
+| `strategy` | `"summary"` | `"summary"` asks a model for a summary. `"archive"` writes a log and keeps no earlier context; see [Archive compaction](#archive-compaction) |
 | `reserveTokens` | `16384` | Free context tokens below which auto-compaction starts |
 | `keepRecentTokens` | `20000` | Recent tokens to keep (not summarized) |
 

@@ -66,6 +66,13 @@ import { type BashResult, executeBashWithOperations } from "./bash-executor.ts";
 import { generateBugReportSummary } from "./bug-report.ts";
 import type { CacheWarmer, CacheWarmingStatus } from "./cache-warmer.ts";
 import {
+	type ArchiveCompactionDetails,
+	buildArchivePromptSection,
+	buildArchiveSummary,
+	isArchiveCompactionDetails,
+	writeSessionArchive,
+} from "./compaction/archive.ts";
+import {
 	type CompactionPreparation,
 	type CompactionResult,
 	calculateContextTokens,
@@ -1858,10 +1865,13 @@ export class AgentSession {
 		options.selectedTools = this._applyToolLoadout(options.selectedTools).map((tool) => tool.name);
 		// The tool list and rules must match the declarations the request carries.
 		options.hiddenTools = [...this._hiddenDeclarations];
-		const sections = diffSystemPromptSections(
-			getCurrentSystemMessage(messages)?.sections ?? {},
-			buildSystemPromptSections(options),
+		const archivePath = this._activeArchivePath();
+		const desired = buildSystemPromptSections(
+			archivePath
+				? { ...options, sections: { ...options.sections, session_archive: buildArchivePromptSection(archivePath) } }
+				: options,
 		);
+		const sections = diffSystemPromptSections(getCurrentSystemMessage(messages)?.sections ?? {}, desired);
 		return sections ? { role: "system", content: "", sections, timestamp: Date.now() } : undefined;
 	}
 
@@ -2883,6 +2893,7 @@ export class AgentSession {
 		signal: AbortSignal,
 		reason: "manual" | "threshold" | "overflow",
 	): Promise<CompactionResult> {
+		if (this.settingsManager.getCompactionStrategy() === "archive") return this._runArchiveCompaction(preparation);
 		// Resolve the request only when Pi summarizes itself: routing may call models or fail.
 		const request = await this._getSummarizationRequestAuth(model, signal);
 		return compact(
@@ -2899,6 +2910,35 @@ export class AgentSession {
 			this._summarizationRetryCallbacks({ source: "compaction", reason }),
 			undefined, // sessionId
 		);
+	}
+
+	/**
+	 * Archive compaction keeps no earlier entries in context, so a recent-tokens budget would only
+	 * make small sessions uncompactable.
+	 */
+	private _compactionPreparationSettings(model: Model<any> | undefined) {
+		const settings = this.settingsManager.getCompactionSettings(model);
+		return this.settingsManager.getCompactionStrategy() === "archive"
+			? { ...settings, keepRecentTokens: 0 }
+			: settings;
+	}
+
+	/** Write the active branch to a plain-text archive and keep nothing before the compaction in context. */
+	private _runArchiveCompaction(preparation: CompactionPreparation): CompactionResult<ArchiveCompactionDetails> {
+		const branch = this.sessionManager.getBranch();
+		const archivePath = writeSessionArchive(branch, this.sessionManager.getSessionFile());
+		return {
+			summary: buildArchiveSummary(branch, archivePath),
+			firstKeptEntryId: null,
+			tokensBefore: preparation.tokensBefore,
+			details: { strategy: "archive", archivePath, archivedEntries: branch.length },
+		};
+	}
+
+	/** The latest archive compaction on the active branch, if it is the newest compaction there. */
+	private _activeArchivePath(): string | undefined {
+		const compaction = getLatestCompactionEntry(this.sessionManager.getBranch());
+		return compaction && isArchiveCompactionDetails(compaction.details) ? compaction.details.archivePath : undefined;
 	}
 
 	private _clearManualCompactionState(): void {
@@ -2934,7 +2974,7 @@ export class AgentSession {
 				throw new Error(formatNoModelSelectedMessage());
 			}
 
-			const settings = this.settingsManager.getCompactionSettings(model);
+			const settings = this._compactionPreparationSettings(model);
 			const pathEntries = this.sessionManager.getBranch();
 
 			const preparation = prepareCompaction(pathEntries, settings);
@@ -2972,7 +3012,7 @@ export class AgentSession {
 			}
 
 			let summary: string;
-			let firstKeptEntryId: string;
+			let firstKeptEntryId: string | null;
 			let tokensBefore: number;
 			let usage: Usage | undefined;
 			let details: unknown;
@@ -3252,7 +3292,7 @@ export class AgentSession {
 	 */
 	private async _runAutoCompaction(reason: "overflow" | "threshold", willRetry: boolean): Promise<boolean> {
 		const model = this.model;
-		const settings = this.settingsManager.getCompactionSettings(model);
+		const settings = this._compactionPreparationSettings(model);
 		let abortController: AbortController | undefined;
 		let started = false;
 		let fromExtension = false;
@@ -3301,7 +3341,7 @@ export class AgentSession {
 			abortController.signal.throwIfAborted();
 
 			let summary: string;
-			let firstKeptEntryId: string;
+			let firstKeptEntryId: string | null;
 			let tokensBefore: number;
 			let usage: Usage | undefined;
 			let details: unknown;
