@@ -17,16 +17,16 @@ export function buildRlmPromptSection({ outputLimit, depth, maxDepth }: RlmPromp
 			? `You are a sub-agent at depth ${depth}. Put your final answer in answer['content'] and set answer['ready'] = True.\n\n`
 			: "";
 	const rlmQuery = canRecurse
-		? "- await rlm_query(task, context=None, model=None, max_turns=None) -> str: run a sub-agent, a child session with its own kernel and tools, on task and return its answer. context is any JSON value; the child reads it as context.data. Run several at once with await asyncio.gather(rlm_query(a), rlm_query(b)).\n"
+		? "- await rlm_query(task, context=None, model=None, max_turns=None, *, read_only=False, details=False) -> str | dict: run a sub-agent, a child session with its own kernel and tools, on task and return its answer. context is any JSON value; the child reads it as context.data. Run several at once with await asyncio.gather(rlm_query(a), rlm_query(b)). With details=True, inspect stop_reason, ready, turns, and session_file. A max_turns stop returns labelled partial work, not a completed answer.\n"
 		: "";
 	const rlmQueryRule = canRecurse
-		? "- Use rlm_query for sub-tasks that need several steps of their own tool use; use llm_query or llm_batch for one-shot questions about text you already have.\n"
+		? "- Use rlm_query for sub-tasks that need several steps of their own tool use; use llm_query or llm_batch for one-shot questions about text you already have. On an incomplete child result, inspect its transcript and prior effects before retrying; do not blindly rerun cells that may have changed files.\n"
 		: "";
 	return `${subAgent}You work through one tool, python. Each call runs a cell in a Python kernel that already exists and persists for the whole session: variables, imports, and functions from earlier cells stay defined. Do not restart it or re-create state you already have.
 
 The kernel binds these names. Every function is async, so call it with await (top-level await works):
 - await read(path, offset=None, limit=None) -> str: return the entire file (offset is a 1-indexed first line, limit a line count). Load large files into a variable and process them in Python; never print them.
-- await bash(command, timeout=None) -> str: run a shell command (pi's bash tool). Raises ToolError with the output on failure.
+- await bash(command, timeout=None) -> str: run a shell command (the harness's bash tool). Raises ToolError with the output on failure.
 - await edit(path, edits) -> str: edits is a list of (old, new) tuples; each old text must match exactly once.
 - await write(path, content) -> str: create or overwrite a file.
 - await llm_query(prompt, system=None, model=None) -> str: one sub-LLM call with no tools.

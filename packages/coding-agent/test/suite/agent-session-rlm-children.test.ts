@@ -220,6 +220,104 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		);
 	});
 
+	it("returns a turn-budget stop reason, partial output, session path, and usage instead of a generic abort", async () => {
+		const { harness, sessionDir } = await setup();
+		harness.setResponses(
+			routed({
+				"Bound the child": [
+					pythonCall(
+						'result = await rlm_query("Inspect one thing", max_turns=1, details=True)\nprint(result["stop_reason"])\nprint(result["turns"])\nprint(result["ready"])\nprint(result["answer"])\nprint(bool(result["session_file"]))',
+					),
+					fauxAssistantMessage("done"),
+				],
+				"Inspect one thing": [pythonCall('answer["content"] = "Found the parser; validation is unfinished"')],
+			}),
+		);
+		await harness.session.prompt("Bound the child");
+		const result = getToolResult(harness, "python");
+		expect(result.isError).toBe(false);
+		const text = getMessageText(result);
+		expect(text).toContain("max_turns\n1\nFalse");
+		expect(text).toContain("Child reached max_turns=1; this result is incomplete.");
+		expect(text).toContain("Found the parser; validation is unfinished");
+		expect(text).toContain("True");
+		expect(text).not.toContain("This operation was aborted");
+		const [childFile] = childSessionFiles(harness, sessionDir);
+		expect(tokens(result.usage)).toBeGreaterThan(0);
+		expect(result.usage).toEqual(sessionUsage(readSession(childFile).entries));
+	});
+
+	it("keeps tool output for string callers when a child exhausts its turn budget", async () => {
+		const { harness } = await setup();
+		harness.setResponses(
+			routed({
+				"Read partial work": [
+					pythonCall('print(await rlm_query("Report a finding", max_turns=1))'),
+					fauxAssistantMessage("done"),
+				],
+				"Report a finding": [pythonCall('print("parser.ts: invalid delimiter")')],
+			}),
+		);
+		await harness.session.prompt("Read partial work");
+		const result = getToolResult(harness, "python");
+		expect(result.isError).toBe(false);
+		expect(getMessageText(result)).toContain("Child reached max_turns=1; this result is incomplete.");
+		expect(getMessageText(result)).toContain("parser.ts: invalid delimiter");
+	});
+
+	it("accepts an explicit ready answer on the last allowed turn", async () => {
+		const { harness } = await setup();
+		harness.setResponses(
+			routed({
+				"Finish within budget": [
+					pythonCall(
+						'result = await rlm_query("Answer immediately", max_turns=1, details=True)\nprint(result["answer"], result["ready"], result["stop_reason"])',
+					),
+					fauxAssistantMessage("done"),
+				],
+				"Answer immediately": [pythonCall('answer["content"] = "42"\nanswer["ready"] = True')],
+			}),
+		);
+		await harness.session.prompt("Finish within budget");
+		expect(getMessageText(getToolResult(harness, "python"))).toBe("[stdout]\n42 True completed");
+	});
+
+	it("does not call a natural final response a turn-budget failure", async () => {
+		const { harness } = await setup();
+		harness.setResponses(
+			routed({
+				"Ask for text": [
+					pythonCall(
+						'result = await rlm_query("Say hello", max_turns=1, details=True)\nprint(result["answer"], result["stop_reason"], result["turns"])',
+					),
+					fauxAssistantMessage("done"),
+				],
+				"Say hello": [fauxAssistantMessage("hello")],
+			}),
+		);
+		await harness.session.prompt("Ask for text");
+		expect(getMessageText(getToolResult(harness, "python"))).toBe("[stdout]\nhello completed 1");
+	});
+
+	it("preserves real provider errors instead of labelling them as budget exhaustion", async () => {
+		const { harness } = await setup();
+		harness.setResponses(
+			routed({
+				"Handle a failed provider": [
+					pythonCall(
+						'try:\n    await rlm_query("Fail upstream", max_turns=1)\nexcept HostError as error:\n    print(error)',
+					),
+					fauxAssistantMessage("done"),
+				],
+				"Fail upstream": [fauxAssistantMessage("", { stopReason: "error", errorMessage: "provider exploded" })],
+			}),
+		);
+		await harness.session.prompt("Handle a failed provider");
+		const text = getMessageText(getToolResult(harness, "python"));
+		expect(text).toContain("The child session failed: provider exploded");
+		expect(text).not.toContain("max_turns");
+	});
+
 	it("aborts the child when the parent is aborted", async () => {
 		const { harness, sessionDir } = await setup();
 		const marker = join(harness.tempDir, "sleeping.mark");

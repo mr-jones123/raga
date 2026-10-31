@@ -38,6 +38,9 @@ export const RLM_CHILD_DEFAULT_MAX_TURNS = 30;
 export interface RlmQueryResult {
 	answer: string;
 	ready: boolean;
+	/** Why the child stopped; reaching a turn budget is not a provider failure. */
+	stop_reason: "completed" | "max_turns";
+	turns: number;
 	/** The child's session file, or null when the parent session is not persisted. */
 	session_file: string | null;
 	workspace?: ChildWorkspace;
@@ -290,8 +293,18 @@ async function runChild(
 	try {
 		if (signal.aborted) throw new Error("rlm_query was aborted");
 		let turns = 0;
+		let maxTurnsReached = false;
 		const unsubscribe = child.subscribe((event) => {
-			if (event.type === "turn_end" && ++turns >= options.maxTurns) void child.abort();
+			if (event.type !== "turn_end" || maxTurnsReached) return;
+			turns++;
+			if (
+				turns >= options.maxTurns &&
+				event.message.role === "assistant" &&
+				event.message.stopReason === "toolUse"
+			) {
+				maxTurnsReached = true;
+				void child.abort();
+			}
 		});
 		const onAbort = () => void child.abort();
 		signal.addEventListener("abort", onAbort, { once: true });
@@ -316,14 +329,36 @@ async function runChild(
 		await captureChange();
 		const artifact = { workspace, change };
 		if (answer.ready)
-			return { answer: answer.content, ready: true, session_file: child.sessionFile ?? null, ...artifact };
+			return {
+				answer: answer.content,
+				ready: true,
+				stop_reason: "completed",
+				turns,
+				session_file: child.sessionFile ?? null,
+				...artifact,
+			};
 		const last = child.messages.findLast((message) => message.role === "assistant");
-		if (last?.role === "assistant" && last.stopReason === "error") {
+		if (last?.role === "assistant" && last.stopReason === "error" && !maxTurnsReached) {
 			throw new Error(`The child session failed: ${last.errorMessage ?? "unknown error"}`);
 		}
+		let partial = child.getLastAssistantText() ?? "";
+		if (maxTurnsReached) {
+			const lastTool = child.messages.findLast((message) => message.role === "toolResult");
+			const toolText =
+				lastTool?.role === "toolResult"
+					? lastTool.content
+							.filter((block) => block.type === "text")
+							.map((block) => block.text)
+							.join("\n")
+					: "";
+			partial = answer.content || toolText.slice(-8000) || partial;
+			partial = `Child reached max_turns=${options.maxTurns}; this result is incomplete. Inspect the child session before retrying; earlier cells may have changed files.${partial ? `\n\n${partial}` : ""}`;
+		}
 		return {
-			answer: child.getLastAssistantText() ?? "",
+			answer: partial,
 			ready: false,
+			stop_reason: maxTurnsReached ? "max_turns" : "completed",
+			turns,
 			session_file: child.sessionFile ?? null,
 			...artifact,
 		};
