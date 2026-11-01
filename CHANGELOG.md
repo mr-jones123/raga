@@ -1,3 +1,9 @@
+## [0.10.1](https://github.com/mr-jones123/raga/compare/raga-v0.10.0...raga-v0.10.1) (2026-11-01)
+
+### Bug Fixes
+
+* install raga with its own installer instead of pi's ([e7816db](https://github.com/mr-jones123/raga/commit/e7816db595936716a08febd2a5a9ac7d91fcfca2))
+
 ## [0.10.0](https://github.com/mr-jones123/raga/compare/raga-v0.9.0...raga-v0.10.0) (2026-11-01)
 
 ### Features
