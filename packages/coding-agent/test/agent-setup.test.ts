@@ -1,11 +1,12 @@
 import { stripVTControlCharacters } from "node:util";
 import { type TUI, visibleWidth } from "@earendil-works/pi-tui";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AgentRoleDefinition, AgentRoleValue } from "../src/core/agent-roles.ts";
+import type { AgentRoleDefinition } from "../src/core/agent-roles.ts";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
 import {
 	type AgentSetupActions,
 	AgentSetupEditor,
+	type AgentSetupModel,
 	type AgentSetupOptions,
 	type AgentSetupState,
 	validateAgentSetup,
@@ -26,33 +27,22 @@ const CATALOG: AgentRoleDefinition[] = [
 	{ name: "arena runners", panel: true, defaultSeats: 2, description: "/arena: one candidate per seat" },
 ];
 const AVAILABLE = ["anthropic/claude-opus-4-5", "openai/gpt-5", "google/gemini-3-pro"];
-
-function deferred<T>() {
-	let resolve!: (value: T) => void;
-	const promise = new Promise<T>((done) => {
-		resolve = done;
-	});
-	return { promise, resolve };
-}
+const model = (selector: string): AgentSetupModel => {
+	const slash = selector.indexOf("/");
+	return { selector, provider: selector.slice(0, slash), id: selector.slice(slash + 1), contextWindow: 200_000 };
+};
+const MODELS = AVAILABLE.map(model);
 
 function fixture(overrides: Partial<AgentSetupOptions> = {}, rows = 30) {
 	const tui = { terminal: { rows }, requestRender: vi.fn() };
-	const picks: { current: AgentRoleValue; title: string; resolve: (value: AgentRoleValue | undefined) => void }[] = [];
-	let discard = deferred<boolean>();
 	const actions = {
-		pickModel: vi.fn((current: AgentRoleValue, title: string) => {
-			const pick = deferred<AgentRoleValue | undefined>();
-			picks.push({ current, title, resolve: pick.resolve });
-			return pick.promise;
-		}),
 		save: vi.fn<(state: AgentSetupState) => void>(),
 		cancel: vi.fn(),
-		confirmDiscard: vi.fn(() => discard.promise),
 	} satisfies AgentSetupActions;
 	const options: AgentSetupOptions = {
 		catalog: CATALOG,
 		initial: { roles: {} },
-		available: AVAILABLE,
+		available: MODELS,
 		instance: false,
 		...overrides,
 	};
@@ -63,13 +53,8 @@ function fixture(overrides: Partial<AgentSetupOptions> = {}, rows = 30) {
 	const press = (...keys: string[]) => {
 		for (const key of keys) editor.handleInput(key);
 	};
-	const resetDiscard = () => {
-		discard = deferred<boolean>();
-		return discard;
-	};
-	const answerDiscard = (value: boolean) => discard.resolve(value);
-	const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-	return { editor, tui, actions, picks, lines, text, selectedLine, press, flush, answerDiscard, resetDiscard };
+	const type = (text: string) => press(...text);
+	return { editor, tui, actions, lines, text, selectedLine, press, type };
 }
 
 beforeEach(() => {
@@ -148,39 +133,60 @@ describe("agent setup editor", () => {
 		expect(f.lines().at(-1)).toContain("• unsaved changes");
 	});
 
-	it("picks a model, applies the result, ignores input while pending, and keeps the value on cancel", async () => {
-		const f = fixture({ initial: { roles: { code: "openai/gpt-5" } } });
+	it("picks in a fullscreen picker: grouped by provider, filtered by typing, with inherit and cancel", () => {
+		const f = fixture({ initial: { roles: { code: "openai/gpt-5" } }, parentModel: "anthropic/claude-opus-4-5" });
 		f.press(DOWN, ENTER);
-		expect(f.actions.pickModel).toHaveBeenCalledWith("openai/gpt-5", "code");
-		f.press(DOWN, ENTER, "i");
-		expect(f.actions.pickModel).toHaveBeenCalledTimes(1);
-		expect(f.lines().at(-1)).toContain("Waiting for a choice");
-		f.picks[0].resolve("google/gemini-3-pro");
-		await f.flush();
-		expect(f.selectedLine()).toMatch(/code\s+gemini-3-pro google/);
-		expect(f.tui.requestRender).toHaveBeenCalled();
+		let text = f.text();
+		expect(text).toContain("Choose a model for code");
+		expect(text).toContain("3 of 3 models");
+		expect(text).toMatch(/now: gpt-5 openai/);
+		expect(text).toMatch(/inherit\s+use the parent session's model \(claude-opus-4-5\)/);
+		// Providers are headers, in order, and the current model starts selected.
+		const lines = f.lines();
+		const headers = ["anthropic", "google", "openai"].map((provider) =>
+			lines.findIndex((line) => line.trim() === provider),
+		);
+		expect(headers.every((index, i) => index > 0 && (i === 0 || index > headers[i - 1]))).toBe(true);
+		expect(f.selectedLine()).toMatch(/gpt-5\s+200k context\s+● current/);
+		// The editor list is hidden while picking, so nothing bleeds through.
+		expect(text).not.toContain("Budget");
 
+		f.type("gem");
+		text = f.text();
+		expect(text).toContain("1 of 3 models");
+		expect(text).not.toContain("claude-opus-4-5  ");
 		f.press(ENTER);
-		f.picks[1].resolve(undefined);
-		await f.flush();
 		expect(f.selectedLine()).toMatch(/code\s+gemini-3-pro google/);
 
-		f.press(ENTER);
-		f.picks[2].resolve(null);
-		await f.flush();
+		f.press(ENTER, ESC);
+		expect(f.selectedLine()).toMatch(/code\s+gemini-3-pro google/);
+		f.press(ENTER, "\x1b[5~", ENTER);
 		expect(f.selectedLine()).toMatch(/code\s+inherit/);
+
+		// Every word must match; a looser fuzzy match is only a fallback, ranked and ungrouped.
+		f.press(ENTER);
+		f.type("opus 4");
+		expect(f.text()).toContain("1 of 3 models");
+		f.press(ESC, ENTER);
+		f.type("gmn");
+		expect(f.text()).toMatch(/google gemini-3-pro/);
+		f.press(ESC, ENTER);
+		f.type("zzz");
+		expect(f.text()).toContain("No models match");
+		f.press(ENTER);
+		expect(f.text()).toContain("Choose a model");
 	});
 
-	it("picks a seat from its row, and seat 1 from the panel header", async () => {
+	it("picks a seat from its row, and seat 1 from the panel header", () => {
 		const f = fixture();
 		f.press(END, ENTER);
-		expect(f.picks[0]).toMatchObject({ current: null, title: "arena runners seat 2" });
-		f.picks[0].resolve("openai/gpt-5");
-		await f.flush();
+		expect(f.text()).toContain("Choose a model for arena runners · seat 2");
+		f.type("gpt");
+		f.press(ENTER);
 		f.press(UP, UP, ENTER);
-		expect(f.picks[1].title).toBe("arena runners seat 1");
-		f.picks[1].resolve("anthropic/claude-opus-4-5");
-		await f.flush();
+		expect(f.text()).toContain("arena runners · seat 1");
+		f.type("opus");
+		f.press(ENTER);
 		const text = f.text();
 		expect(text).toMatch(/seat 1\s+claude-opus-4-5 anthropic/);
 		expect(text).toMatch(/seat 2\s+gpt-5 openai/);
@@ -257,24 +263,19 @@ describe("agent setup editor", () => {
 		});
 	});
 
-	it("cancels immediately when clean and asks before discarding changes", async () => {
+	it("cancels immediately when clean and asks inline before discarding changes", () => {
 		const clean = fixture();
 		clean.press(ESC);
-		expect(clean.actions.confirmDiscard).not.toHaveBeenCalled();
 		expect(clean.actions.cancel).toHaveBeenCalledTimes(1);
 
 		const f = fixture();
 		f.press(ENTER, ESC);
-		expect(f.actions.confirmDiscard).toHaveBeenCalledTimes(1);
-		f.press(ESC);
-		expect(f.actions.confirmDiscard).toHaveBeenCalledTimes(1);
-		f.answerDiscard(false);
-		await f.flush();
 		expect(f.actions.cancel).not.toHaveBeenCalled();
-		f.resetDiscard();
-		f.press(ESC);
-		f.answerDiscard(true);
-		await f.flush();
+		expect(f.lines().at(-1)).toContain("Unsaved changes. esc discard · ctrl+s save · any other key keeps editing");
+		f.press(DOWN);
+		expect(f.actions.cancel).not.toHaveBeenCalled();
+		expect(f.lines().at(-1)).not.toContain("Unsaved changes.");
+		f.press(ESC, ESC);
 		expect(f.actions.cancel).toHaveBeenCalledTimes(1);
 	});
 
@@ -283,7 +284,6 @@ describe("agent setup editor", () => {
 		f.press(ENTER, ENTER, ENTER, ENTER, ENTER);
 		expect(f.lines().at(-1)).not.toContain("unsaved changes");
 		f.press(ESC);
-		expect(f.actions.confirmDiscard).not.toHaveBeenCalled();
 		expect(f.actions.cancel).toHaveBeenCalled();
 	});
 
@@ -300,6 +300,10 @@ describe("agent setup editor", () => {
 				for (const line of rendered) expect(visibleWidth(line)).toBe(width);
 				f.press(SAVE);
 				for (const line of f.editor.render(width)) expect(visibleWidth(line)).toBe(width);
+				f.press(ENTER);
+				const picker = f.editor.render(width);
+				expect(picker).toHaveLength(rows);
+				for (const line of picker) expect(visibleWidth(line)).toBe(width);
 			}
 		}
 		const small = fixture({}, 6);
@@ -320,7 +324,7 @@ describe("agent setup editor", () => {
 		const f = fixture({
 			catalog: [{ name: hostile, panel: false, defaultSeats: 1, description: "desc\x07\u2066" }],
 			initial: { roles: { [hostile]: "bad\x1b]0;title\x07/mo\u2028del" } },
-			available: ["bad\x1b]0;title\x07/mo\u2028del"],
+			available: [model("bad\x1b]0;title\x07/mo\u2028del")],
 			parentModel: "p/\x9bmodel",
 		});
 		f.press(DOWN);
@@ -334,7 +338,12 @@ describe("agent setup editor", () => {
 		expect(text).toContain("desc\\u0007\\u2066");
 		expect(text).toContain("mo\\u2028del bad\\u001b]0;title\\u0007");
 		f.press(ENTER);
-		expect(f.picks[0].title).toBe("evil\\u001b[31m\\u202e name");
+		expect(f.text(200)).toContain("Choose a model for evil\\u001b[31m\\u202e name");
+		// The search field's cursor markers (APC) and SGR codes are the only escapes left.
+		for (const line of f.editor.render(200))
+			expect(line.replace(/\x1b\[[0-9;]*m|\x1b_[^\x07]*\x07/g, "")).not.toMatch(
+				/[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/,
+			);
 	});
 });
 

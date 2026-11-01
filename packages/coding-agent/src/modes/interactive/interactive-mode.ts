@@ -65,7 +65,7 @@ import {
 	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "../../config.ts";
-import { type AgentRoleValue, agentRoleCatalog, effectiveAgentRoles } from "../../core/agent-roles.ts";
+import { agentRoleCatalog, effectiveAgentRoles } from "../../core/agent-roles.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
 import { type AgentSessionRuntime, SessionImportFileNotFoundError } from "../../core/agent-session-runtime.ts";
 import type { AgentSessionRuntimeDiagnostic } from "../../core/agent-session-services.ts";
@@ -4582,23 +4582,15 @@ export class InteractiveMode {
 		const saved = settings.getAgentRoles();
 		const catalog = agentRoleCatalog();
 		const roles = Object.fromEntries(effectiveAgentRoles({ kind: "settings", settings: saved }, catalog));
-		const available = main.modelRuntime.getAvailableSnapshot().map((model) => `${model.provider}/${model.id}`);
+		const available = main.modelRuntime.getAvailableSnapshot().map((model) => ({
+			selector: `${model.provider}/${model.id}`,
+			provider: model.provider,
+			id: model.id,
+			name: model.name,
+			contextWindow: model.contextWindow,
+			reasoning: model.reasoning,
+		}));
 		const parentModel = main.model ? `${main.model.provider}/${main.model.id}` : undefined;
-		const fullscreen = {
-			overlay: true,
-			overlayOptions: {
-				anchor: "top-left" as const,
-				row: 0,
-				col: 0,
-				width: "100%" as const,
-				maxHeight: "100%" as const,
-				margin: 0,
-			},
-		};
-		const popup = {
-			overlay: true,
-			overlayOptions: { anchor: "center" as const, width: "80%" as const, maxHeight: "80%" as const },
-		};
 		let savedNow = false;
 		await this.showExtensionCustom<void>(
 			(tui, _theme, keys, done) =>
@@ -4614,46 +4606,18 @@ export class InteractiveMode {
 						instance: main.isInstanceSession,
 					},
 					{
-						pickModel: (current) =>
-							this.showExtensionCustom<AgentRoleValue | undefined>(
-								(pickerTui, _pickerTheme, _pickerKeys, pick) => {
-									const slash = current?.indexOf("/") ?? -1;
-									const currentModel =
-										current && slash > 0
-											? main.modelRuntime.getModel(current.slice(0, slash), current.slice(slash + 1))
-											: undefined;
-									return new ModelSelectorComponent(
-										pickerTui,
-										currentModel,
-										main.modelRuntime,
-										[],
-										(model) => pick(`${model.provider}/${model.id}`),
-										() => pick(undefined),
-									);
-								},
-								popup,
-							),
 						save: (state) => {
 							settings.setAgentRoles(state);
 							savedNow = true;
 							done();
 						},
 						cancel: () => done(),
-						confirmDiscard: () =>
-							this.showExtensionCustom<boolean>(
-								(confirmTui, _confirmTheme, _confirmKeys, answer) =>
-									new ExtensionSelectorComponent(
-										"Discard unsaved role changes?",
-										["Discard", "Keep editing"],
-										(option) => answer(option === "Discard"),
-										() => answer(false),
-										{ tui: confirmTui },
-									),
-								popup,
-							),
 					},
 				),
-			fullscreen,
+			{
+				overlay: true,
+				overlayOptions: { anchor: "top-left", row: 0, col: 0, width: "100%", maxHeight: "100%", margin: 0 },
+			},
 		);
 		if (savedNow) {
 			this.showStatus(

@@ -1,4 +1,4 @@
-import { type Component, type TUI, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { type Component, fuzzyFilter, Input, type TUI, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import {
 	AGENT_ROLE_BUDGETS,
 	type AgentRoleBudget,
@@ -14,18 +14,26 @@ export interface AgentSetupState {
 }
 
 export interface AgentSetupActions {
-	/** Resolve undefined on cancel, null for inherit, or "provider/id". */
-	pickModel(current: AgentRoleValue, title: string): Promise<AgentRoleValue | undefined>;
 	save(state: AgentSetupState): void;
 	cancel(): void;
-	confirmDiscard(): Promise<boolean>;
+}
+
+/** A model the user can pick, from the authenticated model registry. */
+export interface AgentSetupModel {
+	/** "provider/id" */
+	selector: string;
+	provider: string;
+	id: string;
+	name?: string;
+	contextWindow?: number;
+	reasoning?: boolean;
 }
 
 export interface AgentSetupOptions {
 	catalog: AgentRoleDefinition[];
 	initial: AgentSetupState;
-	/** "provider/id" selectors the user can pick. */
-	available: string[];
+	/** Models the user can pick. */
+	available: AgentSetupModel[];
 	/** The parent session's model, "provider/id", shown beside inheriting roles. */
 	parentModel?: string;
 	/** The session is an instance: its children use the pinned agents/model-roles.json instead. */
@@ -38,6 +46,17 @@ export interface AgentSetupProblem {
 	seat?: number;
 	selector: string;
 }
+
+/** The in-editor model picker: a filterable list grouped by provider, with "inherit" first. */
+interface Picker {
+	role: AgentRoleDefinition;
+	seat: number | undefined;
+	input: Input;
+	selected: number;
+	scroll: number;
+}
+
+type Choice = { kind: "inherit" } | { kind: "model"; model: AgentSetupModel };
 
 type Row =
 	| { kind: "budget" }
@@ -69,6 +88,9 @@ function fitWidth(text: string, width: number, ellipsis = "…"): string {
 	const clipped = visibleWidth(text) > width ? truncateToWidth(text, width, ellipsis) : text;
 	return clipped + " ".repeat(Math.max(0, width - visibleWidth(clipped)));
 }
+
+const contextLabel = (tokens: number) =>
+	tokens >= 1_000_000 ? `${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, "")}M` : `${Math.round(tokens / 1000)}k`;
 
 const normalize = (value: unknown): AgentRoleValue =>
 	typeof value === "string" && value.trim() && value.trim() !== "inherit" ? value.trim() : null;
@@ -108,8 +130,11 @@ export class AgentSetupEditor implements Component {
 	private selected = 0;
 	private scroll = 0;
 	private error: string | undefined;
-	private pending = false;
+	private picker: Picker | undefined;
+	/** Esc was pressed with unsaved changes; a second Esc discards them. */
+	private confirmingDiscard = false;
 	private disposed = false;
+	private readonly models: AgentSetupModel[];
 	private readonly initialSnapshot: string;
 
 	constructor(
@@ -124,7 +149,10 @@ export class AgentSetupEditor implements Component {
 		this.keybindings = keybindings;
 		this.options = options;
 		this.actions = actions;
-		this.available = new Set(options.available);
+		this.models = [...options.available].sort(
+			(a, b) => a.provider.localeCompare(b.provider) || a.id.localeCompare(b.id),
+		);
+		this.available = new Set(this.models.map((model) => model.selector));
 		this.budget = options.initial.budget;
 		for (const role of options.catalog) {
 			const value = Object.hasOwn(options.initial.roles, role.name) ? options.initial.roles[role.name] : undefined;
@@ -227,9 +255,21 @@ export class AgentSetupEditor implements Component {
 	}
 
 	handleInput(data: string): void {
-		if (this.disposed || this.pending) return;
+		if (this.disposed) return;
+		if (this.picker) {
+			this.pickerInput(this.picker, data);
+			this.tui.requestRender();
+			return;
+		}
 		const kb = this.keybindings;
 		const row = this.rows[this.selected];
+		if (this.confirmingDiscard) {
+			this.confirmingDiscard = false;
+			if (kb.matches(data, "tui.select.cancel")) {
+				this.actions.cancel();
+				return;
+			}
+		}
 		if (kb.matches(data, "app.agentSetup.save")) {
 			this.save();
 			this.tui.requestRender();
@@ -282,27 +322,72 @@ export class AgentSetupEditor implements Component {
 		this.tui.requestRender();
 	}
 
-	/** Ask for a model for a single role (`seat` undefined) or a panel seat, ignoring input until it answers. */
+	/** Open the picker for a single role (`seat` undefined) or a panel seat. */
 	private pick(role: AgentRoleDefinition, seat: number | undefined): void {
-		const current = seat === undefined ? this.single(role) : this.seats(role)[seat];
-		const title = seat === undefined ? oneLine(role.name) : `${oneLine(role.name)} seat ${seat + 1}`;
-		this.pending = true;
-		const finish = (result: AgentRoleValue | undefined) => {
-			this.pending = false;
-			if (this.disposed) return;
-			if (result !== undefined) {
-				const value = normalize(result);
-				if (seat === undefined) this.values.set(role.name, value);
-				else if (seat < this.seats(role).length) this.seats(role)[seat] = value;
-			}
-			this.tui.requestRender();
+		const input = new Input({ prompt: "Search: ", placeholder: "type to filter models" });
+		input.focused = true;
+		const picker: Picker = { role, seat, input, selected: 0, scroll: 0 };
+		const current = seat === undefined ? this.single(role) : (this.seats(role)[seat] ?? null);
+		const index = this.choices(picker).choices.findIndex((choice) =>
+			choice.kind === "inherit" ? current === null : choice.model.selector === current,
+		);
+		picker.selected = Math.max(0, index);
+		this.picker = picker;
+	}
+
+	/**
+	 * Models matching the search. Every word must appear in the provider, id, or name; the list then stays grouped by
+	 * provider. When nothing matches that way, a looser fuzzy match is ranked best first, ungrouped.
+	 */
+	private choices(picker: Picker): { choices: Choice[]; grouped: boolean } {
+		const query = picker.input.getValue().trim().toLowerCase();
+		const text = (model: AgentSetupModel) => `${model.provider} ${model.id} ${model.name ?? ""}`.toLowerCase();
+		const words = query.split(/\s+/).filter(Boolean);
+		let models = this.models.filter((model) => words.every((word) => text(model).includes(word)));
+		const grouped = models.length > 0 || !words.length;
+		if (!grouped) models = fuzzyFilter(this.models, query, text);
+		const inherit = !words.length || words.every((word) => "inherit parent".includes(word));
+		return {
+			choices: [
+				...(inherit ? [{ kind: "inherit" as const }] : []),
+				...models.map((model) => ({ kind: "model" as const, model })),
+			],
+			grouped,
 		};
-		this.actions.pickModel(current ?? null, title).then(finish, () => finish(undefined));
+	}
+
+	private pickerInput(picker: Picker, data: string): void {
+		const kb = this.keybindings;
+		const { choices } = this.choices(picker);
+		const move = (index: number) => {
+			picker.selected = Math.max(0, Math.min(choices.length - 1, index));
+		};
+		if (kb.matches(data, "tui.select.cancel")) {
+			this.picker = undefined;
+		} else if (kb.matches(data, "tui.select.confirm")) {
+			const choice = choices[picker.selected];
+			if (!choice) return;
+			const value = choice.kind === "inherit" ? null : choice.model.selector;
+			if (picker.seat === undefined) this.values.set(picker.role.name, value);
+			else if (picker.seat < this.seats(picker.role).length) this.seats(picker.role)[picker.seat] = value;
+			this.picker = undefined;
+		} else if (kb.matches(data, "tui.select.up")) move(picker.selected - 1);
+		else if (kb.matches(data, "tui.select.down")) move(picker.selected + 1);
+		else if (kb.matches(data, "tui.select.pageUp")) move(picker.selected - this.page());
+		else if (kb.matches(data, "tui.select.pageDown")) move(picker.selected + this.page());
+		else {
+			const before = picker.input.getValue();
+			picker.input.handleInput(data);
+			if (picker.input.getValue() !== before) {
+				picker.selected = 0;
+				picker.scroll = 0;
+			}
+		}
 	}
 
 	private save(): void {
 		const state = this.state();
-		const problems = validateAgentSetup(state, this.options.available);
+		const problems = validateAgentSetup(state, [...this.available]);
 		if (!problems.length) {
 			this.error = undefined;
 			this.actions.save(state);
@@ -322,18 +407,8 @@ export class AgentSetupEditor implements Component {
 	}
 
 	private cancel(): void {
-		if (!this.dirty()) {
-			this.actions.cancel();
-			return;
-		}
-		this.pending = true;
-		const finish = (discard: boolean) => {
-			this.pending = false;
-			if (this.disposed) return;
-			if (discard) this.actions.cancel();
-			else this.tui.requestRender();
-		};
-		this.actions.confirmDiscard().then(finish, () => finish(false));
+		if (this.dirty()) this.confirmingDiscard = true;
+		else this.actions.cancel();
 	}
 
 	private key(action: Keybinding): string {
@@ -452,7 +527,8 @@ export class AgentSetupEditor implements Component {
 
 	private footer(): string {
 		const t = this.theme;
-		if (this.pending) return ` ${t.fg("muted", "Waiting for a choice…")}`;
+		if (this.confirmingDiscard)
+			return ` ${t.fg("warning", "Unsaved changes.")} ${t.style(this.key("tui.select.cancel"), { fg: "accent", bold: true })} ${t.fg("muted", "discard ·")} ${t.style(this.key("app.agentSetup.save"), { fg: "accent", bold: true })} ${t.fg("muted", "save · any other key keeps editing")}`;
 		const item = (keys: string, label: string) =>
 			`${t.style(keys, { fg: "accent", bold: true })} ${t.fg("muted", label)}`;
 		const items = [
@@ -466,10 +542,99 @@ export class AgentSetupEditor implements Component {
 		return ` ${items.join(t.fg("borderMuted", " · "))}${dirty}`;
 	}
 
+	private renderPicker(picker: Picker, width: number, height: number): string[] {
+		const t = this.theme;
+		const { choices, grouped } = this.choices(picker);
+		const target =
+			picker.seat === undefined
+				? oneLine(picker.role.name)
+				: `${oneLine(picker.role.name)} · seat ${picker.seat + 1}`;
+		const current =
+			picker.seat === undefined ? this.single(picker.role) : (this.seats(picker.role)[picker.seat] ?? null);
+		const matches = choices.filter((choice) => choice.kind === "model").length;
+		const title = ` ${t.style("Choose a model", { fg: "accent", bold: true })}${t.fg("dim", " for ")}${t.style(target, { fg: "text", bold: true })}`;
+		const count = t.fg("muted", `${matches} of ${this.models.length} models `);
+		const head =
+			fitWidth(title, Math.max(0, width - visibleWidth(count))) + (width > visibleWidth(count) ? count : "");
+		const sub = ` ${t.fg("muted", picker.role.description ? `${oneLine(picker.role.description)} · ` : "")}${t.fg("muted", "now: ")}${this.value(current)}`;
+		const search = ` ${picker.input.render(Math.max(1, width - 1))[0] ?? ""}`;
+		const rule = t.fg("borderMuted", "─".repeat(Math.max(0, width)));
+		const footer = ` ${[
+			[this.key("tui.select.up"), "/", this.key("tui.select.down"), " select"],
+			[this.key("tui.select.confirm"), " choose"],
+			[this.key("tui.select.cancel"), " back"],
+		]
+			.map(([key, ...rest]) => `${t.style(key, { fg: "accent", bold: true })}${t.fg("muted", rest.join(""))}`)
+			.join(t.fg("borderMuted", " · "))}${t.fg("muted", " · type to filter")}`;
+
+		const idWidth = Math.min(40, Math.max(8, ...this.models.map((model) => visibleWidth(oneLine(model.id)))));
+		const nameWidth = Math.min(
+			28,
+			Math.max(0, ...this.models.map((model) => visibleWidth(oneLine(model.name ?? "")))),
+		);
+		const parent = this.options.parentModel;
+		const display: { text: string; choice?: number }[] = [];
+		let provider: string | undefined;
+		choices.forEach((choice, index) => {
+			const selected = index === picker.selected;
+			const marker = selected ? t.fg("accent", "▶ ") : "  ";
+			let text: string;
+			if (choice.kind === "inherit") {
+				const parentId = parent ? parent.slice(parent.indexOf("/") + 1) : undefined;
+				text = `${marker}${fitWidth(t.style("inherit", { fg: "text", bold: selected }), idWidth + 2)}  ${t.fg("muted", `use the parent session's model${parentId ? ` (${oneLine(parentId)})` : ""}`)}`;
+			} else {
+				const model = choice.model;
+				if (grouped && model.provider !== provider) {
+					provider = model.provider;
+					if (display.length) display.push({ text: "" });
+					display.push({ text: `  ${t.style(oneLine(model.provider), { fg: "muted", bold: true })}` });
+				}
+				const meta = [
+					model.contextWindow ? `${contextLabel(model.contextWindow)} context` : "",
+					model.reasoning ? "reasoning" : "",
+				]
+					.filter(Boolean)
+					.join(" · ");
+				const isCurrent = model.selector === current;
+				const tag = grouped ? "" : `${t.fg("dim", oneLine(model.provider))} `;
+				text = `${marker}  ${tag}${fitWidth(t.style(oneLine(model.id), { fg: selected ? "accent" : "text", bold: selected }), idWidth)}  ${fitWidth(t.fg("muted", oneLine(model.name ?? "")), nameWidth)}  ${t.fg("dim", meta)}${isCurrent ? `  ${t.fg("success", "● current")}` : ""}`;
+			}
+			display.push({ text, choice: index });
+		});
+		if (!choices.length)
+			display.push({
+				text: `  ${t.fg("muted", "No models match. Clear the search or press ")}${t.style(this.key("tui.select.cancel"), { fg: "accent", bold: true })}${t.fg("muted", " to go back.")}`,
+			});
+
+		const fixed = [head, sub, search, rule];
+		const top = fixed.slice(0, Math.max(1, Math.min(fixed.length, height - 1)));
+		const footerRows = height >= 2 ? 1 : 0;
+		const ruleRows = height >= 6 ? 1 : 0;
+		const body = Math.max(0, height - top.length - footerRows - ruleRows);
+		const selectedLine = Math.max(
+			0,
+			display.findIndex((line) => line.choice === picker.selected),
+		);
+		if (selectedLine >= picker.scroll + body) picker.scroll = selectedLine - body + 1;
+		if (selectedLine < picker.scroll) picker.scroll = selectedLine;
+		picker.scroll = Math.max(0, Math.min(picker.scroll, display.length - body));
+		const lines = [...top];
+		for (let index = 0; index < body; index++) {
+			const line = display[picker.scroll + index];
+			const selected = line?.choice !== undefined && line.choice === picker.selected;
+			lines.push(selected ? t.bg("selectedBg", fitWidth(line.text, width)) : (line?.text ?? ""));
+		}
+		if (ruleRows) lines.push(rule);
+		if (footerRows) lines.push(footer);
+		while (lines.length < height) lines.push("");
+		return lines.slice(0, height).map((line) => fitWidth(line, width));
+	}
+
 	render(width: number): string[] {
 		width = Math.max(0, Math.floor(width));
 		const height = this.height();
 		if (height === 0) return [];
+		if (this.picker) return this.renderPicker(this.picker, width, height);
 		const layout = this.layout();
 		const lines = [this.header()];
 		if (layout.note) lines.push(this.note());
