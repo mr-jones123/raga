@@ -1428,9 +1428,9 @@
     },
     {
       "path": "skills/raga-artifacts/artifact.mjs",
-      "sha256": "a1affbf90bedc1809654b715d746ee2691de896043b919222d3cb35dd5369cc1",
+      "sha256": "e1ac1f55af91b00dc8c542d80a9dc536868cb7d909aa5b42c606e4d76ad09535",
       "source": "raga native adaptation",
-      "sourceSha256": "a1affbf90bedc1809654b715d746ee2691de896043b919222d3cb35dd5369cc1",
+      "sourceSha256": "e1ac1f55af91b00dc8c542d80a9dc536868cb7d909aa5b42c606e4d76ad09535",
       "adaptation": "raga native adaptation"
     },
     {

@@ -79,6 +79,11 @@ function chromeProcess(chrome, htmlPath, extraArgs) {
 		"--no-first-run",
 		"--no-default-browser-check",
 		"--disable-extensions",
+		// Without these, macOS Chrome asks the login keychain for "Chrome Safe Storage" even in a throwaway profile.
+		"--use-mock-keychain",
+		"--password-store=basic",
+		"--disable-sync",
+		"--disable-background-networking",
 		`--user-data-dir=${profile}`,
 		"--virtual-time-budget=5000",
 		...extraArgs,
