@@ -1,3 +1,17 @@
+## [0.10.0](https://github.com/mr-jones123/raga/compare/raga-v0.9.0...raga-v0.10.0) (2026-11-01)
+
+### Features
+
+* assign models to subagent roles with /agent-setup ([937ae97](https://github.com/mr-jones123/raga/commit/937ae97887bae82215579de3966d23886d8e8d15))
+* open subagents as named sessions from /agents in the TUI or Rex panes ([8cba5d3](https://github.com/mr-jones123/raga/commit/8cba5d360d3f9c9ee0d5fd76652ae53c41f04b21))
+
+### Bug Fixes
+
+* **artifacts:** keep headless Chrome away from the macOS login keychain ([2c65a35](https://github.com/mr-jones123/raga/commit/2c65a3562a0354cbb20618aac4ddedf919ff08c0))
+* keep Raga updates and user-facing guidance on Raga ([8ff9209](https://github.com/mr-jones123/raga/commit/8ff9209ed94681e1c254a496515dd561e7b58590))
+* pick role models in a full-screen list inside /agent-setup ([df1e642](https://github.com/mr-jones123/raga/commit/df1e64234b170472d18c286140d472717699d916))
+* return partial child work when the turn budget is exhausted ([0383bc1](https://github.com/mr-jones123/raga/commit/0383bc1485b8b039d0d5b9628b8ecc12d680a426))
+
 ## [0.9.0](https://github.com/mr-jones123/raga/compare/raga-v0.8.0...raga-v0.9.0) (2026-10-31)
 
 ### Features
