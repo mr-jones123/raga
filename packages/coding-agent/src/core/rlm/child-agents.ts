@@ -29,6 +29,8 @@ export interface ChildAgentInfo {
 	task: string;
 	/** `provider/id` of the child's current model. */
 	model: string;
+	/** The workflow role it was launched for, such as "arena runners #2". */
+	role?: string;
 	/** Outcome of the `rlm_query` run; a later user prompt does not change it. */
 	status: ChildAgentStatus;
 	/** The child's session is producing a response, including a user follow-up after it answered. */
@@ -62,6 +64,7 @@ export interface ChildAgentRegistration {
 	depth: number;
 	task: string;
 	model: string;
+	role?: string;
 	maxTurns: number;
 	/** Stops the `rlm_query` run while it is queued or running. */
 	cancel: () => void;
@@ -278,6 +281,7 @@ export class ChildAgentRegistry {
 			depth: input.depth,
 			task: input.task,
 			model: input.model,
+			role: input.role,
 			status: "queued",
 			busy: false,
 			createdAt: now,

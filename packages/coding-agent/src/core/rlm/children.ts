@@ -9,6 +9,7 @@ import { mkdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
+import { effectiveAgentRoles, resolveAgentRole } from "../agent-roles.ts";
 import { createExtensionRuntime } from "../extensions/loader.ts";
 import { type MemoryService, readOnlyMemoryService } from "../instances/memory-service.ts";
 import { instanceSandbox } from "../instances/session.ts";
@@ -194,10 +195,33 @@ export function createRlmQueryHandler(
 		if (typeof maxTurnsValue !== "number" || !Number.isSafeInteger(maxTurnsValue) || maxTurnsValue < 1) {
 			throw new Error('"max_turns" must be a positive integer');
 		}
+		const role = data.role;
+		if (role !== undefined && role !== null && (typeof role !== "string" || !role.trim())) {
+			throw new Error('"role" must be a non-empty string');
+		}
+		const seat = data.seat;
+		if (
+			seat !== undefined &&
+			seat !== null &&
+			(typeof seat !== "number" || !Number.isSafeInteger(seat) || seat < 0)
+		) {
+			throw new Error('"seat" must be a non-negative integer');
+		}
+		if (seat !== undefined && seat !== null && !role) throw new Error('"seat" needs "role"');
 		const depth = host.depth + 1;
 		const { maxDepth } = host.settingsManager.getRlmSettings();
 		if (depth > maxDepth) throw new Error(`RLM recursion depth limit reached (depth ${depth}, max ${maxDepth})`);
-		const model = host.resolveModel(modelRef ?? undefined);
+		// An explicit model wins; otherwise the role's assignment, then rlm.subModel, then the parent's model.
+		const assigned =
+			typeof role === "string"
+				? resolveAgentRole(
+						agentRolesFor(host),
+						agentRoleBudget(host),
+						role,
+						typeof seat === "number" ? seat : undefined,
+					)
+				: {};
+		const model = host.resolveModel(modelRef ?? assigned.model);
 
 		if (signal.aborted) throw new Error("rlm_query was aborted");
 		const id = randomUUID();
@@ -211,6 +235,7 @@ export function createRlmQueryHandler(
 			depth,
 			task,
 			model: `${model.provider}/${model.id}`,
+			role: typeof role === "string" ? (typeof seat === "number" ? `${role} #${seat + 1}` : role) : undefined,
 			maxTurns: maxTurnsValue,
 			cancel: () => controller.abort(),
 		});
@@ -225,6 +250,7 @@ export function createRlmQueryHandler(
 						task,
 						data: data.context,
 						model,
+						thinkingLevel: modelRef ? undefined : assigned.thinking,
 						depth,
 						maxTurns: maxTurnsValue,
 						readOnly: data.read_only === true,
@@ -246,6 +272,28 @@ export function createRlmQueryHandler(
 		} finally {
 			signal.removeEventListener("abort", onAbort);
 		}
+	};
+}
+
+/** Instance sessions use their pinned revision's roles; ordinary sessions use the user's /agent-setup choices. */
+function agentRolesFor(host: Pick<RlmChildHost, "instance" | "settingsManager">) {
+	return effectiveAgentRoles(
+		host.instance
+			? { kind: "instance", resourceRoot: host.instance.resourceRoot }
+			: { kind: "settings", settings: host.settingsManager.getAgentRoles() },
+	);
+}
+
+function agentRoleBudget(host: Pick<RlmChildHost, "instance" | "settingsManager">) {
+	return host.instance ? undefined : host.settingsManager.getAgentRoles().budget;
+}
+
+/** The `agent.roles` host request: the role table this session's children resolve against. */
+export function describeAgentRoles(host: Pick<RlmChildHost, "instance" | "settingsManager">) {
+	return {
+		source: host.instance ? "instance revision agents/model-roles.json" : "user settings (/agent-setup)",
+		budget: agentRoleBudget(host) ?? null,
+		roles: Object.fromEntries(agentRolesFor(host)),
 	};
 }
 
@@ -283,6 +331,8 @@ async function runChild(
 		task: string;
 		data: unknown;
 		model: Model<Api>;
+		/** From the role's budget; otherwise the parent's level. */
+		thinkingLevel?: ThinkingLevel;
 		depth: number;
 		maxTurns: number;
 		readOnly: boolean;
@@ -337,7 +387,7 @@ async function runChild(
 			resourceLoader: host.instance ? undefined : childResourceLoader(host.resourceLoader),
 			sessionManager: manager,
 			model: options.model,
-			thinkingLevel: host.getThinkingLevel(),
+			thinkingLevel: options.thinkingLevel ?? host.getThinkingLevel(),
 			rlm: true,
 			rlmDepth: options.depth,
 			rlmData: options.data,

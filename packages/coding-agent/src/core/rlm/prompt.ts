@@ -17,7 +17,7 @@ export function buildRlmPromptSection({ outputLimit, depth, maxDepth }: RlmPromp
 			? `You are a sub-agent at depth ${depth}. Put your final answer in answer['content'] and set answer['ready'] = True.\n\n`
 			: "";
 	const rlmQuery = canRecurse
-		? "- await rlm_query(task, context=None, model=None, max_turns=None, *, read_only=False, details=False) -> str | dict: run a sub-agent, a child session with its own kernel and tools, on task and return its answer. context is any JSON value; the child reads it as context.data. Run several at once with await asyncio.gather(rlm_query(a), rlm_query(b)). With details=True, inspect stop_reason, ready, turns, and session_file. A max_turns stop returns labelled partial work, not a completed answer.\n"
+		? "- await rlm_query(task, context=None, model=None, max_turns=None, *, read_only=False, details=False, role=None, seat=None) -> str | dict: run a sub-agent, a child session with its own kernel and tools, on task and return its answer. Without model, role (and seat for panel roles) uses the model and reasoning budget the user assigned to that workflow role. context is any JSON value; the child reads it as context.data. Run several at once with await asyncio.gather(rlm_query(a), rlm_query(b)). With details=True, inspect stop_reason, ready, turns, and session_file. A max_turns stop returns labelled partial work, not a completed answer.\n"
 		: "";
 	const rlmQueryRule = canRecurse
 		? "- Use rlm_query for sub-tasks that need several steps of their own tool use; use llm_query or llm_batch for one-shot questions about text you already have. On an incomplete child result, inspect its transcript and prior effects before retrying; do not blindly rerun cells that may have changed files.\n"

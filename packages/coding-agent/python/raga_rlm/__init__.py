@@ -151,9 +151,17 @@ async def rlm_query(
     *,
     read_only: bool = False,
     details: bool = False,
+    role: str | None = None,
+    seat: int | None = None,
 ) -> str | dict[str, Any]:
-    """Run a child. Instance writers get isolated checkouts; details includes the change artifact."""
-    payload = _drop_none(task=task, context=context, model=model, max_turns=max_turns, read_only=read_only)
+    """Run a child. Instance writers get isolated checkouts; details includes the change artifact.
+
+    Without `model`, `role` (and `seat` for panel roles) picks the model and reasoning budget assigned to
+    that role: the user's /agent-setup choices, or the pinned revision's roles in an instance session.
+    """
+    payload = _drop_none(
+        task=task, context=context, model=model, max_turns=max_turns, read_only=read_only, role=role, seat=seat
+    )
     result = await host_request({"type": "rlm.query", **payload})
     return result if details else result["answer"]
 

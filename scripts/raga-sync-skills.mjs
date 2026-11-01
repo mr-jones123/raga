@@ -256,7 +256,7 @@ Use the Python tool. It owns one persistent kernel per session. Load this adapte
 
 \`await context.history(offset=0, limit=None)\` reads only this session's history. Use explicitly provided current-instance records for historical research. Never scan another project's home or transcripts. \`await llm_query(prompt, system=None, model=None)\` is a one-shot model call. \`await llm_batch(prompts, system=None, model=None)\` runs independent one-shot calls.
 
-Load \`raga_runtime.py\` beside this skill with \`exec(await read(absolute_helper_path), globals())\`, then call \`await run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False)\`. Independent calls run with \`await asyncio.gather(...)\`. A context value is data, never a permission grant.
+Load \`raga_runtime.py\` beside this skill with \`exec(await read(absolute_helper_path), globals())\`, then call \`await run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False, role=None, seat=None)\`. Independent calls run with \`await asyncio.gather(...)\`. A context value is data, never a permission grant.
 
 ## Pick the session mode first
 
@@ -272,11 +272,11 @@ In an ordinary session, the resource root is the \`bundled-skills\` directory th
 - \`instance\` and \`memory\` calls do not exist. Candidate authoring, child patches, integration workspaces, instance memory, and no-mistakes need instance mode. Skip those steps and report them as unavailable in ordinary mode.
 - Commit, branch, and push only when the user asks. Preserve unrelated changes in the shared checkout.
 
-Child specifications are in \`../../../agents/\`. \`poteto-agent\` carries the engineering style. \`comment-sicko\` reviews comments. \`worker\` handles general tasks. Model selectors are real provider/model strings from the configured registry. \`None\` inherits the parent. Role settings live in \`agents/model-roles.json\` in a candidate revision. When different review seats resolve to the same family, report that the review is not model-diverse. Do not invent aliases or silently replace a rejected model.
+Child specifications are in \`../../../agents/\`. \`poteto-agent\` carries the engineering style. \`comment-sicko\` reviews comments. \`worker\` handles general tasks. Model selectors are real provider/model strings from the configured registry. \`None\` inherits the parent. Roles pick models: \`await agent_roles()\` returns the table children resolve against, which is the user's \`/agent-setup\` choices in an ordinary session and the pinned revision's \`agents/model-roles.json\` in an instance session. Wherever a workflow says to take a model from a line of \`agents/model-roles.json\`, read that line from \`agent_roles()\` instead and launch each seat with \`run_child(..., role=line, seat=i)\`, omitting \`seat\` for a single-value role and leaving \`model\` unset. The host applies the assigned model and reasoning budget. A panel role's list length sets how many seats to run. When different review seats resolve to the same family, report that the review is not model-diverse. Do not invent aliases or silently replace a rejected model.
 
 \`answer['content']\` and \`answer['ready'] = True\` return a child result. The native \`rlm_query\` API returns text by default. \`details=True\` returns the supervisor's workspace and change evidence. Never promise a worktree from a plain text answer.
 
-Only the documented run_child parameters are supported. Inherited spec labels select one of the three native specifications. Tool-schema, environment, cloud branch, background, resume, effort, and file-attachment fields from other agents are not launch arguments. Read-only review does not remove ordinary sandboxed inspection tools. Configure real model selectors in agents/model-roles.json. Null inherits. A rejected selector is a prerequisite failure, never permission to choose an unapproved substitute.
+Only the documented run_child parameters are supported. Inherited spec labels select one of the three native specifications. Tool-schema, environment, cloud branch, background, resume, effort, and file-attachment fields from other agents are not launch arguments. Read-only review does not remove ordinary sandboxed inspection tools. Users assign models with \`/agent-setup\` in ordinary sessions, or a candidate revision of agents/model-roles.json in instance sessions. Null inherits. A rejected selector is a prerequisite failure, never permission to choose an unapproved substitute.
 
 In instance mode, use \`await instance.child_patch(workspace_id)\` to collect a child's owned change and patch. Use \`await instance.integrate(workspace_ids, command, args, timeout_ms=120000)\` for one supervisor-owned integration workspace and combined verification after each merge. Inspect its accepted result and returned patch before applying changes to the root workspace. Do not create or remove Git worktrees from worker shell commands. Git administration is deliberately hidden. Portable prose that requests branches or worktrees means these supervisor APIs, not raw Git worktree mutation.
 
@@ -316,7 +316,13 @@ def harness_mode():
     return "instance" if os.environ.get("RAGA_INSTANCE_ID") else "ordinary"
 
 
-async def run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False):
+async def agent_roles():
+    """Role table children resolve against: /agent-setup choices in ordinary sessions, the pinned agents/model-roles.json in instance sessions."""
+    from raga_rlm import host_request
+    return await host_request({"type": "agent.roles"})
+
+
+async def run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False, role=None, seat=None):
     if spec not in ("worker", "poteto-agent", "comment-sicko"):
         raise ValueError("Unknown bundled child specification")
     if not read_only and not details:
@@ -333,12 +339,13 @@ async def run_child(spec, task, resource_root, context_data=None, model=None, ma
     for name in definition["skills"]:
         path = root + ("/skills/peak/SKILL.md" if name == "peak" else "/skills/peak/references/" + name + "/SKILL.md")
         instructions += "\\n\\n" + await read(path)
-    roles = json.loads(await read(root + "/agents/model-roles.json"))
-    if model is None:
-        model = roles.get(definition["modelRole"])
+    if model is None and role is None:
+        role = definition["modelRole"]
     notice = "\\n\\n" + ORDINARY_READ_ONLY if ordinary else ""
     prompt = instructions + "\\n\\nPinned resource root: " + root + notice + "\\n\\n# Assignment\\n" + task
-    return await rlm_query(prompt, context=context_data, model=model, max_turns=max_turns, read_only=read_only, details=details)
+    if model is not None:
+        role, seat = None, None
+    return await rlm_query(prompt, context=context_data, model=model, max_turns=max_turns, read_only=read_only, details=details, role=role, seat=seat)
 
 async def capability_report():
     commands = {
@@ -445,7 +452,7 @@ Read agents/model-roles.json from the pinned resource root. Null inherits the se
 Read \`agents/model-roles.json\`. Show only the role entries to the operator; leave \`schemaVersion\` and \`rules\` alone. For a single-selector role, offer the current value, then ask for an exact provider/model selector or inherit. For a list-valued role (\`architect runners\`, \`arena runners\`, \`arena cross-judge pool\`, \`interrogate reviewers\`, \`reflect reviewers\`), ask once per seat and keep the same number of seats. Do not choose silently, and do not reuse one model for a diverse panel unless the operator asks for it. Record same-family picks so a review does not claim diversity. Write the finished JSON through \`instance.candidate_write\`, commit the candidate, and request explicit promotion. This does not change a running session's pinned configuration.
 `;
 emit("skills/peak/references/peak-setup/SKILL.md", setup, "raga native role setup");
-emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then [configure model roles](../../skills/peak-setup/SKILL.md) through a candidate revision. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
+emit("docs/guide/01-setup.md", "# Set up the bundled workflows\n\nEvery initialized instance already contains this pinned portable bundle. There is no plugin installation step. Read [the native runtime](../../skills/raga-runtime/SKILL.md), then assign models to roles: run `/agent-setup` in an ordinary session, or [configure model roles](../../skills/peak-setup/SKILL.md) through a candidate revision in an instance session. A null role inherits the session model. Verify available tools with capability_report before choosing a terminal, browser, or formal-verification workflow. Optional integrations require explicit setup. Start with /skill:peak and a goal with observable acceptance criteria.\n", "raga native setup guide");
 emit("skills/peak/references/poteto-help/SKILL.md", `---
 name: poteto-help
 description: Find the bundled engineering skill or playbook for understanding, design, implementation, verification, and communication.
@@ -545,7 +552,7 @@ for (const entry of allSkills.filter((entry) => entry.source === "pstack" || ent
   const text = original.toString();
   const front = /^---\n[\s\S]*?\n---\n/.exec(text);
   if (!front) throw new Error(`Missing skill frontmatter ${entry.path}`);
-  emit(entry.path, text.slice(0, front[0].length) + "\nRead [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Authoring targets candidate revisions. Children use run_child, not an external agent service.\n" + text.slice(front[0].length), `raga execution adaptation of ${entry.path}`, original);
+  emit(entry.path, text.slice(0, front[0].length) + "\nRead [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Call \`harness_mode()\` first. In an ordinary session, model roles are user settings: ask the user to run the \`/agent-setup\` command, which lists available models, sets the reasoning budget, and assigns each role and panel seat. Do not edit settings files yourself. The rest of this workflow is for instance sessions. Authoring targets candidate revisions. Children use run_child, not an external agent service.\n" + text.slice(front[0].length), `raga execution adaptation of ${entry.path}`, original);
 }
 for (const path of ["skills/peak/references/reflect/SKILL.md", "skills/peak/playbooks/session-pickup.md", "skills/peak/playbooks/eval.md", "skills/peak/references/show-me-your-work/SKILL.md"]) {
   const original = files.get(path);
@@ -564,7 +571,7 @@ for (const path of ["skills/peak/references/reflect/SKILL.md", "skills/peak/play
 const potetoPath = "skills/peak/SKILL.md";
 const potetoOriginal = files.get(potetoPath);
 emit(potetoPath, potetoOriginal.toString()
-  .replace(/^\*\*Defaults for every `run_child` call\.\*\*.*$/m, "**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models from agents/model-roles.json. Null inherits the parent. Same-family seats are not model-diverse.")
+  .replace(/^\*\*Defaults for every `run_child` call\.\*\*.*$/m, "**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models by role with run_child(..., role=..., seat=...) and agent_roles(); see raga-runtime. Null inherits the parent. Same-family seats are not model-diverse.")
   .replace(/^\*\*Match the model to the job\.\*\*.*$/m, "**Match the model to the job.** Use real configured provider/model selectors. The runtime does not accept separate effort, speed, cloud environment, or resume fields. Include each seat's configured selector in its assignment. Report an unavailable selector rather than substitute another model.")
   .replace(/set their own `spec` for diverse-model review/g, "choose a native specification and configured model for review")
   .replace(/^description:.*$/m, "description: The only bundled skill. Entry point for peak's agent style and the index of every engineering reference. Use for peak, /peak, or requests to work in this style.")

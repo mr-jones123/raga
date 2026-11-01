@@ -1495,6 +1495,11 @@ export class AgentSession {
 		await this._rlm?.flushSnapshot();
 	}
 
+	/** RLM mode in an instance: subagent roles come from the pinned revision, not user settings. */
+	get isInstanceSession(): boolean {
+		return this._rlm?.isInstance ?? false;
+	}
+
 	/** RLM mode: the kernel's `answer` dict. Without RLM mode or a live kernel, it is empty and not ready. */
 	async getRlmAnswer(): Promise<{ content: string; ready: boolean }> {
 		return (await this._rlm?.getAnswer()) ?? { content: "", ready: false };

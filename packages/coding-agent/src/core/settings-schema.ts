@@ -212,6 +212,23 @@ const RlmSettingsSchema = Type.Object({
 	),
 });
 
+const AgentRoleValueSchema = Type.Union([Type.String(), Type.Null()]);
+
+const AgentRolesSettingsSchema = Type.Object({
+	budget: Type.Optional(
+		Type.Union([Type.Literal("unlimited"), Type.Literal("large"), Type.Literal("medium"), Type.Literal("small")], {
+			description:
+				"Reasoning budget for children launched by role: unlimited = xhigh, large = high, medium = medium, small = low thinking. Applies only to roles with an assigned model.",
+		}),
+	),
+	roles: Type.Optional(
+		Type.Record(Type.String(), Type.Union([AgentRoleValueSchema, Type.Array(AgentRoleValueSchema)]), {
+			description:
+				'Model per subagent role, set with /agent-setup. A value is "provider/id", "inherit" or null (the parent\'s model). Panel roles take a list with one entry per seat. Instance sessions use their pinned agents/model-roles.json instead.',
+		}),
+	),
+});
+
 const PackageSourceSchema = Type.Union(
 	[
 		Type.String({ description: "Load all resources from the package." }),
@@ -431,6 +448,7 @@ export const SettingsSchema = Type.Object(
 		warnings: Type.Optional(WarningSettingsSchema),
 		codemode: Type.Optional(CodemodeSettingsSchema),
 		rlm: Type.Optional(RlmSettingsSchema),
+		agentRoles: Type.Optional(AgentRolesSettingsSchema),
 		sessionDir: Type.Optional(
 			Type.String({
 				description: "Custom session storage directory, in the same format as the --session-dir CLI flag.",
@@ -517,6 +535,7 @@ export interface WarningSettings extends Static<typeof WarningSettingsSchema> {}
 export type CodemodeMode = Static<typeof CodemodeModeSchema>;
 export interface CodemodeSettings extends Static<typeof CodemodeSettingsSchema> {}
 export interface RlmSettings extends Static<typeof RlmSettingsSchema> {}
+export interface AgentRolesSettings extends Static<typeof AgentRolesSettingsSchema> {}
 export type DefaultProjectTrust = NonNullable<SettingsInput["defaultProjectTrust"]>;
 export type QuietStartup = NonNullable<SettingsInput["quietStartup"]>;
 export type TransportSetting = NonNullable<SettingsInput["transport"]>;

@@ -88,7 +88,8 @@ Every `host_request` has `data.type`. The host replies with `{"status":"ok","res
 | `llm.query` | `{"prompt":str,"system"?:str,"model"?:str}` | `{"text":str}` | M4 |
 | `llm.batch` | `{"prompts":[str],"system"?:str,"model"?:str}` | `{"texts":[str]}` | M4 |
 | `context.history` | `{"offset"?:int,"limit"?:int}` | `{"messages":[{"role":str,"text":str}],"total":int}` | M5 |
-| `rlm.query` | `{"task":str,"context"?:any,"model"?:str,"max_turns"?:int,"read_only"?:bool}` | `{"answer":str,"ready":bool,"stop_reason":"completed"\|"max_turns","turns":int,"session_file":str\|null,"workspace"?:object,"change"?:object}` | M6, M11 |
+| `rlm.query` | `{"task":str,"context"?:any,"model"?:str,"max_turns"?:int,"read_only"?:bool,"role"?:str,"seat"?:int}` | `{"answer":str,"ready":bool,"stop_reason":"completed"\|"max_turns","turns":int,"session_file":str\|null,"workspace"?:object,"change"?:object}` | M6, M11 |
+| `agent.roles` | `{}` | `{"source":str,"budget":str\|null,"roles":{name: str\|null\|[str\|null]}}`: the role table `role` resolves against | Raga |
 | `memory.search` | `{"query":str,"task_type"?:str,"max_chars"?:int,"limit"?:int}` | A `MemoryRetrieval` | M13 |
 | `memory.get` | `{"id":str}` | The current `MemoryEntry` of the session's project scope | M13 |
 | `memory.observe` | `{"text":str,"evidence":[str]}` | The new `MemoryEntry`, always an `unreviewed` `hypothesis` | M12 |

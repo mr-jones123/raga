@@ -3,7 +3,7 @@ name: peak-setup
 description: Configure real native model selectors for the bundled engineering workflows through a candidate harness revision.
 ---
 
-Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Authoring targets candidate revisions. Children use run_child, not an external agent service.
+Read [the native Python adapter](../raga-runtime/SKILL.md) before executing this workflow. Call `harness_mode()` first. In an ordinary session, model roles are user settings: ask the user to run the `/agent-setup` command, which lists available models, sets the reasoning budget, and assigns each role and panel seat. Do not edit settings files yourself. The rest of this workflow is for instance sessions. Authoring targets candidate revisions. Children use run_child, not an external agent service.
 
 # Configure native model roles
 

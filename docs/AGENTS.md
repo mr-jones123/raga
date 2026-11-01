@@ -58,6 +58,19 @@ Panes reach the subagent through a local socket owned by the Raga process. The s
 
 Raga only touches the Rex session it created. It never adopts sessions by label or splits panes you created.
 
+## Assign models to roles: `/agent-setup`
+
+The bundled workflows (Peak skills such as `/arena`, `/interrogate`, `/swarm`, `/how`, `/why`, `/reflect`) launch subagents by role, for example `bug-fix`, `how explorer`, or `arena runners`. `/agent-setup` decides which model each role runs on. It works like pstack's `/setup-pstack`:
+
+1. **Budget.** The first row sets the reasoning budget for roles that name a model: `unlimited` (xhigh thinking), `large` (high), `medium` (medium), or `small` (low). Enter cycles it. With no budget, children keep the parent's thinking level.
+2. **Roles.** Every role is listed with its current model. Enter opens the model picker, which lists only models you are logged in to. `i` makes the role inherit the parent session's model.
+3. **Panels.** Panel roles (`architect runners`, `arena runners`, `arena cross-judge pool`, `interrogate reviewers`, `reflect reviewers`) have one row per seat; one subagent runs per seat. `a` adds a seat and `d` removes one. A panel whose seats all use one provider is marked "not model-diverse".
+4. **Save.** Ctrl+S checks that every chosen model is available and saves to your global settings (`agentRoles` in `~/.raga/agent/settings.json`). Esc asks before discarding changes.
+
+A workflow launches a seat with `rlm_query(task, role="arena runners", seat=1)`, and Raga applies the assigned model and budget. An explicit `model=` always wins. A role with no model, or `inherit`, runs on `rlm.subModel` if set, otherwise the parent's model. The dashboard shows each subagent's role.
+
+Instance sessions keep their pinned `agents/model-roles.json`, so a running instance never changes under you. Change an instance's roles through a candidate revision (`/skill:peak`, then peak-setup); `/agent-setup` choices apply to ordinary sessions.
+
 ## Lifetime and memory
 
 A subagent's session and kernel stay in memory after it answers, so you can open it immediately. Up to four finished subagents per session stay live; older ones are parked: Raga saves their kernel snapshot and closes them. Opening a parked subagent reloads it from its session file. A subagent open in the TUI is never parked. A Rex pane keeps showing a parked subagent's last state, and sending it a message reloads it. Subagents of an unsaved (`--no-session`) session have no file to reload from, so they are never parked.

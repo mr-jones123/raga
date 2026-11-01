@@ -472,6 +472,7 @@ export class AgentsDashboard implements Component {
 		lines.push(t.style(oneLine(info.name), { fg: "accent", bold: true }));
 		field("Status", this.status(info) + (info.stopReason ? t.fg("muted", ` · ${oneLine(info.stopReason)}`) : ""));
 		field("Model", oneLine(info.model));
+		if (info.role) field("Role", oneLine(info.role));
 		field("Task", paragraphs(info.task));
 		const parent = info.parentId ? this.agents.find((agent) => agent.id === info.parentId) : undefined;
 		field("Parent", parent ? oneLine(parent.name) : "main session");

@@ -105,7 +105,7 @@
     },
     {
       "path": "docs/guide/01-setup.md",
-      "sha256": "56e67d324cc46c3bde1cc6c909e8b627ab11c6fdc31e0e9e8b38c38aad3f8037",
+      "sha256": "dc1bf7425558e5bb5a8d464f55b6dea40825aab1821fd6493cd44682bb2e1f94",
       "source": "pstack/docs/guide/01-setup.md",
       "sourceSha256": "384655bdecc713122ca69a485723c58462002a1d512415e94e48597d0dce2fa5",
       "adaptation": "raga native setup guide"
@@ -679,7 +679,7 @@
     },
     {
       "path": "skills/peak/references/peak-setup/SKILL.md",
-      "sha256": "f2989def1dc7f2112e8583de961d8865f20fd6333cacab05f9a64ee0399c7681",
+      "sha256": "5015abcbbb917dd931b131ec107c8b27b1264990db3f556967446b6c61b2445b",
       "source": "pstack/skills/setup-pstack/SKILL.md",
       "sourceSha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
       "adaptation": "raga execution adaptation of skills/peak/references/peak-setup/SKILL.md"
@@ -882,16 +882,16 @@
     },
     {
       "path": "skills/peak/references/raga-runtime/raga_runtime.py",
-      "sha256": "bb2d22512d55f9acf9e2480efc6aa55f8e28ccd3d9a8e98f5c14a1ee591f7538",
+      "sha256": "aee7412788daf1b7114f8d9fe96051ef4db7aa9cd43443319a68425c3467045e",
       "source": "raga native Python adapter",
-      "sourceSha256": "bb2d22512d55f9acf9e2480efc6aa55f8e28ccd3d9a8e98f5c14a1ee591f7538",
+      "sourceSha256": "aee7412788daf1b7114f8d9fe96051ef4db7aa9cd43443319a68425c3467045e",
       "adaptation": "raga native Python adapter"
     },
     {
       "path": "skills/peak/references/raga-runtime/SKILL.md",
-      "sha256": "5249166b9afe12ecd202971f5dba602b1a0826b6089b5630488cfda510de0440",
+      "sha256": "53a3f75e3611316a3e1a6f402989dc89ef309bc511fa624dacdf5266ef3279c7",
       "source": "raga native adaptation",
-      "sourceSha256": "5249166b9afe12ecd202971f5dba602b1a0826b6089b5630488cfda510de0440",
+      "sourceSha256": "53a3f75e3611316a3e1a6f402989dc89ef309bc511fa624dacdf5266ef3279c7",
       "adaptation": "raga native adaptation"
     },
     {
@@ -1414,7 +1414,7 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "f3feb010706f5e125ef7b95059c1c939bf86c366ffc62f3b5d50faba3e864e94",
+      "sha256": "b8062baa06a1e870f988b155b16f82b8cac383e31085b1370431c84d6c29b662",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"

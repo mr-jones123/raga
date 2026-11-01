@@ -332,6 +332,61 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		expect(childAgents.list(harness.sessionManager.getSessionId())[0].status).toBe("failed");
 	});
 
+	it("launches children by role on the user's assigned model, seat, and reasoning budget", async () => {
+		const sessionDir = mkdtempSync(join(tmpdir(), "rlm-children-roles-"));
+		const harness = await createHarness({
+			provider: "rolefaux",
+			models: [{ id: "faux-1" }, { id: "faux-2", reasoning: true }],
+			settings: {
+				agentRoles: {
+					budget: "small",
+					roles: { "bug-fix": "rolefaux/faux-2", "arena runners": ["inherit", "rolefaux/faux-2"] },
+				},
+			},
+			rlm: {},
+			sessionManager: SessionManager.create(sessionDir, sessionDir),
+		});
+		cleanups.push(() => {
+			harness.cleanup();
+			rmSync(sessionDir, { recursive: true, force: true });
+		});
+		const done = pythonCall('answer["content"] = "ok"\nanswer["ready"] = True');
+		harness.setResponses(
+			routed({
+				Root: [
+					pythonCall(
+						[
+							"from raga_rlm import host_request",
+							'roles = await host_request({"type": "agent.roles"})',
+							'print(roles["budget"], roles["roles"]["bug-fix"], roles["roles"]["arena runners"])',
+							'print(await rlm_query("Fixer", role="bug-fix"))',
+							'print(await rlm_query("Runner", role="arena runners", seat=0))',
+							"try:",
+							'    await rlm_query("Missing", role="arena runners", seat=5)',
+							"except HostError as error:",
+							'    print("seat error:", error)',
+						].join("\n"),
+					),
+					fauxAssistantMessage("done"),
+				],
+				Fixer: [done, fauxAssistantMessage("fixed")],
+				Runner: [done, fauxAssistantMessage("ran")],
+			}),
+		);
+		await harness.session.prompt("Root");
+		const text = getMessageText(getToolResult(harness, "python"));
+		expect(text).toContain("small rolefaux/faux-2 [None, 'rolefaux/faux-2']");
+		expect(text).toContain('seat error: Role "arena runners" has 2 seats; seat must be 0 to 1');
+		const agents = childAgents.list(harness.sessionManager.getSessionId());
+		const fixer = agents.find((agent) => agent.task === "Fixer")!;
+		const runner = agents.find((agent) => agent.task === "Runner")!;
+		expect(fixer).toMatchObject({ model: "rolefaux/faux-2", role: "bug-fix" });
+		expect(childAgents.session(fixer.id)?.thinkingLevel).toBe("low");
+		// An inherited seat runs on the parent's model at the parent's thinking level.
+		expect(runner).toMatchObject({ model: "rolefaux/faux-1", role: "arena runners #1" });
+		expect(childAgents.session(runner.id)?.thinkingLevel).toBe(harness.session.thinkingLevel);
+	});
+
 	it("registers nested children under their parent agent with their own sessions", async () => {
 		const { harness } = await setup({ rlm: { maxDepth: 2 } });
 		harness.setResponses(

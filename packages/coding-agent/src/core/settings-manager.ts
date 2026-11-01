@@ -11,6 +11,7 @@ import { stripBom } from "../utils/text.ts";
 import { DEFAULT_HTTP_IDLE_TIMEOUT_MS, parseHttpIdleTimeoutMs } from "./http-dispatcher.ts";
 import { SETTINGS_DEFAULTS } from "./settings-defaults.ts";
 import type {
+	AgentRolesSettings,
 	CacheWarmingMode,
 	CompactionModelOverride,
 	CompactionStrategy,
@@ -28,6 +29,7 @@ import type {
 } from "./settings-schema.ts";
 
 export type {
+	AgentRolesSettings,
 	BranchSummarySettings,
 	CacheWarmingMode,
 	CodemodeMode,
@@ -1205,6 +1207,18 @@ export class SettingsManager {
 			maxDepth: rlm?.maxDepth ?? SETTINGS_DEFAULTS.rlm.maxDepth,
 			memoryLimitMb: rlm?.memoryLimitMb ?? SETTINGS_DEFAULTS.rlm.memoryLimitMb,
 		};
+	}
+
+	/** Subagent role assignments from /agent-setup, merged from global and project settings. */
+	getAgentRoles(): AgentRolesSettings {
+		return this.settings.agentRoles ?? {};
+	}
+
+	/** Replace the global role assignments. */
+	setAgentRoles(value: AgentRolesSettings): void {
+		this.globalSettings.agentRoles = structuredClone(value);
+		this.markModified("agentRoles");
+		this.save();
 	}
 
 	getThinkingBudgets(): ThinkingBudgetsSettings | undefined {

@@ -29,7 +29,7 @@ import { pythonRenderers } from "../tools/renderers/python.ts";
 import { combineUsage } from "../usage-totals.ts";
 import { emitRlmCellEvent, type RlmCellStatus } from "./cell-events.ts";
 import { childAgents } from "./child-agents.ts";
-import { createRlmQueryHandler, RlmChildSlots } from "./children.ts";
+import { createRlmQueryHandler, describeAgentRoles, RlmChildSlots } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
 /** The tools a python cell reaches through `tool.call`. */
@@ -267,6 +267,7 @@ export class RlmRuntime {
 			["llm.batch", (data, ctx) => this.handleLlmBatch(data, ctx.signal)],
 			["context.history", async (data) => this.handleHistory(data)],
 			["rlm.query", (data, ctx) => rlmQuery(data, ctx.signal)],
+			["agent.roles", async () => describeAgentRoles(host)],
 		]);
 		if (host.instance) {
 			for (const [name, handler] of instanceHostHandlers(
@@ -307,6 +308,10 @@ export class RlmRuntime {
 			execute: (toolCallId, params, signal, onUpdate) => this.execute(toolCallId, params, signal, onUpdate),
 			...pythonRenderers,
 		};
+	}
+
+	get isInstance(): boolean {
+		return this.host.instance !== undefined;
 	}
 
 	/** Kill the kernel synchronously. A pending snapshot is dropped; call {@link flushSnapshot} first to keep it. */

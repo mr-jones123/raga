@@ -65,6 +65,7 @@ import {
 	PROJECT_CONFIG_DIR_NAME,
 	VERSION,
 } from "../../config.ts";
+import { type AgentRoleValue, agentRoleCatalog, effectiveAgentRoles } from "../../core/agent-roles.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
 import { type AgentSessionRuntime, SessionImportFileNotFoundError } from "../../core/agent-session-runtime.ts";
 import type { AgentSessionRuntimeDiagnostic } from "../../core/agent-session-services.ts";
@@ -135,6 +136,7 @@ import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { AgentsHub } from "./agents/hub.ts";
+import { AgentSetupEditor } from "./agents/setup.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
 import { AgentFocusBanner } from "./components/agent-focus-banner.ts";
@@ -3219,6 +3221,11 @@ export class InteractiveMode {
 				await this.showAgentsHub();
 				return;
 			}
+			if (text === "/agent-setup" && !this.focusedAgent) {
+				this.editor.setText("");
+				await this.showAgentSetup();
+				return;
+			}
 			if (this.focusedAgent) {
 				await this.submitToFocusedAgent(this.focusedAgent.id, text);
 				return;
@@ -4565,6 +4572,95 @@ export class InteractiveMode {
 		else if (this.editor.onSubmit) {
 			this.editor.setText("");
 			this.editor.onSubmit(text);
+		}
+	}
+
+	/** `/agent-setup`: assign models and a reasoning budget to the bundled workflows' subagent roles. */
+	private async showAgentSetup(): Promise<void> {
+		const main = this.runtimeHost.session;
+		const settings = main.settingsManager;
+		const saved = settings.getAgentRoles();
+		const catalog = agentRoleCatalog();
+		const roles = Object.fromEntries(effectiveAgentRoles({ kind: "settings", settings: saved }, catalog));
+		const available = main.modelRuntime.getAvailableSnapshot().map((model) => `${model.provider}/${model.id}`);
+		const parentModel = main.model ? `${main.model.provider}/${main.model.id}` : undefined;
+		const fullscreen = {
+			overlay: true,
+			overlayOptions: {
+				anchor: "top-left" as const,
+				row: 0,
+				col: 0,
+				width: "100%" as const,
+				maxHeight: "100%" as const,
+				margin: 0,
+			},
+		};
+		const popup = {
+			overlay: true,
+			overlayOptions: { anchor: "center" as const, width: "80%" as const, maxHeight: "80%" as const },
+		};
+		let savedNow = false;
+		await this.showExtensionCustom<void>(
+			(tui, _theme, keys, done) =>
+				new AgentSetupEditor(
+					tui,
+					theme,
+					keys,
+					{
+						catalog,
+						initial: { budget: saved.budget, roles },
+						available,
+						parentModel,
+						instance: main.isInstanceSession,
+					},
+					{
+						pickModel: (current) =>
+							this.showExtensionCustom<AgentRoleValue | undefined>(
+								(pickerTui, _pickerTheme, _pickerKeys, pick) => {
+									const slash = current?.indexOf("/") ?? -1;
+									const currentModel =
+										current && slash > 0
+											? main.modelRuntime.getModel(current.slice(0, slash), current.slice(slash + 1))
+											: undefined;
+									return new ModelSelectorComponent(
+										pickerTui,
+										currentModel,
+										main.modelRuntime,
+										[],
+										(model) => pick(`${model.provider}/${model.id}`),
+										() => pick(undefined),
+									);
+								},
+								popup,
+							),
+						save: (state) => {
+							settings.setAgentRoles(state);
+							savedNow = true;
+							done();
+						},
+						cancel: () => done(),
+						confirmDiscard: () =>
+							this.showExtensionCustom<boolean>(
+								(confirmTui, _confirmTheme, _confirmKeys, answer) =>
+									new ExtensionSelectorComponent(
+										"Discard unsaved role changes?",
+										["Discard", "Keep editing"],
+										(option) => answer(option === "Discard"),
+										() => answer(false),
+										{ tui: confirmTui },
+									),
+								popup,
+							),
+					},
+				),
+			fullscreen,
+		);
+		if (savedNow) {
+			this.showStatus(
+				main.isInstanceSession
+					? "Saved agent roles for ordinary sessions. This instance keeps its pinned agents/model-roles.json."
+					: "Saved agent roles. New subagents launched by role use them.",
+			);
 		}
 	}
 

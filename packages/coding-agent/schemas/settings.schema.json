@@ -677,6 +677,65 @@
         }
       }
     },
+    "agentRoles": {
+      "type": "object",
+      "properties": {
+        "budget": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "unlimited"
+            },
+            {
+              "type": "string",
+              "const": "large"
+            },
+            {
+              "type": "string",
+              "const": "medium"
+            },
+            {
+              "type": "string",
+              "const": "small"
+            }
+          ],
+          "description": "Reasoning budget for children launched by role: unlimited = xhigh, large = high, medium = medium, small = low thinking. Applies only to roles with an assigned model."
+        },
+        "roles": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "description": "Model per subagent role, set with /agent-setup. A value is \"provider/id\", \"inherit\" or null (the parent's model). Panel roles take a list with one entry per seat. Instance sessions use their pinned agents/model-roles.json instead."
+        }
+      }
+    },
     "sessionDir": {
       "type": "string",
       "description": "Custom session storage directory, in the same format as the --session-dir CLI flag."

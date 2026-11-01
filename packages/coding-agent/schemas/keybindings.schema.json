@@ -207,6 +207,22 @@
       "$ref": "#/$defs/KeybindingValue",
       "description": "Agents dashboard: stop the selected subagent"
     },
+    "app.agentSetup.inherit": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agent setup: let the role inherit the parent model"
+    },
+    "app.agentSetup.addSeat": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agent setup: add a seat to a panel role"
+    },
+    "app.agentSetup.removeSeat": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agent setup: remove the selected panel seat"
+    },
+    "app.agentSetup.save": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agent setup: validate and save role assignments"
+    },
     "app.agents.first": {
       "$ref": "#/$defs/KeybindingValue",
       "description": "Agents dashboard: first subagent"

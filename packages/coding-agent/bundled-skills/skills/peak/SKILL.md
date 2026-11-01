@@ -127,7 +127,7 @@ Peak, `bend`, and `raga-artifacts` are the installed skills. `bend` handles Bend
 
 **Use `spec: "poteto-agent"` for any subagent you spawn inside a playbook step** (code-writing delegates, ad-hoc helpers). The chat that receives `/peak` runs the playbook. Never spawn a `poteto-agent` to run the playbook itself. Routed workflow references (`how`, `why`, `interrogate`, `reflect`, `swarm`) choose a native specification and configured model for review. Respect what the reference prescribes, don't override to `poteto-agent`.
 
-**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models from agents/model-roles.json. Null inherits the parent. Same-family seats are not model-diverse.
+**Defaults for every run_child call.** Use the pinned resource root and one of worker, poteto-agent, or comment-sicko. Read-only reviewers use read_only=True. Writing children use read_only=False, details=True. Run independent calls with asyncio.gather. Select models by role with run_child(..., role=..., seat=...) and agent_roles(); see raga-runtime. Null inherits the parent. Same-family seats are not model-diverse.
 
 **Match the model to the job.** Use real configured provider/model selectors. The runtime does not accept separate effort, speed, cloud environment, or resume fields. Include each seat's configured selector in its assignment. Report an unavailable selector rather than substitute another model.
 

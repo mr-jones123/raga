@@ -88,7 +88,7 @@ On macOS and Linux, `/local-models` searches Hugging Face, asks before downloadi
 
 ## Subagents
 
-Each `rlm_query` child is its own named Raga session with its own Python kernel. Run `/agents` to see them in a dashboard (name, state, model, tokens, cost, turns) and open one to read its cells or steer it. Optionally, Rex shows one pane per subagent. See [docs/AGENTS.md](docs/AGENTS.md).
+Each `rlm_query` child is its own named Raga session with its own Python kernel. Run `/agents` to see them in a dashboard (name, state, model, tokens, cost, turns) and open one to read its cells or steer it. Optionally, Rex shows one pane per subagent. Run `/agent-setup` to choose which model each workflow role (such as `arena runners` or `bug-fix`) uses. See [docs/AGENTS.md](docs/AGENTS.md).
 
 ## What the model does in RLM mode
 

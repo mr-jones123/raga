@@ -11,7 +11,13 @@ def harness_mode():
     return "instance" if os.environ.get("RAGA_INSTANCE_ID") else "ordinary"
 
 
-async def run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False):
+async def agent_roles():
+    """Role table children resolve against: /agent-setup choices in ordinary sessions, the pinned agents/model-roles.json in instance sessions."""
+    from raga_rlm import host_request
+    return await host_request({"type": "agent.roles"})
+
+
+async def run_child(spec, task, resource_root, context_data=None, model=None, max_turns=None, read_only=True, details=False, role=None, seat=None):
     if spec not in ("worker", "poteto-agent", "comment-sicko"):
         raise ValueError("Unknown bundled child specification")
     if not read_only and not details:
@@ -28,12 +34,13 @@ async def run_child(spec, task, resource_root, context_data=None, model=None, ma
     for name in definition["skills"]:
         path = root + ("/skills/peak/SKILL.md" if name == "peak" else "/skills/peak/references/" + name + "/SKILL.md")
         instructions += "\n\n" + await read(path)
-    roles = json.loads(await read(root + "/agents/model-roles.json"))
-    if model is None:
-        model = roles.get(definition["modelRole"])
+    if model is None and role is None:
+        role = definition["modelRole"]
     notice = "\n\n" + ORDINARY_READ_ONLY if ordinary else ""
     prompt = instructions + "\n\nPinned resource root: " + root + notice + "\n\n# Assignment\n" + task
-    return await rlm_query(prompt, context=context_data, model=model, max_turns=max_turns, read_only=read_only, details=details)
+    if model is not None:
+        role, seat = None, None
+    return await rlm_query(prompt, context=context_data, model=model, max_turns=max_turns, read_only=read_only, details=details, role=role, seat=seat)
 
 async def capability_report():
     commands = {
