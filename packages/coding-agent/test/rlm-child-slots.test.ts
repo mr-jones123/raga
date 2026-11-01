@@ -93,6 +93,27 @@ describe("RlmChildSlots", () => {
 		expect(root.running).toBe(0);
 	});
 
+	it("never starts an already aborted child or one aborted just after admission", async () => {
+		const slots = new RlmChildSlots(1);
+		const parent = { running: 0 };
+		const controller = new AbortController();
+		controller.abort();
+		let starts = 0;
+		await expect(
+			slots.run(parent, 1, 1, controller.signal, async () => {
+				starts++;
+			}),
+		).rejects.toThrow("aborted");
+		const next = new AbortController();
+		const run = slots.run(parent, 1, 1, next.signal, async () => {
+			starts++;
+		});
+		next.abort();
+		await expect(run).rejects.toThrow("aborted");
+		expect(starts).toBe(0);
+		expect(parent.running).toBe(0);
+	});
+
 	it("rejects a waiting child when its signal aborts", async () => {
 		const slots = new RlmChildSlots(1);
 		const parent: RlmChildParent = { running: 0 };

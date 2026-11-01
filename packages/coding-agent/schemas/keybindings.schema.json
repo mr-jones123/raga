@@ -195,6 +195,26 @@
       "$ref": "#/$defs/KeybindingValue",
       "description": "Scroll viewport to bottom"
     },
+    "app.agents.details": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents dashboard: toggle the details panel"
+    },
+    "app.agents.tree": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents dashboard: toggle tree and flat views"
+    },
+    "app.agents.stop": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents dashboard: stop the selected subagent"
+    },
+    "app.agents.first": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents dashboard: first subagent"
+    },
+    "app.agents.last": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents dashboard: last subagent"
+    },
     "app.diff.commits": {
       "$ref": "#/$defs/KeybindingValue",
       "description": "Diff dashboard: browse commits"

@@ -86,6 +86,10 @@ On macOS and Linux, `/local-models` searches Hugging Face, asks before downloadi
 
 `/diff` opens a read-only Git review dashboard. Browse changes by category (tests, modules, GitHub workflows, documentation, dependencies, configuration), inspect staged or working-tree changes, or pick a commit from history. Open a file to scroll its diff, and toggle to its full contents without leaving raga. See [docs/DIFF.md](docs/DIFF.md) for controls.
 
+## Subagents
+
+Each `rlm_query` child is its own named Raga session with its own Python kernel. Run `/agents` to see them in a dashboard (name, state, model, tokens, cost, turns) and open one to read its cells or steer it. Optionally, Rex shows one pane per subagent. See [docs/AGENTS.md](docs/AGENTS.md).
+
 ## What the model does in RLM mode
 
 The kernel already exists when the model's first turn starts. Each `python` call runs a cell, and variables stay defined for the whole session. The model sees at most `rlm.outputLimit` characters of each cell's output. The full output stays in `cells`.
@@ -132,6 +136,7 @@ print(counts.most_common(5))
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the pi base works and where raga's layers attach. |
 | [docs/RLM.md](docs/RLM.md) | The RLM runtime reference. |
+| [docs/AGENTS.md](docs/AGENTS.md) | Subagent sessions, the `/agents` dashboard, and Rex panes. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
 | [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) | Search, download, and run local Hugging Face models with llama.cpp or MLX. |

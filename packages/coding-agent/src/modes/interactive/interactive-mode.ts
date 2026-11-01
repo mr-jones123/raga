@@ -106,6 +106,7 @@ import { CredentialSynchronizationError } from "../../core/model-runtime.ts";
 import { DefaultPackageManager } from "../../core/package-manager.ts";
 import { RADIUS_MCP_URL, RADIUS_PROVIDER_ID } from "../../core/radius.ts";
 import type { ResourceDiagnostic } from "../../core/resource-loader.ts";
+import { childAgents } from "../../core/rlm/child-agents.ts";
 import { formatMissingSessionCwdPrompt, MissingSessionCwdError } from "../../core/session-cwd.ts";
 import {
 	type SessionEntry,
@@ -133,8 +134,10 @@ import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
+import { AgentsHub } from "./agents/hub.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
+import { AgentFocusBanner } from "./components/agent-focus-banner.ts";
 import { ArminComponent } from "./components/armin.ts";
 import { AssistantMessageComponent } from "./components/assistant-message.ts";
 import { BashExecutionComponent } from "./components/bash-execution.ts";
@@ -445,6 +448,16 @@ export class InteractiveMode {
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
 	private rlmCellDashboard: RlmCellDashboard | undefined;
+	/** The subagent whose session the view shows. The main session keeps running underneath. */
+	private focusedAgent:
+		| { id: string; session: AgentSession; release: () => void; unsubscribe: () => void }
+		| undefined;
+	private agentsHub: AgentsHub | undefined;
+	private readonly agentBanner = new AgentFocusBanner(
+		() => (this.focusedAgent ? childAgents.get(this.focusedAgent.id) : undefined),
+		() => this.runtimeHost.session.isStreaming,
+		() => keyText("app.interrupt"),
+	);
 	private ui: TUI;
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
@@ -586,8 +599,9 @@ export class InteractiveMode {
 	private themeController: InteractiveThemeController;
 
 	// Convenience accessors
+	/** The session the view shows: a focused subagent's, otherwise the main session. */
 	private get session(): AgentSession {
-		return this.runtimeHost.session;
+		return this.focusedAgent?.session ?? this.runtimeHost.session;
 	}
 	private get agent() {
 		return this.session.agent;
@@ -606,6 +620,8 @@ export class InteractiveMode {
 		this.options = { ...options, tuiMode };
 		this.autoTrustOnReloadCwd = options.autoTrustOnReloadCwd;
 		this.runtimeHost.setBeforeSessionInvalidate(() => {
+			this.leaveAgentFocus();
+			this.agentsHub?.dispose();
 			this.resetExtensionUI();
 		});
 		this.runtimeHost.setRebindSession(async () => {
@@ -1258,7 +1274,7 @@ export class InteractiveMode {
 		while (true) {
 			const userInput = await this.getUserInput();
 			try {
-				await this.session.prompt(userInput);
+				await this.runtimeHost.session.prompt(userInput);
 			} catch (error: unknown) {
 				const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
 				this.showError(errorMessage);
@@ -2538,17 +2554,20 @@ export class InteractiveMode {
 			this.customFooter.dispose();
 		}
 
-		this.footerContainer.clear();
-		if (factory) {
-			// Create and add custom footer, passing the data provider
-			this.customFooter = factory(this.ui, theme, this.footerDataProvider);
-			this.footerContainer.addChild(this.customFooter);
-		} else {
-			// Restore built-in footer
-			this.customFooter = undefined;
-			this.footerContainer.addChild(this.footer);
-		}
+		// Create a custom footer with the data provider, or restore the built-in one.
+		this.customFooter = factory ? factory(this.ui, theme, this.footerDataProvider) : undefined;
+		this.renderFooterContainer();
+	}
 
+	/** A focused subagent always shows the built-in footer, which reports its session, under its banner. */
+	private renderFooterContainer(): void {
+		this.footerContainer.clear();
+		if (this.focusedAgent) {
+			this.footerContainer.addChild(this.agentBanner);
+			this.footerContainer.addChild(this.footer);
+		} else {
+			this.footerContainer.addChild(this.customFooter ?? this.footer);
+		}
 		this.ui.requestRender();
 	}
 
@@ -3032,6 +3051,12 @@ export class InteractiveMode {
 		// Set up handlers on defaultEditor - they use this.editor for text access
 		// so they work correctly regardless of which editor is active
 		this.defaultEditor.onEscape = () => {
+			// In a subagent's session, Esc returns to the main session and never interrupts the subagent.
+			if (this.focusedAgent) {
+				if (this.editor.getText().trim()) this.editor.setText("");
+				else this.returnToMainSession();
+				return;
+			}
 			if (this.session.isStreaming) {
 				this.restoreQueuedMessagesToEditor({ abort: true });
 			} else if (this.session.isBashRunning) {
@@ -3063,13 +3088,25 @@ export class InteractiveMode {
 		this.defaultEditor.onAction("app.clear", () => this.handleCtrlC());
 		this.defaultEditor.onCtrlD = () => this.handleCtrlD();
 		this.defaultEditor.onAction("app.suspend", () => this.handleCtrlZ());
-		this.defaultEditor.onAction("app.thinking.cycle", () => this.cycleThinkingLevel());
-		this.defaultEditor.onAction("app.model.cycleForward", () => this.cycleModel("forward"));
-		this.defaultEditor.onAction("app.model.cycleBackward", () => this.cycleModel("backward"));
+		this.defaultEditor.onAction(
+			"app.thinking.cycle",
+			this.mainSessionOnly(() => this.cycleThinkingLevel()),
+		);
+		this.defaultEditor.onAction(
+			"app.model.cycleForward",
+			this.mainSessionOnly(() => this.cycleModel("forward")),
+		);
+		this.defaultEditor.onAction(
+			"app.model.cycleBackward",
+			this.mainSessionOnly(() => this.cycleModel("backward")),
+		);
 
 		// Global debug handler on TUI (works regardless of focus)
 		this.ui.onDebug = () => this.handleDebugCommand();
-		this.defaultEditor.onAction("app.model.select", () => this.showModelSelector());
+		this.defaultEditor.onAction(
+			"app.model.select",
+			this.mainSessionOnly(() => this.showModelSelector()),
+		);
 		this.defaultEditor.onAction("app.tools.expand", () => this.toggleToolOutputExpansion());
 		this.defaultEditor.onAction("app.thinking.toggle", () => this.toggleThinkingBlockVisibility());
 		this.defaultEditor.onAction("app.editor.external", () => void this.handleOpenExternalEditor());
@@ -3079,10 +3116,22 @@ export class InteractiveMode {
 		);
 		this.defaultEditor.onAction("app.message.followUp", () => this.handleFollowUp());
 		this.defaultEditor.onAction("app.message.dequeue", () => this.handleDequeue());
-		this.defaultEditor.onAction("app.session.new", () => this.handleClearCommand());
-		this.defaultEditor.onAction("app.session.tree", () => this.showTreeSelector());
-		this.defaultEditor.onAction("app.session.fork", () => this.showUserMessageSelector());
-		this.defaultEditor.onAction("app.session.resume", () => this.showSessionSelector());
+		this.defaultEditor.onAction(
+			"app.session.new",
+			this.mainSessionOnly(() => this.handleClearCommand()),
+		);
+		this.defaultEditor.onAction(
+			"app.session.tree",
+			this.mainSessionOnly(() => this.showTreeSelector()),
+		);
+		this.defaultEditor.onAction(
+			"app.session.fork",
+			this.mainSessionOnly(() => this.showUserMessageSelector()),
+		);
+		this.defaultEditor.onAction(
+			"app.session.resume",
+			this.mainSessionOnly(() => this.showSessionSelector()),
+		);
 
 		this.defaultEditor.onChange = (text: string) => {
 			const wasBashMode = this.isBashMode;
@@ -3164,6 +3213,16 @@ export class InteractiveMode {
 		this.defaultEditor.onSubmit = async (text: string) => {
 			text = text.trim();
 			if (!text) return;
+
+			if (text === "/agents") {
+				this.editor.setText("");
+				await this.showAgentsHub();
+				return;
+			}
+			if (this.focusedAgent) {
+				await this.submitToFocusedAgent(this.focusedAgent.id, text);
+				return;
+			}
 
 			// Handle commands
 			if (text === "/settings") {
@@ -4295,6 +4354,7 @@ export class InteractiveMode {
 	private async shutdown(options?: { fromSignal?: boolean }): Promise<void> {
 		if (this.isShuttingDown) return;
 		this.isShuttingDown = true;
+		this.agentsHub?.dispose();
 		// Keep signal handlers registered until terminal cleanup has completed.
 		// `signal-exit` checks the listener list during the same SIGTERM/SIGHUP
 		// dispatch and re-sends the signal if only its own listeners remain.
@@ -4506,6 +4566,120 @@ export class InteractiveMode {
 			this.editor.setText("");
 			this.editor.onSubmit(text);
 		}
+	}
+
+	/** Run `action` only while the view shows the main session. */
+	private mainSessionOnly(action: () => unknown): () => void {
+		return () => {
+			if (this.focusedAgent) {
+				this.showWarning(`This acts on the main session. Press ${keyText("app.interrupt")} to return to it first.`);
+				return;
+			}
+			void action();
+		};
+	}
+
+	private async showAgentsHub(): Promise<void> {
+		this.agentsHub ??= new AgentsHub({
+			rootSessionId: () => this.runtimeHost.session.sessionManager.getSessionId(),
+			title: () =>
+				this.runtimeHost.session.sessionManager.getSessionName() ??
+				this.runtimeHost.session.sessionManager.getSessionId().slice(0, 8),
+			cwd: () => this.runtimeHost.session.sessionManager.getCwd(),
+			showFullscreen: (factory) =>
+				this.showExtensionCustom(factory, {
+					overlay: true,
+					overlayOptions: { anchor: "top-left", row: 0, col: 0, width: "100%", maxHeight: "100%", margin: 0 },
+				}),
+			confirm: (title, message) => this.showExtensionConfirm(title, message),
+			notify: (message, type) => this.showExtensionNotify(message, type),
+			focus: (id) => this.focusSubagent(id),
+		});
+		await this.agentsHub.open();
+	}
+
+	/** Show a subagent's own session: its transcript, Python cells, footer, and an editor that steers it. */
+	private async focusSubagent(id: string): Promise<void> {
+		let session: AgentSession;
+		try {
+			session = await childAgents.open(id);
+		} catch (error) {
+			this.showError(error instanceof Error ? error.message : String(error));
+			return;
+		}
+		const info = childAgents.get(id);
+		if (!info) return;
+		this.leaveAgentFocus();
+		const release = childAgents.retain(id);
+		const unsubscribe = childAgents.subscribe(() => {
+			if (this.focusedAgent?.id !== id) return;
+			if (childAgents.session(id) !== session) this.returnToMainSession(`${info.name} was closed.`);
+			else this.ui.requestRender();
+		});
+		this.focusedAgent = { id, session, release, unsubscribe };
+		this.attachViewSession();
+		this.showStatus(
+			`Viewing subagent ${info.name}. ${info.promptable ? "Messages you send steer it." : "Its session is read-only."} ${keyText("app.interrupt")} returns to the main session.`,
+		);
+	}
+
+	private returnToMainSession(notice?: string): void {
+		if (!this.focusedAgent) return;
+		this.leaveAgentFocus();
+		this.attachViewSession();
+		if (notice) this.showStatus(notice);
+	}
+
+	/** Forget the focused subagent without re-rendering; callers attach the next view. */
+	private leaveAgentFocus(): void {
+		const focused = this.focusedAgent;
+		if (!focused) return;
+		this.focusedAgent = undefined;
+		focused.unsubscribe();
+		focused.release();
+	}
+
+	/** Re-render the view from {@link session} and follow its events, joining a response in progress. */
+	private attachViewSession(): void {
+		this.unsubscribe?.();
+		this.unsubscribe = undefined;
+		this.clearStatusIndicator();
+		this.footer.setSession(this.session);
+		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
+		this.renderFooterContainer();
+		this.renderCurrentSessionState();
+		this.subscribeToAgent();
+		const session = this.session;
+		if (session.isStreaming) {
+			const message = session.agent.state.streamingMessage;
+			if (message?.role === "assistant") void this.handleEvent({ type: "message_start", message });
+			for (const toolCallId of session.agent.state.pendingToolCalls) {
+				this.pendingTools.get(toolCallId)?.markExecutionStarted();
+			}
+			if (this.workingVisible) this.showWorkingStatusIndicator();
+		}
+		this.updatePendingMessagesDisplay();
+		this.updateEditorBorderColor();
+		this.updateTerminalTitle();
+		this.ui.requestRender();
+	}
+
+	private async submitToFocusedAgent(id: string, text: string): Promise<void> {
+		if (text.startsWith("/") || text.startsWith("!")) {
+			this.showWarning(
+				`Commands run in the main session. Press ${keyText("app.interrupt")} to return to it, or send plain text to steer this subagent.`,
+			);
+			return;
+		}
+		try {
+			await childAgents.prompt(id, text);
+			this.editor.addToHistory?.(text);
+			this.editor.setText("");
+			this.updatePendingMessagesDisplay();
+		} catch (error) {
+			this.showError(error instanceof Error ? error.message : String(error));
+		}
+		this.ui.requestRender();
 	}
 
 	private handleDequeue(): void {

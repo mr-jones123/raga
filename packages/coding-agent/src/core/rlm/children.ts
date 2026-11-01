@@ -26,6 +26,7 @@ import { createAgentSession } from "../sdk.ts";
 import { SessionManager } from "../session-manager.ts";
 import type { SettingsManager } from "../settings-manager.ts";
 import { combineUsage } from "../usage-totals.ts";
+import { childAgents } from "./child-agents.ts";
 import type { HostRequest } from "./kernel.ts";
 
 /** Children of one session that run at once; more wait in a queue. */
@@ -71,6 +72,8 @@ interface Waiter extends SlotRequest {
  * child can always start.
  */
 export class RlmChildSlots {
+	/** Shared identity of the coordinator, including for in-memory child sessions. */
+	rootSessionId?: string;
 	private live = 0;
 	private readonly waiting: Waiter[] = [];
 	private readonly limit: number;
@@ -89,6 +92,7 @@ export class RlmChildSlots {
 	): Promise<T> {
 		await this.acquire({ parent, depth, maxDepth }, signal);
 		try {
+			if (signal.aborted) throw new Error("rlm_query was aborted");
 			return await child();
 		} finally {
 			parent.running--;
@@ -108,13 +112,15 @@ export class RlmChildSlots {
 	}
 
 	private acquire(request: SlotRequest, signal: AbortSignal): Promise<void> {
+		if (signal.aborted) return Promise.reject(new Error("rlm_query was aborted"));
 		if (this.admits(request)) {
 			this.take(request);
 			return Promise.resolve();
 		}
 		const { promise, resolve, reject } = Promise.withResolvers<void>();
 		const onAbort = () => {
-			this.waiting.splice(this.waiting.indexOf(waiter), 1);
+			const index = this.waiting.indexOf(waiter);
+			if (index !== -1) this.waiting.splice(index, 1);
 			reject(new Error("rlm_query was aborted"));
 		};
 		// `startWaiting` takes the slot before it calls `start`.
@@ -174,6 +180,7 @@ export function createRlmQueryHandler(
 	host: RlmChildHost,
 ): (data: HostRequest, signal: AbortSignal) => Promise<RlmQueryResult> {
 	const parent: RlmChildParent = { running: 0 };
+	host.childSlots.rootSessionId ??= host.sessionManager.getSessionId();
 	return async (data, signal) => {
 		const task = data.task;
 		if (typeof task !== "string" || task.trim() === "") throw new Error('rlm.query needs a non-empty string "task"');
@@ -193,13 +200,52 @@ export function createRlmQueryHandler(
 		const model = host.resolveModel(modelRef ?? undefined);
 
 		if (signal.aborted) throw new Error("rlm_query was aborted");
-		return host.childSlots.run(parent, depth, maxDepth, signal, () =>
-			runChild(
-				host,
-				{ task, data: data.context, model, depth, maxTurns: maxTurnsValue, readOnly: data.read_only === true },
-				signal,
-			),
-		);
+		const id = randomUUID();
+		const controller = new AbortController();
+		const onAbort = () => controller.abort();
+		signal.addEventListener("abort", onAbort, { once: true });
+		const agent = childAgents.register({
+			id,
+			rootSessionId: host.childSlots.rootSessionId ?? host.sessionManager.getSessionId(),
+			parentSessionId: host.sessionManager.getSessionId(),
+			depth,
+			task,
+			model: `${model.provider}/${model.id}`,
+			maxTurns: maxTurnsValue,
+			cancel: () => controller.abort(),
+		});
+		try {
+			const result = await host.childSlots.run(parent, depth, maxDepth, controller.signal, () => {
+				childAgents.start(id);
+				return runChild(
+					host,
+					{
+						id,
+						name: agent.name,
+						task,
+						data: data.context,
+						model,
+						depth,
+						maxTurns: maxTurnsValue,
+						readOnly: data.read_only === true,
+					},
+					controller.signal,
+				);
+			});
+			childAgents.finish(id, {
+				status: result.stop_reason === "max_turns" ? "partial" : "done",
+				stopReason: result.stop_reason,
+			});
+			return result;
+		} catch (error) {
+			childAgents.finish(id, {
+				status: controller.signal.aborted ? "stopped" : "failed",
+				error: error instanceof Error ? error.message : String(error),
+			});
+			throw error;
+		} finally {
+			signal.removeEventListener("abort", onAbort);
+		}
 	};
 }
 
@@ -231,7 +277,16 @@ function childResourceLoader(parent: ResourceLoader): ResourceLoader {
 
 async function runChild(
 	host: RlmChildHost,
-	options: { task: string; data: unknown; model: Model<Api>; depth: number; maxTurns: number; readOnly: boolean },
+	options: {
+		id: string;
+		name: string;
+		task: string;
+		data: unknown;
+		model: Model<Api>;
+		depth: number;
+		maxTurns: number;
+		readOnly: boolean;
+	},
 	signal: AbortSignal,
 ): Promise<RlmQueryResult> {
 	const parent = host.sessionManager;
@@ -261,34 +316,46 @@ async function runChild(
 	const sessionManager = parent.isPersisted()
 		? SessionManager.create(cwd, parent.getSessionDir(), { parentSession })
 		: SessionManager.inMemory(cwd, { parentSession });
-	const baseSandbox = host.instance
-		? instanceSandbox(host.instance, cwd, sessionManager, workspace?.path ?? host.sandbox?.workspace ?? cwd)
-		: host.sandbox;
-	const sandbox = baseSandbox && options.readOnly ? { ...baseSandbox, workspaceReadOnly: true } : baseSandbox;
 	let change: ChildChange | undefined;
 	const captureChange = async () => {
 		if (!workspace || change) return;
 		change = await collectChildChange(workspace);
 		parent.appendCustomEntry("raga-child-change", { workspace, change });
 	};
-	const { session: child } = await createAgentSession({
-		cwd,
-		instance: host.instance,
-		instanceMemory: host.memory ? (options.readOnly ? readOnlyMemoryService(host.memory) : host.memory) : false,
-		sandbox,
-		modelRuntime: host.modelRuntime,
-		settingsManager: host.instance ? undefined : host.settingsManager,
-		resourceLoader: host.instance ? undefined : childResourceLoader(host.resourceLoader),
-		sessionManager,
-		model: options.model,
-		thinkingLevel: host.getThinkingLevel(),
-		rlm: true,
-		rlmDepth: options.depth,
-		rlmData: options.data,
-		rlmChildSlots: host.childSlots,
-	}).catch(async (error) => {
+	const createChild = (manager: SessionManager) => {
+		const baseSandbox = host.instance
+			? instanceSandbox(host.instance, cwd, manager, workspace?.path ?? host.sandbox?.workspace ?? cwd)
+			: host.sandbox;
+		const sandbox = baseSandbox && options.readOnly ? { ...baseSandbox, workspaceReadOnly: true } : baseSandbox;
+		return createAgentSession({
+			cwd,
+			instance: host.instance,
+			instanceMemory: host.memory ? (options.readOnly ? readOnlyMemoryService(host.memory) : host.memory) : false,
+			sandbox,
+			modelRuntime: host.modelRuntime,
+			settingsManager: host.instance ? undefined : host.settingsManager,
+			resourceLoader: host.instance ? undefined : childResourceLoader(host.resourceLoader),
+			sessionManager: manager,
+			model: options.model,
+			thinkingLevel: host.getThinkingLevel(),
+			rlm: true,
+			rlmDepth: options.depth,
+			rlmData: options.data,
+			rlmChildSlots: host.childSlots,
+		});
+	};
+	const { session: child } = await createChild(sessionManager).catch(async (error) => {
 		await captureChange();
 		throw error;
+	});
+	child.setSessionName(options.name);
+	const sessionFile = child.sessionFile;
+	childAgents.attach(options.id, child, {
+		// A collected workspace change is final, so a writable instance child no longer takes follow-ups.
+		followUps: !workspace,
+		reopen: sessionFile
+			? async () => (await createChild(SessionManager.open(sessionFile, parent.getSessionDir()))).session
+			: undefined,
 	});
 	try {
 		if (signal.aborted) throw new Error("rlm_query was aborted");
@@ -325,7 +392,6 @@ async function runChild(
 		if (usage) host.addUsage(usage);
 		if (signal.aborted) throw new Error("rlm_query was aborted");
 		const answer = await child.getRlmAnswer();
-		child.dispose();
 		await captureChange();
 		const artifact = { workspace, change };
 		if (answer.ready)
@@ -363,7 +429,8 @@ async function runChild(
 			...artifact,
 		};
 	} finally {
-		child.dispose();
+		// The session and kernel stay open for /agents; the registry parks idle children and the parent's
+		// runtime disposes them with itself.
 		await captureChange();
 	}
 }

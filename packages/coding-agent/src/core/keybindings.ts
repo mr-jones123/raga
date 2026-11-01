@@ -23,6 +23,11 @@ export function useWindowsKeybindings(
 const windowsKeybindings = useWindowsKeybindings();
 
 const APP_KEYBINDINGS = {
+	"app.agents.details": { defaultKeys: "tab", description: "Agents dashboard: toggle the details panel" },
+	"app.agents.tree": { defaultKeys: "t", description: "Agents dashboard: toggle tree and flat views" },
+	"app.agents.stop": { defaultKeys: "x", description: "Agents dashboard: stop the selected subagent" },
+	"app.agents.first": { defaultKeys: "home", description: "Agents dashboard: first subagent" },
+	"app.agents.last": { defaultKeys: "end", description: "Agents dashboard: last subagent" },
 	"app.diff.commits": { defaultKeys: "c", description: "Diff dashboard: browse commits" },
 	"app.diff.working": { defaultKeys: "w", description: "Diff dashboard: working-tree changes" },
 	"app.diff.staged": { defaultKeys: "s", description: "Diff dashboard: staged changes" },

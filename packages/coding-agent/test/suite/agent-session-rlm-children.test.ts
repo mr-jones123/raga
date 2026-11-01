@@ -10,6 +10,7 @@ import {
 import type { AssistantMessage, FauxResponseStep, Usage } from "@earendil-works/pi-ai/compat";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/index.ts";
+import { childAgents } from "../../src/core/rlm/child-agents.ts";
 import type { SessionEntry, SessionHeader } from "../../src/core/session-manager.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
@@ -140,6 +141,17 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		const [childFile] = childSessionFiles(harness, sessionDir);
 		const child = readSession(childFile);
 		expect(child.header.parentSession).toBe(harness.session.sessionFile);
+		// The child stays a live, named session that /agents can open.
+		const [observed] = childAgents.list(harness.sessionManager.getSessionId());
+		expect(observed.status).toBe("done");
+		expect(observed.name).toMatch(/^[A-Z][a-z]+[A-Z][a-z]+\d*$/);
+		expect(observed.sessionId).toBe(child.header.id);
+		expect(observed.parentSessionId).toBe(harness.sessionManager.getSessionId());
+		expect(observed.live).toBe(true);
+		expect(observed.promptable).toBe(true);
+		expect(observed.usage.totalTokens).toBeGreaterThan(0);
+		expect(childAgents.session(observed.id)?.sessionName).toBe(observed.name);
+		expect(childAgents.session(observed.id)?.messages.some((message) => message.role === "toolResult")).toBe(true);
 
 		// The python result carries the child's usage, and the session stats include it.
 		const childUsage = sessionUsage(child.entries);
@@ -242,6 +254,7 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		expect(text).toContain("Found the parser; validation is unfinished");
 		expect(text).toContain("True");
 		expect(text).not.toContain("This operation was aborted");
+		expect(childAgents.list(harness.sessionManager.getSessionId())[0].status).toBe("partial");
 		const [childFile] = childSessionFiles(harness, sessionDir);
 		expect(tokens(result.usage)).toBeGreaterThan(0);
 		expect(result.usage).toEqual(sessionUsage(readSession(childFile).entries));
@@ -316,6 +329,129 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		const text = getMessageText(getToolResult(harness, "python"));
 		expect(text).toContain("The child session failed: provider exploded");
 		expect(text).not.toContain("max_turns");
+		expect(childAgents.list(harness.sessionManager.getSessionId())[0].status).toBe("failed");
+	});
+
+	it("registers nested children under their parent agent with their own sessions", async () => {
+		const { harness } = await setup({ rlm: { maxDepth: 2 } });
+		harness.setResponses(
+			routed({
+				Root: [pythonCall('print(await rlm_query("Branch"))'), fauxAssistantMessage("done")],
+				Branch: [
+					pythonCall('raise ValueError("bad cell")'),
+					pythonCall('print(await rlm_query("Leaf"))\nanswer["ready"] = True'),
+					fauxAssistantMessage("done"),
+				],
+				Leaf: [
+					pythonCall('print("leaf output")\nanswer["content"] = "leaf"\nanswer["ready"] = True'),
+					fauxAssistantMessage("done"),
+				],
+			}),
+		);
+		await harness.session.prompt("Root");
+		const root = harness.sessionManager.getSessionId();
+		const agents = childAgents.list(root);
+		expect(agents).toHaveLength(2);
+		const branch = agents.find((agent) => agent.task === "Branch")!;
+		const leaf = agents.find((agent) => agent.task === "Leaf")!;
+		expect(leaf.parentSessionId).toBe(branch.sessionId);
+		expect(leaf.parentId).toBe(branch.id);
+		expect(branch.parentSessionId).toBe(root);
+		expect(branch.parentId).toBeUndefined();
+		expect(new Set(agents.map((agent) => agent.name)).size).toBe(2);
+		const branchResults = childAgents.session(branch.id)!.messages.filter((message) => message.role === "toolResult");
+		expect(branchResults).toHaveLength(2);
+		expect(getMessageText(branchResults[0])).toContain("bad cell");
+		expect(agents.every((agent) => agent.status === "done")).toBe(true);
+	});
+
+	it("accepts a user follow-up after the child answered, without charging the parent cell again", async () => {
+		const { harness } = await setup();
+		harness.setResponses(
+			routed({
+				Root: [pythonCall('print(await rlm_query("Worker"))'), fauxAssistantMessage("done")],
+				Worker: [
+					pythonCall('answer["content"] = "first"\nanswer["ready"] = True'),
+					fauxAssistantMessage("answered"),
+					fauxAssistantMessage("follow-up handled"),
+				],
+			}),
+		);
+		await harness.session.prompt("Root");
+		const parentUsage = getToolResult(harness, "python").usage;
+		const [worker] = childAgents.list(harness.sessionManager.getSessionId());
+		await childAgents.prompt(worker.id, "Also check the tests");
+		const session = childAgents.session(worker.id)!;
+		await vi.waitFor(() => expect(session.getLastAssistantText()).toBe("follow-up handled"), { timeout: 10000 });
+		await vi.waitFor(() => expect(childAgents.get(worker.id)?.busy).toBe(false));
+		expect(childAgents.get(worker.id)?.status).toBe("done");
+		expect(getToolResult(harness, "python").usage).toEqual(parentUsage);
+	});
+
+	it("removes a cancelled queued child without creating its session", async () => {
+		const { harness, sessionDir } = await setup();
+		const scripts: Record<string, Turn[]> = {
+			Root: [
+				pythonCall(
+					'import asyncio\nprint(await asyncio.gather(*[rlm_query("Block" + str(i)) for i in range(4)], rlm_query("Queued"), return_exceptions=True))',
+				),
+				fauxAssistantMessage("done"),
+			],
+		};
+		for (let i = 0; i < 4; i++)
+			scripts[`Block${i}`] = [
+				pythonCall('import asyncio\nawait asyncio.sleep(0.5)\nanswer["ready"] = True'),
+				fauxAssistantMessage("done"),
+			];
+		// There is deliberately no script for Queued: it must never reach the provider.
+		harness.setResponses(routed(scripts));
+		const root = harness.sessionManager.getSessionId();
+		const run = harness.session.prompt("Root");
+		await vi.waitFor(
+			() => {
+				const queued = childAgents.list(root).find((agent) => agent.task === "Queued");
+				expect(queued?.status).toBe("queued");
+				expect(queued?.sessionId).toBeUndefined();
+			},
+			{ timeout: 10000, interval: 10 },
+		);
+		const queued = childAgents.list(root).find((agent) => agent.task === "Queued")!;
+		expect(childAgents.stop(queued.id)).toBe(true);
+		await run;
+		const cancelled = childAgents.get(queued.id)!;
+		expect(cancelled.status).toBe("stopped");
+		expect(cancelled.sessionId).toBeUndefined();
+		expect(childSessionFiles(harness, sessionDir)).toHaveLength(4);
+	});
+
+	it("cancels only the selected child while a sibling finishes", async () => {
+		const { harness } = await setup();
+		const marker = join(harness.tempDir, "hub-cancel.mark");
+		harness.setResponses(
+			routed({
+				Root: [
+					pythonCall(
+						'import asyncio\nprint(await asyncio.gather(rlm_query("Slow"), rlm_query("Fast"), return_exceptions=True))',
+					),
+					fauxAssistantMessage("done"),
+				],
+				Slow: [
+					pythonCall(`import asyncio\nopen(${JSON.stringify(marker)}, "w").close()\nawait asyncio.sleep(30)`),
+					fauxAssistantMessage("unused"),
+				],
+				Fast: [pythonCall('answer["content"] = "fast"\nanswer["ready"] = True'), fauxAssistantMessage("done")],
+			}),
+		);
+		const run = harness.session.prompt("Root");
+		await vi.waitFor(() => expect(existsSync(marker)).toBe(true), { timeout: 10000 });
+		const root = harness.sessionManager.getSessionId();
+		const slow = childAgents.list(root).find((agent) => agent.task === "Slow")!;
+		expect(childAgents.stop(slow.id)).toBe(true);
+		await run;
+		const agents = childAgents.list(root);
+		expect(agents.find((agent) => agent.task === "Slow")?.status).toBe("stopped");
+		expect(agents.find((agent) => agent.task === "Fast")?.status).toBe("done");
+		expect(getMessageText(getToolResult(harness, "python"))).toContain("fast");
 	});
 
 	it("aborts the child when the parent is aborted", async () => {

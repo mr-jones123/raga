@@ -28,6 +28,7 @@ import type { SettingsManager } from "../settings-manager.ts";
 import { pythonRenderers } from "../tools/renderers/python.ts";
 import { combineUsage } from "../usage-totals.ts";
 import { emitRlmCellEvent, type RlmCellStatus } from "./cell-events.ts";
+import { childAgents } from "./child-agents.ts";
 import { createRlmQueryHandler, RlmChildSlots } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
@@ -311,6 +312,7 @@ export class RlmRuntime {
 	/** Kill the kernel synchronously. A pending snapshot is dropped; call {@link flushSnapshot} first to keep it. */
 	dispose(): void {
 		this.disposed = true;
+		childAgents.disposeOwnedBy(this.host.sessionManager.getSessionId());
 		clearTimeout(this.snapshotTimer);
 		this.snapshotTimer = undefined;
 		this.kernel.dispose();
