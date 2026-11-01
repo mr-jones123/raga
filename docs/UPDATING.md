@@ -2,14 +2,22 @@
 
 ## Install
 
-Raga needs Node.js 22.19 or newer. Install the published CLI from npm:
+On macOS, Linux, or WSL, run the installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mr-jones123/raga/main/install.sh | sh
+```
+
+It checks for Node.js 22.19 or newer and npm and offers to install them, installs `raga-cli` with npm (under `~/.local` when npm's global directory is not writable), and offers to install `uv`. It then asks whether to log in to a subscription or add an API key, and recommends installing [Bend](https://bend-lang.com) for the bundled `bend` skill. Bend runs on macOS and Linux (arm64 and x64); the installer skips it on other systems. Set `RAGA_VERSION` to install a specific version. Run the installer again to reinstall or uninstall; uninstalling keeps `~/.raga/agent`.
+
+To install from npm directly instead:
 
 ```sh
 npm install -g raga-cli
 raga --version
 ```
 
-RLM mode also needs `uv` to create its Python environment on first use.
+RLM mode also needs `uv` to create its Python environment on first use. To log in later, run `raga --login` or type `/login` inside raga.
 
 ## Update the CLI
 

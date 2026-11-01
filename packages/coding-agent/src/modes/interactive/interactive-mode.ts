@@ -440,6 +440,8 @@ export interface InteractiveModeOptions {
 	verbose?: boolean;
 	/** TUI layout mode. */
 	tuiMode?: TuiMode;
+	/** Open the login selector on startup, as `/login` does. The installer starts raga this way. */
+	openLogin?: boolean;
 	/** Initial interactive theme setting for this invocation. */
 	initialThemeSetting?: string;
 	/** Terminal implementation. Defaults to the current process terminal. */
@@ -1250,6 +1252,10 @@ export class InteractiveMode {
 		}
 
 		void this.maybeWarnAboutAnthropicSubscriptionAuth();
+
+		if (this.options.openLogin) {
+			this.showLoginAuthTypeSelector();
+		}
 
 		// Process initial messages
 		if (initialMessage) {

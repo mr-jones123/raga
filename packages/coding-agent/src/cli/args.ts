@@ -49,6 +49,8 @@ export interface Args {
 	noContextFiles?: boolean;
 	listModels?: string | true;
 	offline?: boolean;
+	/** Open the login selector when interactive mode starts. */
+	login?: boolean;
 	tuiMode?: TuiMode;
 	verbose?: boolean;
 	projectTrustOverride?: boolean;
@@ -256,6 +258,8 @@ export function parseArgs(args: string[]): Args {
 			result.projectTrustOverride = false;
 		} else if (arg === "--offline") {
 			result.offline = true;
+		} else if (arg === "--login") {
+			result.login = true;
 		} else if (arg === "--rlm") {
 			result.rlm = true;
 		} else if (arg === "--no-rlm") {
@@ -372,6 +376,7 @@ ${chalk.bold("Options:")}
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
+  --login                        Open the login screen on startup (subscription or API key)
 ${
 	IS_RAGA_CLI
 		? ""

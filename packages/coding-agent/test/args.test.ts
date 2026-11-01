@@ -457,6 +457,14 @@ describe("parseArgs", () => {
 		});
 	});
 
+	describe("--login flag", () => {
+		test("parses --login flag", () => {
+			const result = parseArgs(["--login"]);
+			expect(result.login).toBe(true);
+			expect(result.messages).toEqual([]);
+		});
+	});
+
 	describe("--tui-mode flag", () => {
 		test.each(["regular", "fullscreen"] as const)("parses %s mode", (mode) => {
 			const result = parseArgs(["--tui-mode", mode]);

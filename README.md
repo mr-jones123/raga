@@ -31,11 +31,17 @@ User-facing commands and messages use Raga branding. The SDK packages retain the
 
 ## Run it
 
-Raga needs Node.js 22.19 or newer, `uv`, and an AI provider that pi supports. Install it from npm:
+Raga needs Node.js 22.19 or newer, `uv`, and an AI provider that pi supports. On macOS, Linux, or WSL, the installer sets these up, asks you to log in, and offers to install Bend for the `bend` skill:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mr-jones123/raga/main/install.sh | sh
+```
+
+Or install it from npm:
 
 ```bash
 npm install -g raga-cli
-raga
+raga --login
 ```
 
 ### Update

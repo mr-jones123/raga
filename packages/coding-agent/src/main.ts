@@ -1016,6 +1016,7 @@ export async function main(args: string[], options?: MainOptions) {
 			initialMessages: parsed.messages,
 			verbose: parsed.verbose,
 			tuiMode: parsed.tuiMode,
+			openLogin: parsed.login,
 			initialThemeSetting: parsed.useTheme,
 		});
 		if (startupBenchmark) {
