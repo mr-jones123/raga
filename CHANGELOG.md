@@ -1,3 +1,9 @@
+## [0.11.0](https://github.com/mr-jones123/raga/compare/raga-v0.10.1...raga-v0.11.0) (2026-11-02)
+
+### Features
+
+* **ai:** send Claude Code's billing attestation on Anthropic OAuth requests ([1ae8c83](https://github.com/mr-jones123/raga/commit/1ae8c8372b69c044ace500c3181657d129554cb7))
+
 ## [0.10.1](https://github.com/mr-jones123/raga/compare/raga-v0.10.0...raga-v0.10.1) (2026-11-01)
 
 ### Bug Fixes
