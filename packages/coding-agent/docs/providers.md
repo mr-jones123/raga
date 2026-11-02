@@ -68,6 +68,20 @@ Anthropic also recognizes `ANTHROPIC_OAUTH_TOKEN` as an API credential and `ANTH
 
 With no key or token set, Anthropic uses workload identity federation when `ANTHROPIC_FEDERATION_RULE_ID`, `ANTHROPIC_ORGANIZATION_ID` and `ANTHROPIC_IDENTITY_TOKEN_FILE` are set: the Anthropic SDK exchanges the identity token for a short-lived access token and refreshes it itself (re-reading the identity token file, so keep that file fresh for long sessions). `ANTHROPIC_SERVICE_ACCOUNT_ID` and `ANTHROPIC_WORKSPACE_ID` are passed through when set.
 
+### Anthropic OAuth requests
+
+A Claude subscription credential (`sk-ant-oat…`) is sent in the shape Claude Code's own CLI uses, because that is the transport the subscription path meters: a `x-anthropic-billing-header` system block carrying `cc_version` and a `cch` checksum over the serialized request body, then the CLI identity block, plus a `metadata.user_id`. API-key requests never take this path.
+
+That shape, its constants and the checksum canonicalization follow [oh-my-pi](https://github.com/can1357/oh-my-pi); Raga's implementation is a port of its behaviour rather than an independent recovery of Claude Code's wire format.
+
+The wire version is pinned to the Claude Code release the request shape was taken from. Raga adopts a newer one automatically when Anthropic rejects a request with `claude_code_version_too_old`, and `PI_AI_CLAUDE_CODE_VERSION` pins it explicitly:
+
+```bash
+export PI_AI_CLAUDE_CODE_VERSION=2.1.300
+```
+
+The checksum covers the body with its `cch=00000` placeholder in place, so it is patched into the serialized bytes on the way out; a body whose billing block cannot be anchored is sent unattested rather than failing.
+
 ## Load an API key from a command
 
 To use a secret manager without writing the resolved key to disk, set a provider's `key` in `auth.json` to a command prefixed with `!`:

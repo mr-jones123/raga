@@ -57,6 +57,16 @@ import {
 	resolveTranscript,
 	type TranscriptContext,
 } from "../utils/transcript.ts";
+import {
+	adoptRequiredClaudeCodeVersion,
+	buildClaudeCodeBillingHeader,
+	CLAUDE_CODE_SYSTEM_INSTRUCTION,
+	claudeCodeRequestHeaders,
+	firstWireUserPromptText,
+	getClaudeCodeVersion,
+	resolveClaudeCodeMetadataUserId,
+	wrapFetchForClaudeCodeCch,
+} from "./anthropic-claude-code.ts";
 
 import {
 	getJsonSchemaToolParameters,
@@ -97,8 +107,8 @@ function getCacheControl(
 	};
 }
 
-// Stealth mode: Mimic Claude Code's tool naming exactly
-const claudeCodeVersion = "2.1.280";
+// Stealth mode: Mimic Claude Code's tool naming exactly. The wire version lives in
+// `anthropic-claude-code.ts` (it is adopted from a server rejection, so it is not a constant here).
 
 // Claude Code 2.x tool names (canonical casing)
 // Source: https://cchistory.mariozechner.at/data/prompts-2.1.11.md
@@ -640,16 +650,18 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				client = created.client;
 				isOAuth = created.isOAuthToken;
 			}
-			const requestOptions = {
+			const requestOptions = () => ({
 				...(options?.signal ? { signal: options.signal } : {}),
 				...(options?.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
 				maxRetries: 0,
-			};
+				// Re-sent per attempt so an adopted Claude Code version reaches the wire immediately.
+				...(isOAuth ? { headers: claudeCodeRequestHeaders(options?.sessionId) } : {}),
+			});
 			let disablePreferredStrictTools = false;
 			let response: Response;
 			for (;;) {
 				options?.signal?.throwIfAborted();
-				const built = buildParams(model, normalizedContext, isOAuth, options, disablePreferredStrictTools);
+				const built = await buildParams(model, normalizedContext, isOAuth, options, disablePreferredStrictTools);
 				if (built.providerThinkingLevel) output.providerThinkingLevel = built.providerThinkingLevel;
 				let params = built.params;
 				const nextParams = await options?.onPayload?.(params, model);
@@ -658,7 +670,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				}
 				try {
 					response = await retryProviderRequest(
-						() => client.beta.messages.create(params, requestOptions).asResponse(),
+						() => client.beta.messages.create(params, requestOptions()).asResponse(),
 						{
 							maxRetries: options?.maxRetries,
 							maxRetryDelayMs: options?.maxRetryDelayMs,
@@ -667,9 +679,19 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					);
 					break;
 				} catch (error) {
+					if (options?.signal?.aborted) throw error;
+					// A rejected pin is a version negotiation, not a downgrade: adopt it and rebuild.
+					if (adoptRequiredClaudeCodeVersion(error)) {
+						appendAssistantMessageDiagnostic(output, {
+							type: "anthropic_claude_code_version_adopted",
+							timestamp: Date.now(),
+							error: { message: error instanceof Error ? error.message : String(error) },
+							details: { version: getClaudeCodeVersion() },
+						});
+						continue;
+					}
 					// Only downgrade a rejected request, never an already-started stream.
 					if (
-						options?.signal?.aborted ||
 						disablePreferredStrictTools ||
 						!built.hasPreferredStrictTools ||
 						!(error instanceof Anthropic.APIError) ||
@@ -1065,13 +1087,13 @@ function createClient(
 			authToken: apiKey,
 			baseURL: model.baseUrl,
 			dangerouslyAllowBrowser: true,
-			fetch,
+			// The billing checksum covers the serialized body, so it can only be patched on the way out.
+			fetch: wrapFetchForClaudeCodeCch(fetch),
 			defaultHeaders: mergeHeaders(
 				{
 					accept: "application/json",
 					"anthropic-dangerous-direct-browser-access": "true",
-					"user-agent": `claude-cli/${claudeCodeVersion}`,
-					"x-app": "cli",
+					...claudeCodeRequestHeaders(sessionId),
 				},
 				model.headers,
 				optionsHeaders,
@@ -1170,18 +1192,18 @@ function getBetaFeatures(
 	return [...new Set(features)];
 }
 
-function buildParams(
+async function buildParams(
 	model: Model<"anthropic-messages">,
 	context: TranscriptContext,
 	isOAuthToken: boolean,
 	options?: AnthropicOptions,
 	disablePreferredStrictTools = false,
-): {
+): Promise<{
 	params: MessageCreateParamsStreaming;
 	hasPreferredStrictTools: boolean;
 	/** Effort of the final effort marker, recorded on the reply so later requests can replay it. */
 	providerThinkingLevel: AnthropicEffort | undefined;
-} {
+}> {
 	const { cacheControl } = getCacheControl(model, options?.cacheRetention, options?.env);
 	const compat = getAnthropicCompat(model);
 	const initialSystemMessage = getInitialSystemMessage(context.messages);
@@ -1237,12 +1259,14 @@ function buildParams(
 		...(betaFeatures.length > 0 ? { betas: betaFeatures } : {}),
 	};
 
-	// For OAuth tokens, we MUST include Claude Code identity
+	// For OAuth tokens we MUST reproduce Claude Code's wire shape: the billing attestation block
+	// first (its `cch` is patched once the body is serialized), then the CLI identity block.
 	if (isOAuthToken) {
 		params.system = [
+			{ type: "text", text: await buildClaudeCodeBillingHeader(firstWireUserPromptText(converted.messages)) },
 			{
 				type: "text",
-				text: "You are Claude Code, Anthropic's official CLI for Claude.",
+				text: CLAUDE_CODE_SYSTEM_INSTRUCTION,
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			},
 		];
@@ -1321,11 +1345,15 @@ function buildParams(
 		}
 	}
 
-	if (options?.metadata) {
-		const userId = options.metadata.user_id;
-		if (typeof userId === "string") {
-			params.metadata = { user_id: userId };
-		}
+	// OAuth requests carry Claude Code's JSON metadata user id. A caller-supplied Claude Code-shaped id
+	// is preserved; anything else is replaced so a foreign shape never rides an OAuth request.
+	const metadataUserId = await resolveClaudeCodeMetadataUserId(
+		options?.metadata?.user_id,
+		isOAuthToken,
+		options?.sessionId,
+	);
+	if (metadataUserId) {
+		params.metadata = { user_id: metadataUserId };
 	}
 
 	if (options?.toolChoice) {
