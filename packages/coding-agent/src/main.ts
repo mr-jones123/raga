@@ -36,6 +36,7 @@ import { listModels } from "./cli/list-models.ts";
 import { createProjectTrustContext } from "./cli/project-trust.ts";
 import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
+import { handleTenmoCommand } from "./cli/tenmo-command.ts";
 import {
 	APP_NAME,
 	DISPLAY_VERSION,
@@ -606,6 +607,7 @@ export async function main(args: string[], options?: MainOptions) {
 			args = ["instance", ...args];
 		}
 	}
+	if (await handleTenmoCommand(args)) return;
 	if (await handleInstanceCommand(args)) return;
 	const extensionFactories = [...builtInExtensions, ...(options?.extensionFactories ?? [])];
 	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);

@@ -231,6 +231,10 @@
       "$ref": "#/$defs/KeybindingValue",
       "description": "Agents dashboard: last subagent"
     },
+    "app.tenmo.delete": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Tenmo dashboard: end the selected session and delete its history"
+    },
     "app.diff.commits": {
       "$ref": "#/$defs/KeybindingValue",
       "description": "Diff dashboard: browse commits"

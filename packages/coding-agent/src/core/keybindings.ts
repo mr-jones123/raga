@@ -32,6 +32,10 @@ const APP_KEYBINDINGS = {
 	"app.agentSetup.save": { defaultKeys: "ctrl+s", description: "Agent setup: validate and save role assignments" },
 	"app.agents.first": { defaultKeys: "home", description: "Agents dashboard: first subagent" },
 	"app.agents.last": { defaultKeys: "end", description: "Agents dashboard: last subagent" },
+	"app.tenmo.delete": {
+		defaultKeys: "x",
+		description: "Tenmo dashboard: end the selected session and delete its history",
+	},
 	"app.diff.commits": { defaultKeys: "c", description: "Diff dashboard: browse commits" },
 	"app.diff.working": { defaultKeys: "w", description: "Diff dashboard: working-tree changes" },
 	"app.diff.staged": { defaultKeys: "s", description: "Diff dashboard: staged changes" },

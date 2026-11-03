@@ -42,6 +42,7 @@ import {
 	verificationStatus,
 } from "../core/instances/verification.ts";
 import { loadSkillsFromDir } from "../core/skills.ts";
+import { tenmoUsage } from "./tenmo-command.ts";
 
 class UsageError extends Error {}
 
@@ -201,7 +202,11 @@ Import --scope deliberately remaps only lessons explicitly exported as reusable.
 RAGA_MEMORY_BACKEND selects local (default) or hindsight search for memory commands and sessions; see docs/INSTANCE-PLAN.md.
 Refinement checks are JSON argv arrays, never shell strings. Promotion requires supervisor evidence and explicit approval.
 No-mistakes setup and gate lifecycle are manual. Run skips push, PR, and CI unless individually authorized.
-Use --help with any instance command to show this help. No command changes global user configuration.`);
+Use --help with any instance command to show this help. No command changes global user configuration.
+
+Session tracking (tenmo):
+${tenmoUsage()}
+In a session, /tenmo opens the same list as a dashboard and /tenmo @path <task> starts a session.`);
 }
 
 function parse(args: string[]): ParsedCommand {
