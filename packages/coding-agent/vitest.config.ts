@@ -5,7 +5,8 @@ export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
-			exclude: [...configDefaults.exclude, "bundled-skills/**"],
+			// dist/ holds build copies of bundled skills, whose tests are written for Bun.
+			exclude: [...configDefaults.exclude, "bundled-skills/**", "dist/**"],
 			globals: true,
 			environment: "node",
 			testTimeout: 30000,

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
@@ -11,7 +11,7 @@ afterEach(async () => {
 });
 
 async function adapterFixture(reply: string, options: { missingEnd?: boolean; changedSession?: boolean } = {}) {
-	const project = await mkdtemp(join(tmpdir(), "raga-adapter-"));
+	const project = await realpath(await mkdtemp(join(tmpdir(), "raga-adapter-")));
 	temporary.push(project);
 	const agent = join(project, "agent.mjs");
 	await writeFile(

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -20,7 +20,7 @@ afterEach(async () => {
 });
 
 async function fixture(): Promise<{ project: string; backend: NoMistakesBackend }> {
-	const project = await mkdtemp(join(tmpdir(), "raga-gate-"));
+	const project = await realpath(await mkdtemp(join(tmpdir(), "raga-gate-")));
 	temporary.push(project);
 	return { project, backend: new NoMistakesBackend({ instanceRoot: join(project, ".raga"), projectRoot: project }) };
 }
@@ -160,7 +160,7 @@ describe("managed no-mistakes authorization", () => {
 		);
 		expect((await (await getNoMistakesBackend(join(project, ".raga"), project)).inspect()).enabled).toBe(true);
 		expect((await backend.inspect()).enabled).toBe(true);
-		const wrongProject = await mkdtemp(join(tmpdir(), "raga-other-project-"));
+		const wrongProject = await realpath(await mkdtemp(join(tmpdir(), "raga-other-project-")));
 		temporary.push(wrongProject);
 		const wrongBinding = await getNoMistakesBackend(join(project, ".raga"), wrongProject);
 		expect((await wrongBinding.inspect()).enabled).toBe(false);

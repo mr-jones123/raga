@@ -160,6 +160,10 @@ if (process.platform !== "win32") fs.chmodSync(piPath, 0o755);
 			return undefined as never;
 		}) as typeof process.exit);
 		process.env[ENV_AGENT_DIR] = agentDir;
+		// Keep the user's ~/.agents/skills out of resolved resources and the config list.
+		const home = join(tempDir, "home");
+		mkdirSync(home, { recursive: true });
+		vi.stubEnv("HOME", home);
 		process.chdir(projectDir);
 	});
 
