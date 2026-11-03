@@ -1,3 +1,14 @@
+## [0.12.0](https://github.com/mr-jones123/raga/compare/raga-v0.11.0...raga-v0.12.0) (2026-11-03)
+
+### Features
+
+* **coding-agent:** add tenmo to watch, start, and delete sessions across folders ([4589a68](https://github.com/mr-jones123/raga/commit/4589a68c5a42e049e39f40a87707928ce4f90ce8))
+* **coding-agent:** hide superseded OpenAI and Anthropic models ([ef2cb8b](https://github.com/mr-jones123/raga/commit/ef2cb8b10bef8c3a71e9fd677b7fc208a7a6f8f8))
+
+### Bug Fixes
+
+* **peak:** pin TLC to stable v1.7.4 and fix statechart checks on macOS ([9148f37](https://github.com/mr-jones123/raga/commit/9148f377bb31d3d89ffebeb6ba7a82358e22083a))
+
 ## [0.11.0](https://github.com/mr-jones123/raga/compare/raga-v0.10.1...raga-v0.11.0) (2026-11-02)
 
 ### Features
