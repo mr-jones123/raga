@@ -1,3 +1,30 @@
+# Raga
+
+Raga is an opinionated coding harness, forked from [pi](https://github.com/badlogic/pi-mono). It adds a Python RLM kernel per session, the bundled `peak` skill, session tracking (tenmo, see [docs/TENMO.md](docs/TENMO.md)), and experimental per-project instances with Git-versioned harnesses on top of the pi base. Do not describe raga as adapting to tasks or improving over time; that is unmeasured. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing how sessions, the kernel, or instances work.
+
+## Project Map
+
+- `packages/ai`: LLM providers and model catalog (`@earendil-works/pi-ai`).
+- `packages/agent`: agent turn loop and state (`@earendil-works/pi-agent-core`).
+- `packages/tui`: terminal UI library (`@earendil-works/pi-tui`). Tests use `node:test`.
+- `packages/coding-agent`: the `raga` and `pi` CLI. Most raga work happens here.
+  - `src/main.ts`: CLI entry and subcommand dispatch. `src/raga.ts` is the `raga` launcher.
+  - `src/config.ts`: app name, agent dir (`~/.raga/agent` under `raga`, `~/.pi/agent` under `pi`), and asset paths.
+  - `src/core/current-models.ts`: hides superseded OpenAI and Anthropic models from the `openai`, `openai-codex`, and `anthropic` providers.
+  - `src/core/`: sessions (`session-manager.ts`, `agent-session.ts`), SDK (`sdk.ts`), extensions runtime, settings, keybindings.
+  - `src/core/rlm/`: Python kernel, `rlm_query` child agents.
+  - `src/core/instances/`: instance mode (`.raga/instance.json`, harness revisions, sandbox, memory). Sandbox is Linux-only (bubblewrap).
+  - `src/core/tenmo.ts`, `src/extensions/tenmo/`, `src/cli/tenmo-command.ts`: tenmo. Each process writes `~/.raga/agent/tenmo/<pid>.json`; `/tenmo` and `raga tenmo` read it; spawns go to tmux windows. Tenmo can delete a session (process, session file, subagents, forks, kernel snapshots); it never sends messages to sessions.
+  - `src/extensions/`: built-in extensions, registered in `src/extensions/index.ts`.
+  - `src/modes/interactive/`: TUI mode, including `/agents` (`agents/`).
+  - `src/cli/`: CLI subcommands (`instance-command.ts`, `tenmo-command.ts`, args and help).
+  - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `raga-artifacts`).
+  - `test/`: vitest tests; `test/suite/` uses the faux provider harness.
+- `packages/codemode`, `packages/mcp`, `packages/durable`, `packages/env`, `packages/chord`, `packages/telemetry`, `packages/evals`: supporting packages.
+- `docs/`: raga docs (`ARCHITECTURE.md`, `INSTANCE-PLAN.md`, `PROGRESS.md`, `RLM.md`, `RELEASING.md`). `packages/coding-agent/docs/` holds the upstream pi user docs.
+- `bench/`: benchmarks. `.cache/` snapshots under it are not source; ignore them when searching.
+- `./raga-test.sh` runs `raga` from source; `./pi-test.sh` runs `pi` from source.
+
 # Development Rules
 
 ## Conversational Style

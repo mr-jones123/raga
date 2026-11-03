@@ -6,13 +6,18 @@
 
 <p align="center"><i>あらゆる事象への適応<br>Adaptation to every phenomenon.</i></p>
 
-In *Jujutsu Kaisen*, the wheel above Mahoraga turns each time it takes a hit, and after every turn the same attack works less well. Raga is a coding harness built on that idea. Give it a long task, such as a refactor, a model training run, or a port of a legacy codebase, and it keeps working until a goal or a metric is met. Each error and each finished feature should make the next run of the same task smoother, with fewer mistakes.
+Raga is an opinionated coding harness, forked from [pi](https://github.com/badlogic/pi-mono). It makes a few choices for you instead of leaving them as options:
 
-Raga is a fork of [pi](https://github.com/badlogic/pi-mono). It adds a native [Recursive Language Model](https://arxiv.org/abs/2512.24601) runtime. The model works inside a persistent Python REPL, keeps large inputs and its history in variables instead of its context window, and calls sub-LLMs and recursive sub-agents from code.
+- The model works inside a persistent Python REPL, a native [Recursive Language Model](https://arxiv.org/abs/2512.24601) runtime. It keeps large inputs and its history in variables instead of its context window, and calls sub-LLMs and recursive sub-agents from code.
+- Every session loads one engineering playbook skill, `peak`, with its references and the no-mistakes workflow.
+- `/tenmo` tracks every running session across folders and worktrees, and `/diff` reviews changes without leaving the terminal.
+- Model pickers show only current OpenAI and Anthropic models.
+
+The name comes from Mahoraga in *Jujutsu Kaisen*, whose wheel turns after each hit so the same attack works less well. A harness that improves at a task each time the task repeats is still the long-term goal. The pieces for it exist as experimental instance mode (Linux only), and no measurement has shown that improvement yet.
 
 ## Status
 
-The RLM runtime works end to end. The adaptive layer, which lets the harness rewrite its own prompts, memories, and skills, is the next step. [docs/PROGRESS.md](docs/PROGRESS.md) tracks every milestone with the evidence for it.
+The RLM runtime, subagents, `peak`, and tenmo work end to end. Instance mode, which lets a project's harness revise its own prompts, memories, and skills, is experimental and needs Linux. [docs/PROGRESS.md](docs/PROGRESS.md) tracks every milestone with the evidence for it.
 
 | Part | State |
 |---|---|
@@ -23,9 +28,10 @@ The RLM runtime works end to end. The adaptive layer, which lets the harness rew
 | `rlm_query` recursive sub-agents, with a depth limit and parallel runs | Done |
 | Kernel variables saved and restored across resume and fork | Done |
 | Kernel memory limit and memory reporting | Done |
-| Self-editing harness state (prompt notes, memories, skills) with rollback | Not started |
+| Session tracking across folders (`/tenmo`) | Done |
+| Native engineering skills (`peak`, no-mistakes) | Done |
+| Self-editing harness state (prompt notes, memories, skills) with rollback | Experimental, Linux only |
 | Goal and metric loop (`--goal`, `--gate`, `--metric`) | Not started |
-| Native engineering skills (pstack, no-mistakes) | Not started |
 
 User-facing commands and messages use Raga branding. The SDK packages retain their upstream names (`@earendil-works/pi-*`); imports, extension APIs, and protocol identifiers are not renamed. The `raga` command keeps its own user directory, `~/.raga/agent`, for logins, settings, sessions, skills, extensions, and packages. Set `RAGA_CODING_AGENT_DIR` to move it. It does not read `~/.pi/agent` or the shared `~/.agents/skills` folder, so an existing pi setup does not carry over. The `pi` command still uses `~/.pi/agent`.
 
@@ -88,6 +94,18 @@ Without `--rlm`, raga behaves like pi, with `read`, `bash`, `edit`, and `write` 
 
 On macOS and Linux, `/local-models` searches Hugging Face, asks before downloading missing weights, and starts models locally. The first recommendation is the official LFM3-1.7B GGUF Q4_K_M build through llama.cpp. The same command detects MLX models automatically on Apple Silicon; no separate backend command is needed. See [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) for setup, cache behavior, and limits.
 
+## Track sessions
+
+If you keep many worktrees, or run one or two sessions per project, `/tenmo` shows every running raga session on the machine in one list: its folder, whether it is working, waiting on you, or idle, the message it was started with, and what it is doing now. Press Enter to jump to its tmux pane, or `x` twice to end it and delete its history.
+
+```
+/tenmo                                              # the dashboard
+/tenmo @../theHub-v2-flaky-test fix the flaky test  # start a session there in a new tmux window
+raga tenmo                                          # the same list from any terminal
+```
+
+See [docs/TENMO.md](docs/TENMO.md).
+
 ## Review changes
 
 `/diff` opens a read-only Git review dashboard. Browse changes by category (tests, modules, GitHub workflows, documentation, dependencies, configuration), inspect staged or working-tree changes, or pick a commit from history. Open a file to scroll its diff, and toggle to its full contents without leaving raga. See [docs/DIFF.md](docs/DIFF.md) for controls.
@@ -143,6 +161,7 @@ print(counts.most_common(5))
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the pi base works and where raga's layers attach. |
 | [docs/RLM.md](docs/RLM.md) | The RLM runtime reference. |
 | [docs/AGENTS.md](docs/AGENTS.md) | Subagent sessions, the `/agents` dashboard, and Rex panes. |
+| [docs/TENMO.md](docs/TENMO.md) | Track, start, and delete sessions across folders and worktrees. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
 | [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) | Search, download, and run local Hugging Face models with llama.cpp or MLX. |

@@ -61,6 +61,8 @@ The real-model smoke demonstrates validated acquisition and explicit activation.
 
 | Step | Status | Scope |
 |---|---|---|
+| Session tracking (tenmo) | done | `/tenmo` and `raga tenmo`: per-process records in `~/.raga/agent/tenmo/`, a dashboard with intent, status, and activity, tmux spawning, and delete. See [TENMO.md](TENMO.md). Faux tests in `test/tenmo.test.ts`; a real tmux run listed two sessions, jumped panes, and deleted a session file. |
+| Current-model filter | done | `src/core/current-models.ts` hides superseded OpenAI and Anthropic chat models (o-series, deep-research, GPT-3/4, older generations, dated snapshots). `test/current-models.test.ts`. |
 | Goal and metric loop | not started | `--goal`, `--gate <cmd>`, and `--metric <cmd> --target`. Reuse instance budgets and stop after runs that make no progress. |
 
 ## Decisions
@@ -79,3 +81,5 @@ The real-model smoke demonstrates validated acquisition and explicit activation.
 | 2026-10-25 | Child workspaces are plain checkouts without `.git`, managed by the supervisor's own Git metadata. | Workers cannot run Git against the project or install filters, merge drivers, or hooks. Integration validates combined changes in a separate checkout. |
 | 2026-10-25 | Checkpoint refinement is an explicit, bounded command, not a scheduler. | Raga runs no scheduler process. The caller decides when to invoke it, and policy limits decide whether it runs. |
 | 2026-10-25 | Promotion needs user approval unless an external held-out report supports policy promotion. | No held-out evidence exists yet. Changes to host extensions and settings always need the user. |
+| 2026-11-03 | Raga is described as an opinionated harness, not an adaptive one. | Adaptation is unmeasured; instance mode stays experimental. |
+| 2026-11-03 | Tenmo watches and deletes sessions but never messages them, and does not run containers. | Isolated container runs would make raga responsible for images, mounts, and credentials. |
