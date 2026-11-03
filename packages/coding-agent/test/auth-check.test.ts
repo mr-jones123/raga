@@ -58,13 +58,13 @@ describe("auth check command", () => {
 	test("resolves the provider from --model", async () => {
 		const runtime = await createRuntime(AuthStorage.inMemory({ openai: { type: "api_key", key: "test-key" } }));
 
-		await expect(checkProviderAuth(parseArgs(["--model", "openai/gpt-5.5"]), runtime)).resolves.toEqual({
+		await expect(checkProviderAuth(parseArgs(["--model", "openai/gpt-6.1-sol"]), runtime)).resolves.toEqual({
 			status: "ready",
 			provider: "openai",
 			authType: "api_key",
 		});
 		await expect(
-			checkProviderAuth(parseArgs(["--provider", "openai", "--model", "gpt-5.5"]), runtime),
+			checkProviderAuth(parseArgs(["--provider", "openai", "--model", "gpt-6.1-sol"]), runtime),
 		).resolves.toMatchObject({ status: "ready", provider: "openai" });
 	});
 

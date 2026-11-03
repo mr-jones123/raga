@@ -70,6 +70,7 @@ import {
 import { getAgentDir } from "../config.ts";
 import { operationSignal, raceWithAbortSignal } from "../utils/abort.ts";
 import { AuthStorage as DefaultAuthStorage } from "./auth-storage.ts";
+import { CURRENT_MODEL_PROVIDERS, withCurrentModelsOnly } from "./current-models.ts";
 import { ModelConfig } from "./model-config.ts";
 import { FileModelsStore, InMemoryCodingAgentModelsStore } from "./models-store.ts";
 import {
@@ -237,7 +238,8 @@ export class ModelRuntime implements Models {
 					builtinModelDataGeneratedAt,
 				);
 			}
-			return withRemoteCatalog(provider, options.catalogBaseUrl, builtinModelDataGeneratedAt);
+			const catalog = withRemoteCatalog(provider, options.catalogBaseUrl, builtinModelDataGeneratedAt);
+			return CURRENT_MODEL_PROVIDERS.has(provider.id) ? withCurrentModelsOnly(catalog) : catalog;
 		});
 		const runtime = new ModelRuntime(
 			credentials,

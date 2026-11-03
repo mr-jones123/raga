@@ -724,7 +724,7 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				anthropic: {
 					modelOverrides: {
-						"claude-fable-5": {
+						"claude-fable-5-1": {
 							compat: { allowedFallbackModels },
 						},
 					},
@@ -732,7 +732,7 @@ describe("ModelRegistry", () => {
 			});
 
 			const registry = await createModelRegistry(authStorage, modelsJsonPath);
-			const compat = registry.find("anthropic", "claude-fable-5")?.compat as AnthropicMessagesCompat | undefined;
+			const compat = registry.find("anthropic", "claude-fable-5-1")?.compat as AnthropicMessagesCompat | undefined;
 
 			expect(registry.getError()).toBeUndefined();
 			expect(compat?.allowedFallbackModels).toEqual(allowedFallbackModels);
@@ -742,13 +742,13 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				anthropic: {
 					modelOverrides: {
-						"claude-fable-5": { compat: { allowedFallbackModels: [] } },
+						"claude-fable-5-1": { compat: { allowedFallbackModels: [] } },
 					},
 				},
 			});
 
 			const registry = await createModelRegistry(authStorage, modelsJsonPath);
-			const compat = registry.find("anthropic", "claude-fable-5")?.compat as AnthropicMessagesCompat | undefined;
+			const compat = registry.find("anthropic", "claude-fable-5-1")?.compat as AnthropicMessagesCompat | undefined;
 
 			expect(registry.getError()).toBeUndefined();
 			expect(compat?.allowedFallbackModels).toEqual([]);
@@ -817,7 +817,7 @@ describe("ModelRegistry", () => {
 				},
 				anthropic: {
 					modelOverrides: {
-						"claude-sonnet-4-6": { promptCache: { long: 1800 } },
+						"claude-sonnet-5-5": { promptCache: { long: 1800 } },
 					},
 				},
 			});
@@ -830,7 +830,7 @@ describe("ModelRegistry", () => {
 			expect(openrouter.find((m) => m.id === "anthropic/claude-sonnet-4.5")?.promptCache).toEqual({ short: 300 });
 			expect(openrouter.find((m) => m.id === "anthropic/claude-opus-4.1")?.promptCache).toBeUndefined();
 			// Overrides merge per tier with the built-in catalog.
-			expect(registry.find("anthropic", "claude-sonnet-4-6")?.promptCache).toEqual({ short: 300, long: 1800 });
+			expect(registry.find("anthropic", "claude-sonnet-5-5")?.promptCache).toEqual({ short: 300, long: 1800 });
 		});
 
 		// Regression test for https://github.com/earendil-works/pi/issues/9631

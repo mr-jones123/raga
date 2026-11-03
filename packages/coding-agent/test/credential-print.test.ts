@@ -32,8 +32,8 @@ describe("credential print commands", () => {
 			}),
 		);
 
-		// anthropic has no gpt-5.5; an uncatalogued id on a configured provider must not count as a match.
-		await expect(resolveCredentialForPrint(parseArgs(["--model", "gpt-5.5"]), runtime, "api_key")).resolves.toBe(
+		// anthropic has no gpt-6.1-sol; an uncatalogued id on a configured provider must not count as a match.
+		await expect(resolveCredentialForPrint(parseArgs(["--model", "gpt-6.1-sol"]), runtime, "api_key")).resolves.toBe(
 			"openai-test-key",
 		);
 	});
