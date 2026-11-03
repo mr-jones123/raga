@@ -51,7 +51,7 @@ async def capability_report():
         "github": "gh --version",
         "browser": "node -e " + shlex.quote("const p=require('playwright'); const fs=require('node:fs'); const exe=p.chromium.executablePath(); if(!fs.existsSync(exe)) throw new Error('Approved browser provisioning required'); console.log(JSON.stringify({version:require('playwright/package.json').version,executable:exe}))"),
         "mermaid": shlex.quote(os.environ.get("MERMAID_CLI", "mmdc")) + " --version",
-        "tla": "python3 -c " + shlex.quote("import hashlib,os,pathlib; path=os.environ.get('TLA2TOOLS'); assert path, 'Approved TLC provisioning required'; assert hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == 'd15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f', 'TLC checksum mismatch'; print('TLC 1.8.0')"),
+        "tla": "python3 -c " + shlex.quote("import hashlib,os,pathlib; path=os.environ.get('TLA2TOOLS'); assert path, 'Approved TLC provisioning required'; assert hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88', 'TLC checksum mismatch'; print('TLC 1.7.4')"),
     }
     report = {}
     for name, command in commands.items():

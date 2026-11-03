@@ -98,7 +98,7 @@
     },
     {
       "path": "dependencies.json",
-      "sha256": "a1b3b1a3f7dcd213c04112d404bfc1ff2e4d59d1245cc0c7d5f8756d15ee531b",
+      "sha256": "b5d68173dc534e0b5744317cdc0cce06b9a81c5af9ab45a5d8f36a96b71fcfb6",
       "source": "raga dependency contract",
       "sourceSha256": "0e46d1ca9d09773b4a317e9155ea63714a3c5ed0ba5178f2a08a2d0cc1d92452",
       "adaptation": "raga pinned runtime dependency assets"
@@ -875,21 +875,21 @@
     },
     {
       "path": "skills/peak/references/raga-runtime/managed-tools.mjs",
-      "sha256": "22fff227135648672380342d6f4270c18ae98733b00e096b21d373772fa2f63c",
+      "sha256": "dffacff4ad805c2a2cb6ddc9af5003e333e0103551a71f7cc0df24a21c72cebd",
       "source": "raga explicit managed TLC provisioning",
       "sourceSha256": "22fff227135648672380342d6f4270c18ae98733b00e096b21d373772fa2f63c",
       "adaptation": "raga explicit managed TLC provisioning"
     },
     {
       "path": "skills/peak/references/raga-runtime/raga_runtime.py",
-      "sha256": "aee7412788daf1b7114f8d9fe96051ef4db7aa9cd43443319a68425c3467045e",
+      "sha256": "6cb66654df494b0ce478781c4bc40a4cbe25f57f2ba3ced6568473dcefae03de",
       "source": "raga native Python adapter",
       "sourceSha256": "aee7412788daf1b7114f8d9fe96051ef4db7aa9cd43443319a68425c3467045e",
       "adaptation": "raga native Python adapter"
     },
     {
       "path": "skills/peak/references/raga-runtime/SKILL.md",
-      "sha256": "53a3f75e3611316a3e1a6f402989dc89ef309bc511fa624dacdf5266ef3279c7",
+      "sha256": "faede38b5272f59e2aa1a1b42dd0008648a4c836eb9f6cfef94483a746b0ef6f",
       "source": "raga native adaptation",
       "sourceSha256": "53a3f75e3611316a3e1a6f402989dc89ef309bc511fa624dacdf5266ef3279c7",
       "adaptation": "raga native adaptation"
@@ -987,7 +987,7 @@
     },
     {
       "path": "skills/peak/references/statechart/scripts/lib.mjs",
-      "sha256": "8c6e8be74545160bce19fad359678e118b9449660e72f2b974d4e811ec0b13a1",
+      "sha256": "a1c6d7cf99435949003ecb9253ec66d29344970634fb6270ca4c85c6f42b77a1",
       "source": "pstack/skills/statechart/scripts/lib.mjs",
       "sourceSha256": "47731d9dba3fd831bb81b739af31f2dd80b7a25dd6fa6786ee3c0d531e1ab781",
       "adaptation": "raga pinned TLC adapter"
@@ -1015,17 +1015,17 @@
     },
     {
       "path": "skills/peak/references/statechart/scripts/statechart.mjs",
-      "sha256": "7341fff08e3e50b151b79954fad8a54da5f992c1eb16e0725521ef0acdbab02f",
+      "sha256": "c455d19f3ba8163962b2599a26def94c23ab31994023b9f4e4d2d02b0bcf1482",
       "source": "pstack/skills/statechart/scripts/statechart.mjs",
       "sourceSha256": "d352ca68fb05cef8673ce1b86ea516cc619ff6c1f4faea70233de59bcdf7a9b7",
-      "adaptation": "raga offline Mermaid adapter"
+      "adaptation": "raga offline Mermaid and pinned-TLC order adapter"
     },
     {
       "path": "skills/peak/references/statechart/scripts/test/statechart.test.mjs",
-      "sha256": "431c448e1576f4a0a1cbbfb8e762b90c1487a52312830257ffd82e03367ac4df",
+      "sha256": "b73ba948d835b6d07a2df3c2c64b81334a39f9389cf42d0be846e8b31088f3a8",
       "source": "pstack/skills/statechart/scripts/test/statechart.test.mjs",
       "sourceSha256": "494119bb923d25876d4984c6831a6ffcbdfd697c5f834cd6e61121ca5530b83c",
-      "adaptation": "raga managed formal-runtime fixtures"
+      "adaptation": "raga managed formal-runtime fixtures with macOS fault injection"
     },
     {
       "path": "skills/peak/references/statechart/scripts/test/sync.mmd",
@@ -1494,9 +1494,9 @@
         }
       },
       "tla": {
-        "tag": "v1.8.0",
-        "url": "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar",
-        "sha256": "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f"
+        "tag": "v1.7.4",
+        "url": "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar",
+        "sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88"
       }
     },
     "optional": {

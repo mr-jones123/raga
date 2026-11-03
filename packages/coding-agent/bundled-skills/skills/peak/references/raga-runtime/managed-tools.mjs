@@ -15,13 +15,13 @@ const root = resolve(directory);
 const within = relative(harness, root);
 if (!within || (!within.startsWith(".." + sep) && within !== ".." && !isAbsolute(within))) throw new Error("Runtime provisioning cannot write a pinned harness");
 await mkdir(root, { recursive: true, mode: 0o700 });
-const digest = "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f";
-const destination = join(root, "tla2tools-v1.8.0.jar");
+const digest = "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88";
+const destination = join(root, "tla2tools-v1.7.4.jar");
 const valid = (bytes) => createHash("sha256").update(bytes).digest("hex") === digest;
 let installed = false;
 try { installed = valid(await readFile(destination)); } catch (error) { if (error.code !== "ENOENT") throw error; }
 if (!installed) {
-  const response = await fetch("https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar", { signal: AbortSignal.timeout(60000) });
+  const response = await fetch("https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar", { signal: AbortSignal.timeout(60000) });
   if (!response.ok) throw new Error("Pinned TLC download failed: " + response.status);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (!valid(bytes)) throw new Error("Pinned TLC checksum mismatch");
@@ -31,4 +31,4 @@ if (!installed) {
     await rename(temporary, destination);
   } finally { await rm(temporary, { force: true }); }
 }
-console.log(JSON.stringify({ TLA2TOOLS: destination, version: "1.8.0", sha256: digest }));
+console.log(JSON.stringify({ TLA2TOOLS: destination, version: "1.7.4", sha256: digest }));

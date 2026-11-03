@@ -135,7 +135,7 @@ Regenerate
 
 TLC
   TLA2TOOLS is the path to tla2tools.jar, and JAVA is the java binary (default: java, Java 11 or
-  later). Download tla2tools.jar from https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar. When TLA2TOOLS
+  later). Download tla2tools.jar from https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar. When TLA2TOOLS
   is not set, the command says where to get TLC and exits 2.
 
 Exit codes
@@ -673,9 +673,9 @@ async function fromSpec(input, { "expect-broken": expected, ...flags }) {
   const secondSpec = flags.fixed ?? flags.against;
   const inputs = snapshot([input, cfgOf(input), map, secondSpec, secondSpec && cfgOf(secondSpec)]);
   const second = secondModel(input, flags);
+  const out = outDir(flags.out, input, name);
   const tools = findTools();
   const model = readInput(input, expected);
-  const out = outDir(flags.out, input, name);
   return inWorkFolder(async (work) => {
     const now = check(tools, model, work, expected);
     if (!fs.existsSync(map)) {
@@ -712,9 +712,9 @@ async function fromChart(input, { "expect-broken": expected, ...flags }) {
     console.log(`Wrote ${name}.tla, ${name}.cfg, and ${name}.map.mjs from ${rel(input)}.`);
   }
   snapshot([spec, cfgOf(spec), map], inputs);
+  const out = outDir(flags.out, input, name);
   const tools = findTools();
   const model = readInput(spec, expected);
-  const out = outDir(flags.out, input, name);
   return inWorkFolder(async (work) => {
     const now = check(tools, model, work, expected);
     const drawn = await draw({ now, map, work, out, title: flags.title, comparing: true });

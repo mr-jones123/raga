@@ -228,19 +228,27 @@ emit(storePath, store.toString().replace(
 const chartPath = "skills/peak/references/statechart/scripts/statechart.mjs";
 const chart = files.get(chartPath);
 emit(chartPath, chart.toString().replaceAll("npx @mermaid-js/mermaid-cli", "the managed MERMAID_CLI executable")
-  .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar")
-  .replace('"npx",\n      ["-y", "@mermaid-js/mermaid-cli",', 'process.env.MERMAID_CLI || "mmdc",\n      ['), "raga offline Mermaid adapter", chart);
+  .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar")
+  .replace('"npx",\n      ["-y", "@mermaid-js/mermaid-cli",', 'process.env.MERMAID_CLI || "mmdc",\n      [')
+  // The pinned TLC adapter checks the jar's digest, so refuse a foreign output folder before looking for TLC.
+  .replace("  const tools = findTools();\n  const model = readInput(input, expected);\n  const out = outDir(flags.out, input, name);\n", "  const out = outDir(flags.out, input, name);\n  const tools = findTools();\n  const model = readInput(input, expected);\n")
+  .replace("  const tools = findTools();\n  const model = readInput(spec, expected);\n  const out = outDir(flags.out, input, name);\n", "  const out = outDir(flags.out, input, name);\n  const tools = findTools();\n  const model = readInput(spec, expected);\n"), "raga offline Mermaid and pinned-TLC order adapter", chart);
 const tlcPath = "skills/peak/references/statechart/scripts/lib.mjs";
 const tlc = files.get(tlcPath);
 emit(tlcPath, 'import { createHash } from "node:crypto";\n' + tlc.toString().replace(
   '  return { jar: TLA2TOOLS, java: JAVA || "java" };',
-  '  if (createHash("sha256").update(fs.readFileSync(TLA2TOOLS)).digest("hex") !== "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f") throw new Error("TLC checksum mismatch. Request managed provisioning of TLA+ v1.8.0.");\n  return { jar: TLA2TOOLS, java: JAVA || "java" };'
-).replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar"), "raga pinned TLC adapter", tlc);
+  '  if (createHash("sha256").update(fs.readFileSync(TLA2TOOLS)).digest("hex") !== "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88") throw new Error("TLC checksum mismatch. Request managed provisioning of TLA+ v1.7.4.");\n  return { jar: TLA2TOOLS, java: JAVA || "java" };'
+).replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar"), "raga pinned TLC adapter", tlc);
 const chartTestsPath = "skills/peak/references/statechart/scripts/test/statechart.test.mjs";
 const chartTests = files.get(chartTestsPath);
 emit(chartTestsPath, chartTests.toString()
-  .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar")
-  .replaceAll('"fake-npx-"', '"fake-mmdc-"').replaceAll('join(bin, "npx")', 'join(bin, "mmdc")'), "raga managed formal-runtime fixtures", chartTests);
+  .replaceAll("https://github.com/tlaplus/tlaplus/releases", "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar")
+  .replaceAll('"fake-npx-"', '"fake-mmdc-"').replaceAll('join(bin, "npx")', 'join(bin, "mmdc")')
+  // macOS: inject the rename fault with dyld interposing, and compare TLC's resolved temp paths.
+  .replace("  readFileSync,\n  rmSync,\n  writeFileSync,\n} from \"node:fs\";", "  readFileSync,\n  realpathSync,\n  rmSync,\n  writeFileSync,\n} from \"node:fs\";")
+  .replace("const failingRenames = (() => {\n  const dir = mkdtempSync(join(tmpdir(), \"statechart-preload-\"));\n  writeFileSync(join(dir, \"rename.c\"), failRenames);\n  const so = join(dir, \"rename.so\");\n  const cc = spawnSync(\"cc\", [\"-shared\", \"-fPIC\", \"-o\", so, join(dir, \"rename.c\"), \"-ldl\"]);\n  return cc.status === 0 ? so : null;\n})();", "// macOS ignores LD_PRELOAD. dyld loads DYLD_INSERT_LIBRARIES and swaps the functions listed in __interpose.\nconst failRenamesDarwin = `#include <errno.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\nstatic size_t hits;\nstatic int fail(const char *to) {\n  const char *base = strrchr(to, '/'), *fails = getenv(\"RENAME_FAILS\");\n  base = base ? base + 1 : to;\n  if (!fails || strcmp(base, \"shared\") != 0 || hits >= strlen(fails)) return 0;\n  errno = fails[hits++] == 'N' ? ENOTEMPTY : EIO;\n  return 1;\n}\nstatic int fake_rename(const char *f, const char *t) { return fail(t) ? -1 : rename(f, t); }\nstatic int fake_renameat(int a, const char *f, int b, const char *t) { return fail(t) ? -1 : renameat(a, f, b, t); }\nstatic int fake_renamex_np(const char *f, const char *t, unsigned int o) { return fail(t) ? -1 : renamex_np(f, t, o); }\nstatic int fake_renameatx_np(int a, const char *f, int b, const char *t, unsigned int o) {\n  return fail(t) ? -1 : renameatx_np(a, f, b, t, o);\n}\n__attribute__((used)) static const struct { const void *replacement, *original; } interposers[]\n  __attribute__((section(\"__DATA,__interpose\"))) = {\n  { (const void *)fake_rename, (const void *)rename },\n  { (const void *)fake_renameat, (const void *)renameat },\n  { (const void *)fake_renamex_np, (const void *)renamex_np },\n  { (const void *)fake_renameatx_np, (const void *)renameatx_np },\n};\n`;\nconst darwin = process.platform === \"darwin\";\nconst failingRenames = (() => {\n  const dir = mkdtempSync(join(tmpdir(), \"statechart-preload-\"));\n  writeFileSync(join(dir, \"rename.c\"), darwin ? failRenamesDarwin : failRenames);\n  const so = join(dir, darwin ? \"rename.dylib\" : \"rename.so\");\n  const cc = spawnSync(\n    \"cc\",\n    darwin ? [\"-dynamiclib\", \"-o\", so, join(dir, \"rename.c\")] : [\"-shared\", \"-fPIC\", \"-o\", so, join(dir, \"rename.c\"), \"-ldl\"],\n  );\n  return cc.status === 0 ? so : null;\n})();\nconst preload = (so) => (darwin ? { DYLD_INSERT_LIBRARIES: so } : { LD_PRELOAD: so });")
+  .replace("      node(\"statechart.mjs\", args, dir, { LD_PRELOAD: failingRenames, RENAME_FAILS: fails });", "      node(\"statechart.mjs\", args, dir, { ...preload(failingRenames), RENAME_FAILS: fails });")
+  .replace("      assert.equal(parsed, `Parsing file ${join(folder, \"Naturals.tla\")}`);", "      // Java prints the resolved path; on macOS the temp folder sits behind the /var -> /private/var link.\n      assert.equal(parsed, `Parsing file ${join(realpathSync(tmp) + folder.slice(tmp.length), \"Naturals.tla\")}`);"), "raga managed formal-runtime fixtures with macOS fault injection", chartTests);
 
 const runtimeSkill = `---
 name: raga-runtime
@@ -290,7 +298,7 @@ In instance mode, \`await memory.search(query)\`, \`await memory.get(entry_id)\`
 
 ## Capabilities and dependencies
 
-TLC is pinned to v1.8.0 with SHA-256 d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f. The operator can explicitly provision it with the adjacent managed-tools.mjs into a supervisor runtime directory using provision-tla --root and --approved. Workers request this capability and cannot grant the approval themselves. Shipped statechart helpers verify the jar digest before execution. Upstream helper test fixtures require optional Bun 1.3.11; production orchestration and PR watchers run on Node.
+TLC is pinned to v1.7.4 with SHA-256 936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88. The operator can explicitly provision it with the adjacent managed-tools.mjs into a supervisor runtime directory using provision-tla --root and --approved. Workers request this capability and cannot grant the approval themselves. Shipped statechart helpers verify the jar digest before execution. Upstream helper test fixtures require optional Bun 1.3.11; production orchestration and PR watchers run on Node.
 
 Node 22.19.0 or newer runs the shipped operational helpers. Commander 14.0.0 and its MIT license are vendored, so helper startup never installs npm packages. \`await capability_report()\` checks available local commands without installing software. Terminal verification uses an existing repo harness or Python's standard pty module. Browser verification requires the repo's pinned Playwright and managed browser installation. Ask for approved setup when absent; never run an unpinned npx download. TLA+ requires a digest-verified tla2tools.jar and an approved Java runtime, supplied by the operator through TLA2TOOLS and JAVA. Mermaid PNG rendering uses a provisioned MERMAID_CLI path, never a runtime download. GitHub and other optional integrations require their explicit tools and authentication. An absent optional capability is a prerequisite report, not a successful check.
 `;
@@ -356,7 +364,7 @@ async def capability_report():
         "github": "gh --version",
         "browser": "node -e " + shlex.quote("const p=require('playwright'); const fs=require('node:fs'); const exe=p.chromium.executablePath(); if(!fs.existsSync(exe)) throw new Error('Approved browser provisioning required'); console.log(JSON.stringify({version:require('playwright/package.json').version,executable:exe}))"),
         "mermaid": shlex.quote(os.environ.get("MERMAID_CLI", "mmdc")) + " --version",
-        "tla": "python3 -c " + shlex.quote("import hashlib,os,pathlib; path=os.environ.get('TLA2TOOLS'); assert path, 'Approved TLC provisioning required'; assert hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == 'd15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f', 'TLC checksum mismatch'; print('TLC 1.8.0')"),
+        "tla": "python3 -c " + shlex.quote("import hashlib,os,pathlib; path=os.environ.get('TLA2TOOLS'); assert path, 'Approved TLC provisioning required'; assert hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest() == '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88', 'TLC checksum mismatch'; print('TLC 1.7.4')"),
     }
     report = {}
     for name, command in commands.items():
@@ -500,7 +508,7 @@ The backend keeps HOME and NM_HOME below instance state, disables telemetry and 
 
 From packages/coding-agent, run the focused Vitest files test/instances-bundle.test.ts and test/instances-no-mistakes.test.ts after integration. The separate test/instances-no-mistakes-smoke.test.ts is opt-in with RAGA_NM_SMOKE=1, RAGA_NM_AGENT_EXECUTABLE, and RAGA_NM_AGENT_VERSION. Its optional JSON RAGA_NM_AGENT_ARGS and RAGA_NM_AGENT_ENV are explicit adapter inputs. The smoke creates a disposable Git remote, uses the actual pinned backend, and asserts that the feature branch is not published. It can use network and paid model calls. Do not enable it without authorization.
 `, "raga bundle maintenance guide");
-emit("dependencies.json", JSON.stringify({ schemaVersion: 1, runtime: { node: ">=22.19.0", python: ">=3.11" }, vendored: { commander: "14.0.0" }, managed: { noMistakes: { tag: "v1.84.0", commit: nmCommit, skillSha256: digest(upstreamNm), provisioning: "trusted supervisor, pinned per-platform archive SHA-256" }, tla: { tag: "v1.8.0", url: "https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar", sha256: "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f" } }, optional: { upstreamHelperTests: { bun: "1.3.11" }, terminal: "repository harness or Python stdlib pty", browser: "repository-pinned Playwright and browser; explicit setup", tlaJava: "approved Java >=11", mermaid: "repository-pinned and digest-verified MERMAID_CLI path", github: "explicit authenticated gh CLI" }, policy: "No helper auto-install, latest installer, global home mutation, or credential copy" }, null, 2), "raga dependency contract");
+emit("dependencies.json", JSON.stringify({ schemaVersion: 1, runtime: { node: ">=22.19.0", python: ">=3.11" }, vendored: { commander: "14.0.0" }, managed: { noMistakes: { tag: "v1.84.0", commit: nmCommit, skillSha256: digest(upstreamNm), provisioning: "trusted supervisor, pinned per-platform archive SHA-256" }, tla: { tag: "v1.7.4", url: "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar", sha256: "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88" } }, optional: { upstreamHelperTests: { bun: "1.3.11" }, terminal: "repository harness or Python stdlib pty", browser: "repository-pinned Playwright and browser; explicit setup", tlaJava: "approved Java >=11", mermaid: "repository-pinned and digest-verified MERMAID_CLI path", github: "explicit authenticated gh CLI" }, policy: "No helper auto-install, latest installer, global home mutation, or credential copy" }, null, 2), "raga dependency contract");
 emit("skills/peak/references/raga-runtime/managed-tools.mjs", `#!/usr/bin/env node
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
@@ -518,13 +526,13 @@ const root = resolve(directory);
 const within = relative(harness, root);
 if (!within || (!within.startsWith(".." + sep) && within !== ".." && !isAbsolute(within))) throw new Error("Runtime provisioning cannot write a pinned harness");
 await mkdir(root, { recursive: true, mode: 0o700 });
-const digest = "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f";
-const destination = join(root, "tla2tools-v1.8.0.jar");
+const digest = "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88";
+const destination = join(root, "tla2tools-v1.7.4.jar");
 const valid = (bytes) => createHash("sha256").update(bytes).digest("hex") === digest;
 let installed = false;
 try { installed = valid(await readFile(destination)); } catch (error) { if (error.code !== "ENOENT") throw error; }
 if (!installed) {
-  const response = await fetch("https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar", { signal: AbortSignal.timeout(60000) });
+  const response = await fetch("https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar", { signal: AbortSignal.timeout(60000) });
   if (!response.ok) throw new Error("Pinned TLC download failed: " + response.status);
   const bytes = Buffer.from(await response.arrayBuffer());
   if (!valid(bytes)) throw new Error("Pinned TLC checksum mismatch");
@@ -534,7 +542,7 @@ if (!installed) {
     await rename(temporary, destination);
   } finally { await rm(temporary, { force: true }); }
 }
-console.log(JSON.stringify({ TLA2TOOLS: destination, version: "1.8.0", sha256: digest }));
+console.log(JSON.stringify({ TLA2TOOLS: destination, version: "1.7.4", sha256: digest }));
 `, "raga explicit managed TLC provisioning");
 const dependencies = JSON.parse(files.get("dependencies.json").toString());
 dependencies.managed.noMistakes.assets = {

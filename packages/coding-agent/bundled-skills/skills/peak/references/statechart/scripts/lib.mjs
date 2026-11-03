@@ -6,10 +6,10 @@ export function findTlc() {
   const { TLA2TOOLS, JAVA } = process.env;
   if (!TLA2TOOLS)
     throw new Error(
-      "Cannot find TLC. Download tla2tools.jar from a TLA+ release:\n  https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar\nThen set TLA2TOOLS to the path of tla2tools.jar, and JAVA to a java binary (Java 11 or later).",
+      "Cannot find TLC. Download tla2tools.jar from a TLA+ release:\n  https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar\nThen set TLA2TOOLS to the path of tla2tools.jar, and JAVA to a java binary (Java 11 or later).",
     );
   if (!fs.existsSync(TLA2TOOLS)) throw new Error(`TLA2TOOLS is ${TLA2TOOLS}, which does not exist.`);
-  if (createHash("sha256").update(fs.readFileSync(TLA2TOOLS)).digest("hex") !== "d15655eeaff4b3f7b3d65c46b838bc0f35d131b2ef4b1e473689b62c98d4726f") throw new Error("TLC checksum mismatch. Request managed provisioning of TLA+ v1.8.0.");
+  if (createHash("sha256").update(fs.readFileSync(TLA2TOOLS)).digest("hex") !== "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88") throw new Error("TLC checksum mismatch. Request managed provisioning of TLA+ v1.7.4.");
   return { jar: TLA2TOOLS, java: JAVA || "java" };
 }
 

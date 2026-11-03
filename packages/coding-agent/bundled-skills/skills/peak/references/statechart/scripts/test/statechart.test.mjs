@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -709,7 +710,7 @@ export const step = (a) => ({ TapPay: "you tap Pay", TapBack: "you tap Back", Ta
 });
 
 const NO_TLC = `Cannot find TLC. Download tla2tools.jar from a TLA+ release:
-  https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
+  https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
 Then set TLA2TOOLS to the path of tla2tools.jar, and JAVA to a java binary (Java 11 or later).
 `;
 const FROM_SPEC_USAGE =
@@ -2565,13 +2566,45 @@ int rename(const char *from, const char *to) {
   return real(from, to);
 }
 `;
+// macOS ignores LD_PRELOAD. dyld loads DYLD_INSERT_LIBRARIES and swaps the functions listed in __interpose.
+const failRenamesDarwin = `#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+static size_t hits;
+static int fail(const char *to) {
+  const char *base = strrchr(to, '/'), *fails = getenv("RENAME_FAILS");
+  base = base ? base + 1 : to;
+  if (!fails || strcmp(base, "shared") != 0 || hits >= strlen(fails)) return 0;
+  errno = fails[hits++] == 'N' ? ENOTEMPTY : EIO;
+  return 1;
+}
+static int fake_rename(const char *f, const char *t) { return fail(t) ? -1 : rename(f, t); }
+static int fake_renameat(int a, const char *f, int b, const char *t) { return fail(t) ? -1 : renameat(a, f, b, t); }
+static int fake_renamex_np(const char *f, const char *t, unsigned int o) { return fail(t) ? -1 : renamex_np(f, t, o); }
+static int fake_renameatx_np(int a, const char *f, int b, const char *t, unsigned int o) {
+  return fail(t) ? -1 : renameatx_np(a, f, b, t, o);
+}
+__attribute__((used)) static const struct { const void *replacement, *original; } interposers[]
+  __attribute__((section("__DATA,__interpose"))) = {
+  { (const void *)fake_rename, (const void *)rename },
+  { (const void *)fake_renameat, (const void *)renameat },
+  { (const void *)fake_renamex_np, (const void *)renamex_np },
+  { (const void *)fake_renameatx_np, (const void *)renameatx_np },
+};
+`;
+const darwin = process.platform === "darwin";
 const failingRenames = (() => {
   const dir = mkdtempSync(join(tmpdir(), "statechart-preload-"));
-  writeFileSync(join(dir, "rename.c"), failRenames);
-  const so = join(dir, "rename.so");
-  const cc = spawnSync("cc", ["-shared", "-fPIC", "-o", so, join(dir, "rename.c"), "-ldl"]);
+  writeFileSync(join(dir, "rename.c"), darwin ? failRenamesDarwin : failRenames);
+  const so = join(dir, darwin ? "rename.dylib" : "rename.so");
+  const cc = spawnSync(
+    "cc",
+    darwin ? ["-dynamiclib", "-o", so, join(dir, "rename.c")] : ["-shared", "-fPIC", "-o", so, join(dir, "rename.c"), "-ldl"],
+  );
   return cc.status === 0 ? so : null;
 })();
+const preload = (so) => (darwin ? { DYLD_INSERT_LIBRARIES: so } : { LD_PRELOAD: so });
 test(
   "a run whose rename fails after it moves the output folder aside puts the folder back, or says where it is",
   { skip: needsTlc.skip || (!failingRenames && "cannot compile a rename preload") },
@@ -2584,7 +2617,7 @@ test(
     assert.equal(first.status, 0, first.stderr);
     const chart = readFileSync(join(shared, "chart.mmd"), "utf8");
     const run = (fails) =>
-      node("statechart.mjs", args, dir, { LD_PRELOAD: failingRenames, RENAME_FAILS: fails });
+      node("statechart.mjs", args, dir, { ...preload(failingRenames), RENAME_FAILS: fails });
 
     const back = run("NI");
     assert.equal(back.status, 2, back.stderr);
@@ -2643,7 +2676,8 @@ exit $s
     for (const line of runs) {
       const [folder, parsed] = line.split(": ");
       assert.ok(folder.startsWith(join(tmp, "tlc-")), line);
-      assert.equal(parsed, `Parsing file ${join(folder, "Naturals.tla")}`);
+      // Java prints the resolved path; on macOS the temp folder sits behind the /var -> /private/var link.
+      assert.equal(parsed, `Parsing file ${join(realpathSync(tmp) + folder.slice(tmp.length), "Naturals.tla")}`);
       folders.add(folder);
     }
     assert.equal(folders.size, runs.length);
