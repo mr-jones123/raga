@@ -11,12 +11,13 @@ const severities = ["info", "low", "moderate", "high", "critical"];
 
 /** @type {Record<string, { package: string; reason: string }>} */
 const acceptedAdvisories = {
-	"GHSA-86w9-cpqp-85rv": {
-		package: "node-forge",
+	"GHSA-mrhx-c7xc-m3w5": {
+		package: "zod",
 		reason:
-			"No fixed node-forge release exists. It is only reachable through @earendil-works/gondolin in the private, " +
-			"unpublished gondolin example extension. Gondolin only verifies leaf certificates against its own locally " +
-			"generated CA (public exponent 65537), so the low-exponent signature forgery does not apply.",
+			"No fixed zod 3 release exists. zod 3 is only a dependency of @anthropic-ai/sandbox-runtime (every release " +
+			"requires ^3.25.0) in the private, unpublished sandbox example extension, which validates the user's own " +
+			"local sandbox config. @anthropic-ai/sdk and openai declare zod as an optional peer and raga does not use " +
+			"their zod helpers, so no untrusted input reaches a zod array schema.",
 	},
 };
 
