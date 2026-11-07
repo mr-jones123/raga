@@ -1,3 +1,9 @@
+## [0.12.1](https://github.com/mr-jones123/raga/compare/raga-v0.12.0...raga-v0.12.1) (2026-11-07)
+
+### Bug Fixes
+
+* **deps:** update undici and minimatch for security advisories ([1cdc576](https://github.com/mr-jones123/raga/commit/1cdc576a3b63e53bfc031d50ecceca2864e5c0b5))
+
 ## [0.12.0](https://github.com/mr-jones123/raga/compare/raga-v0.11.0...raga-v0.12.0) (2026-11-03)
 
 ### Features
