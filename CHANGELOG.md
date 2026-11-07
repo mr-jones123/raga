@@ -1,3 +1,10 @@
+## [0.13.0](https://github.com/mr-jones123/raga/compare/raga-v0.12.1...raga-v0.13.0) (2026-11-07)
+
+### Features
+
+* **coding-agent:** compact python cells with an inline running wheel ([f09ffbc](https://github.com/mr-jones123/raga/commit/f09ffbc9b4ae33cd2ddf5a7289fd45d96f92b5b0))
+* **coding-agent:** show subagents as a tree chart in /agents-tui ([dcd2abe](https://github.com/mr-jones123/raga/commit/dcd2abe0403d42055273eecfc1c6e5506e76b608))
+
 ## [0.12.1](https://github.com/mr-jones123/raga/compare/raga-v0.12.0...raga-v0.12.1) (2026-11-07)
 
 ### Bug Fixes
