@@ -8,10 +8,11 @@ describe("RLM cell dashboard", () => {
 
 	it("keeps cells apart when sessions reuse a call id", () => {
 		const requestRender = () => {};
-		const dashboard = new RlmCellDashboard(requestRender);
+		const dashboard = new RlmCellDashboard(requestRender, () => "viewed");
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "same-call",
+			cell: 1,
 			sessionId: "root",
 			depth: 0,
 			code: "print('root')",
@@ -20,6 +21,7 @@ describe("RLM cell dashboard", () => {
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "same-call",
+			cell: 2,
 			sessionId: "child",
 			depth: 1,
 			code: "print('child')",
@@ -42,10 +44,14 @@ describe("RLM cell dashboard", () => {
 	});
 
 	it("renders one row per running cell, keeps ended cells briefly, and unsubscribes on dispose", () => {
-		const dashboard = new RlmCellDashboard(() => {});
+		const dashboard = new RlmCellDashboard(
+			() => {},
+			() => "viewed",
+		);
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "root-cell",
+			cell: 1,
 			sessionId: "root",
 			depth: 0,
 			code: "print('root')",
@@ -54,6 +60,7 @@ describe("RLM cell dashboard", () => {
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "child-cell",
+			cell: 2,
 			sessionId: "child",
 			depth: 1,
 			code: "print('child')",
@@ -86,11 +93,45 @@ describe("RLM cell dashboard", () => {
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "late",
+			cell: 3,
 			sessionId: "root",
 			depth: 0,
 			code: "late()",
 			startedAt: Date.now(),
 		});
 		expect(dashboard.render(100)).toEqual([]);
+	});
+
+	it("hides the viewed session's cells, which its transcript draws, and shows other sessions'", () => {
+		let viewed = "root";
+		const dashboard = new RlmCellDashboard(
+			() => {},
+			() => viewed,
+		);
+		for (const [sessionId, depth] of [
+			["root", 0],
+			["child", 1],
+		] as const) {
+			emitRlmCellEvent({
+				type: "start",
+				cellId: `${sessionId}-cell`,
+				sessionId,
+				cell: 7,
+				depth,
+				code: `print('${sessionId}')`,
+				startedAt: Date.now(),
+			});
+		}
+		let text = dashboard.render(100).join("\n");
+		expect(text).toContain("cell 7 · depth 1");
+		expect(text).not.toContain("depth 0");
+		// Opening the child in the main view swaps them.
+		viewed = "child";
+		text = dashboard.render(100).join("\n");
+		expect(text).toContain("cell 7 · depth 0");
+		expect(text).not.toContain("depth 1");
+		viewed = "other";
+		expect(dashboard.render(100)).toHaveLength(6);
+		dashboard.dispose();
 	});
 });

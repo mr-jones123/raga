@@ -13,6 +13,7 @@ describe("RLM cell events", () => {
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "call-1",
+			cell: 1,
 			sessionId: "session-a",
 			depth: 0,
 			code: "print(1)",
@@ -30,6 +31,7 @@ describe("RLM cell events", () => {
 		emitRlmCellEvent({
 			type: "start",
 			cellId: "call-2",
+			cell: 2,
 			sessionId: "session-a",
 			depth: 0,
 			code: "print(2)",
@@ -48,6 +50,7 @@ describe("RLM cell events", () => {
 			emitRlmCellEvent({
 				type: "start",
 				cellId: "call-3",
+				cell: 3,
 				sessionId: "session-b",
 				depth: 1,
 				code: "x",

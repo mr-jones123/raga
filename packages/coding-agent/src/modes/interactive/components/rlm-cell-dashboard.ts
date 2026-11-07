@@ -1,4 +1,4 @@
-import { type Component, foregroundAnsi, rgbColor, truncateToWidth } from "@earendil-works/pi-tui";
+import { type Component, foregroundAnsi, truncateToWidth } from "@earendil-works/pi-tui";
 import {
 	cellCodePreview,
 	type RlmCellEvent,
@@ -6,33 +6,15 @@ import {
 	subscribeRlmCellEvents,
 } from "../../../core/rlm/cell-events.ts";
 import { theme } from "../theme/theme.ts";
+import { WHEEL_FRAME_MS, WHEEL_PALETTE, wheelFrame } from "./cell-wheel.ts";
 
-/** Eight frames of a 7x3 braille wheel; the gap rotates to read as spin. */
-const FRAMES = [
-	[" ⢴⣴⡶⣦⡦ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠺⠻⣷⠟⠗ "],
-	[" ⢴⣴⡿⣦⡄ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠺⠻⣷⠟⠗ "],
-	[" ⢴⣴⡿⣦⡦ ", "⠰⣿⣭⡷⣭⣿ ", " ⠺⠻⣷⠟⠗ "],
-	[" ⢴⣴⡿⣦⡦ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠺⠻⣷⠟⠃ "],
-	[" ⢴⣴⡿⣦⡦ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠺⠻⠷⠟⠗ "],
-	[" ⢴⣴⡿⣦⡦ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠘⠻⣷⠟⠗ "],
-	[" ⢴⣴⡿⣦⡦ ", " ⣿⣭⡷⣭⣿⠆", " ⠺⠻⣷⠟⠗ "],
-	[" ⢠⣴⡿⣦⡦ ", "⠰⣿⣭⡷⣭⣿⠆", " ⠺⠻⣷⠟⠗ "],
-] as const;
-
-const PALETTE = [
-	rgbColor(228, 138, 122),
-	rgbColor(79, 142, 179),
-	rgbColor(234, 182, 93),
-	rgbColor(126, 190, 122),
-	rgbColor(200, 120, 200),
-	rgbColor(90, 190, 190),
-];
-
-const FRAME_MS = 80;
 const LINGER_MS = 1200;
 const MAX_VISIBLE = 4;
 
 interface Cell {
+	sessionId: string;
+	/** The session's own cell number, as its transcript shows it. */
+	cell: number;
 	depth: number;
 	code: string;
 	startedAt: number;
@@ -43,25 +25,30 @@ interface Cell {
 }
 
 /**
- * Fixed-height dashboard for running RLM cells. It subscribes to the process-wide cell
- * bus, so child sessions appear beside the root cell. Hidden while no cell is running.
+ * Panel for running RLM cells of sessions other than the one in view; the viewed session draws its
+ * own cells in the transcript. It subscribes to the process-wide cell bus, so it shows subagents'
+ * cells while the root waits on them. Hidden while no such cell is running.
  */
 export class RlmCellDashboard implements Component {
 	private readonly cells = new Map<string, Cell>();
 	private readonly unsubscribe: () => void;
 	private readonly requestRender: () => void;
+	private readonly viewedSessionId: () => string;
 	private ordinal = 0;
 	private timer: NodeJS.Timeout | undefined;
 
-	constructor(requestRender: () => void) {
+	constructor(requestRender: () => void, viewedSessionId: () => string) {
 		this.requestRender = requestRender;
+		this.viewedSessionId = viewedSessionId;
 		this.unsubscribe = subscribeRlmCellEvents((event) => this.handle(event));
 	}
 
 	render(width: number): string[] {
 		if (width < 10) return [];
 		const now = Date.now();
-		const visible = [...this.cells.values()]
+		const viewed = this.viewedSessionId();
+		const shown = [...this.cells.values()].filter((cell) => cell.sessionId !== viewed);
+		const visible = shown
 			.filter((cell) => cell.endedAt === undefined || now - cell.endedAt < LINGER_MS)
 			.sort(
 				(left, right) =>
@@ -72,21 +59,19 @@ export class RlmCellDashboard implements Component {
 		const mode = theme.getColorMode();
 		const lines: string[] = [];
 		for (const cell of visible) {
-			const color = foregroundAnsi(PALETTE[cell.color % PALETTE.length], mode);
-			const frame = cell.endedAt
-				? FRAMES[0]
-				: FRAMES[Math.floor((now - cell.startedAt) / FRAME_MS + cell.color * 2) % FRAMES.length];
+			const color = foregroundAnsi(WHEEL_PALETTE[cell.color % WHEEL_PALETTE.length], mode);
+			const frame = wheelFrame(cell.startedAt, cell.endedAt ? undefined : now, cell.color * 2);
 			const elapsed = ((cell.endedAt ?? now) - cell.startedAt) / 1000;
 			const state = cell.endedAt ? (cell.status === "ok" ? "ok" : cell.status) : "running";
 			const textWidth = Math.max(1, width - 9);
-			const label = `cell ${cell.ordinal} · depth ${cell.depth} · ${elapsed.toFixed(1)}s · ${state}`;
+			const label = `cell ${cell.cell} · depth ${cell.depth} · ${elapsed.toFixed(1)}s · ${state}`;
 			lines.push(`${color}${frame[0]}  ${theme.fg("muted", truncateToWidth(label, textWidth, "…"))}`);
 			lines.push(
 				`${color}${frame[1]}  ${theme.fg("dim", truncateToWidth(cellCodePreview(cell.code), textWidth, "…"))}`,
 			);
 			lines.push(`${color}${frame[2]}`);
 		}
-		const hidden = this.cells.size - visible.length;
+		const hidden = shown.length - visible.length;
 		if (hidden > 0) lines.push(theme.fg("dim", `  +${hidden} more cell${hidden === 1 ? "" : "s"}`));
 		return lines;
 	}
@@ -106,6 +91,8 @@ export class RlmCellDashboard implements Component {
 		const key = `${event.sessionId}:${event.cellId}`;
 		if (event.type === "start") {
 			this.cells.set(key, {
+				sessionId: event.sessionId,
+				cell: event.cell,
 				depth: event.depth,
 				code: event.code,
 				startedAt: event.startedAt,
@@ -125,13 +112,13 @@ export class RlmCellDashboard implements Component {
 	/** A color no visible cell uses, so concurrent wheels stay distinguishable. */
 	private nextColor(): number {
 		const used = new Set([...this.cells.values()].map((cell) => cell.color));
-		for (let index = 0; index < PALETTE.length; index++) if (!used.has(index)) return index;
-		return (this.ordinal - 1) % PALETTE.length;
+		for (let index = 0; index < WHEEL_PALETTE.length; index++) if (!used.has(index)) return index;
+		return (this.ordinal - 1) % WHEEL_PALETTE.length;
 	}
 
 	private startTimer(): void {
 		if (this.timer) return;
-		this.timer = setInterval(() => this.tick(), FRAME_MS);
+		this.timer = setInterval(() => this.tick(), WHEEL_FRAME_MS);
 		this.timer.unref();
 	}
 

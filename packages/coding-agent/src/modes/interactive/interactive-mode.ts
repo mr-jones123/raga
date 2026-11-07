@@ -977,7 +977,11 @@ export class InteractiveMode {
 
 		// Keep one component tree and remount it when changing renderers.
 		this.renderWidgets(); // Initialize with default spacer
-		this.rlmCellDashboard = new RlmCellDashboard(() => this.ui.requestRender());
+		// The session in view draws its own cells inline; the panel shows the others, such as subagents.
+		this.rlmCellDashboard = new RlmCellDashboard(
+			() => this.ui.requestRender(),
+			() => (this.focusedAgent?.session ?? this.runtimeHost.session).sessionId,
+		);
 		const viewport = createChatViewport({
 			document: this.documentContainer,
 			pendingMessages: this.pendingMessagesContainer,

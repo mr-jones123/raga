@@ -157,6 +157,10 @@ After the output come memory lines when the effective kernel limit is not 0. Whe
 
 Before the first cell on each kernel process, the host sends `set_context` with `context.task`, the input paths, and `context.data`. `context.task` is the text of the first user message on the session branch.
 
+The result's `details` carry `cell` (the session's python call number on its branch, from 1), `depth`, and, for a failed cell, `error` (the exception name). The first update of every call already carries `cell` and `depth`.
+
+In the TUI (`src/core/tools/renderers/python.ts`), a finished cell is one line: `✓` or `✗`, `[cell]`, the first code line, the code and output line counts, the duration, and the exception name of a failed cell, such as `✗ [3] python · import random, asyncio · ↑ 2 ↓ 2 lines · 8.7s · ToolError`. The expand key (`app.tools.expand`, Ctrl+O) shows every cell's full code and output; clicking a cell expands only that cell. A running cell draws a spinning braille wheel with `cell N · depth D · <elapsed> · running` and its first code line. The panel above the editor shows the running cells of other sessions, such as subagents; it hides the cells of the session in view, which its transcript draws.
+
 The session starts the kernel when it is created. If the start fails, the first `python` call returns the reason as an error result, and the next call tries again. When the session is aborted, the tool sends `interrupt`, waits 1 second, then kills and restarts the kernel. The first result from a new kernel process starts with `[kernel restarted: the namespace is empty]`.
 
 ## Memory

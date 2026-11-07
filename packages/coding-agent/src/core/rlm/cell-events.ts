@@ -10,6 +10,8 @@ export interface RlmCellStartEvent {
 	type: "start";
 	cellId: string;
 	sessionId: string;
+	/** The session's python call number, as its transcript shows it. */
+	cell: number;
 	depth: number;
 	code: string;
 	startedAt: number;

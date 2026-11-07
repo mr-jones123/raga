@@ -109,6 +109,12 @@ export interface PythonToolDetails {
 	cutCharacters: number;
 	/** The kernel restarted since the previous cell, so the namespace is empty. */
 	restarted: boolean;
+	/** The session's python call number on its branch, from 1. Absent in results recorded before it existed. */
+	cell?: number;
+	/** The session's RLM depth: 0 for a root session. */
+	depth?: number;
+	/** Exception name of a failed cell, such as `ToolError`. */
+	error?: string;
 }
 
 function errorMessage(error: unknown): string {
@@ -354,14 +360,26 @@ export class RlmRuntime {
 
 		const cellStartedAt = Date.now();
 		const cellSessionId = this.host.sessionManager.getSessionId();
+		// This call's result is not on the branch yet, so it is one past the recorded python results.
+		const cell =
+			this.host.sessionManager
+				.getBranch()
+				.filter(
+					(entry) =>
+						entry.type === "message" &&
+						entry.message.role === "toolResult" &&
+						entry.message.toolName === "python",
+				).length + 1;
+		const cellInfo = { cell, depth: this.host.depth };
 		emitRlmCellEvent({
 			type: "start",
 			cellId: toolCallId,
 			sessionId: cellSessionId,
-			depth: this.host.depth,
+			...cellInfo,
 			code,
 			startedAt: cellStartedAt,
 		});
+		onUpdate?.({ content: [], details: { cutCharacters: 0, restarted: false, ...cellInfo } });
 		let cellStatus: RlmCellStatus = "error";
 		try {
 			// Debounce: the snapshot waits until no cell has run for SNAPSHOT_DELAY_MS.
@@ -377,7 +395,10 @@ export class RlmRuntime {
 				const now = Date.now();
 				if (!onUpdate || now - lastUpdate < UPDATE_THROTTLE_MS) return;
 				lastUpdate = now;
-				onUpdate({ content: [{ type: "text", text: streamed }], details: { cutCharacters: 0, restarted: false } });
+				onUpdate({
+					content: [{ type: "text", text: streamed }],
+					details: { cutCharacters: 0, restarted: false, ...cellInfo },
+				});
 			};
 
 			const notices: string[] = [];
@@ -454,7 +475,7 @@ export class RlmRuntime {
 				content: [
 					{ type: "text", text: [...notices, text, ...formatMemoryNotes(output, this.memoryLimitMb)].join("\n") },
 				],
-				details: { cutCharacters, restarted },
+				details: { cutCharacters, restarted, ...cellInfo, ...(output.error ? { error: output.error.ename } : {}) },
 				...(usage ? { usage } : {}),
 				...(output.status === "error" ? { isError: true } : {}),
 			};

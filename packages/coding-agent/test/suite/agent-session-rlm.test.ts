@@ -271,10 +271,27 @@ describe("AgentSession RLM mode", () => {
 	it("reports a Python error as an error result and keeps the namespace", async () => {
 		const harness = await setup();
 		harness.setResponses([pythonCall("value = 21\n1 / 0"), pythonCall("value * 2"), fauxAssistantMessage("done")]);
+		const firstUpdates: unknown[] = [];
+		const seenCalls = new Set<string>();
+		harness.session.subscribe((event) => {
+			if (event.type !== "tool_execution_update" || seenCalls.has(event.toolCallId)) return;
+			seenCalls.add(event.toolCallId);
+			firstUpdates.push(event.partialResult.details);
+		});
 		await harness.session.prompt("go");
 		const results = harness.session.messages.filter((message) => message.role === "toolResult");
 		expect(results[0].role === "toolResult" && results[0].isError).toBe(true);
 		expect(getMessageText(results[0])).toContain("ZeroDivisionError");
 		expect(getMessageText(results[1])).toBe("[result]\n42");
+		// The renderer's cell number, depth, and exception name ride on the details, from the first update on.
+		expect(results.map((message) => message.role === "toolResult" && message.details)).toEqual([
+			expect.objectContaining({ cell: 1, depth: 0, error: "ZeroDivisionError" }),
+			expect.objectContaining({ cell: 2, depth: 0 }),
+		]);
+		expect(results[1].role === "toolResult" && results[1].details).not.toHaveProperty("error");
+		expect(firstUpdates).toEqual([
+			expect.objectContaining({ cell: 1, depth: 0 }),
+			expect.objectContaining({ cell: 2, depth: 0 }),
+		]);
 	});
 });
