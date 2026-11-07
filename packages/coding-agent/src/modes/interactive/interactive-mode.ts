@@ -135,7 +135,7 @@ import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
-import { AgentsHub } from "./agents/hub.ts";
+import { AgentsDashboard } from "./agents/dashboard.ts";
 import { AgentSetupEditor } from "./agents/setup.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
@@ -456,7 +456,6 @@ export class InteractiveMode {
 	private focusedAgent:
 		| { id: string; session: AgentSession; release: () => void; unsubscribe: () => void }
 		| undefined;
-	private agentsHub: AgentsHub | undefined;
 	private readonly agentBanner = new AgentFocusBanner(
 		() => (this.focusedAgent ? childAgents.get(this.focusedAgent.id) : undefined),
 		() => this.runtimeHost.session.isStreaming,
@@ -625,7 +624,6 @@ export class InteractiveMode {
 		this.autoTrustOnReloadCwd = options.autoTrustOnReloadCwd;
 		this.runtimeHost.setBeforeSessionInvalidate(() => {
 			this.leaveAgentFocus();
-			this.agentsHub?.dispose();
 			this.resetExtensionUI();
 		});
 		this.runtimeHost.setRebindSession(async () => {
@@ -3222,9 +3220,9 @@ export class InteractiveMode {
 			text = text.trim();
 			if (!text) return;
 
-			if (text === "/agents") {
+			if (text === "/agents-tui") {
 				this.editor.setText("");
-				await this.showAgentsHub();
+				await this.showAgents();
 				return;
 			}
 			if (text === "/agent-setup" && !this.focusedAgent) {
@@ -4367,7 +4365,6 @@ export class InteractiveMode {
 	private async shutdown(options?: { fromSignal?: boolean }): Promise<void> {
 		if (this.isShuttingDown) return;
 		this.isShuttingDown = true;
-		this.agentsHub?.dispose();
 		// Keep signal handlers registered until terminal cleanup has completed.
 		// `signal-exit` checks the listener list during the same SIGTERM/SIGHUP
 		// dispatch and re-sends the signal if only its own listeners remain.
@@ -4645,23 +4642,39 @@ export class InteractiveMode {
 		};
 	}
 
-	private async showAgentsHub(): Promise<void> {
-		this.agentsHub ??= new AgentsHub({
-			rootSessionId: () => this.runtimeHost.session.sessionManager.getSessionId(),
-			title: () =>
-				this.runtimeHost.session.sessionManager.getSessionName() ??
-				this.runtimeHost.session.sessionManager.getSessionId().slice(0, 8),
-			cwd: () => this.runtimeHost.session.sessionManager.getCwd(),
-			showFullscreen: (factory) =>
-				this.showExtensionCustom(factory, {
-					overlay: true,
-					overlayOptions: { anchor: "top-left", row: 0, col: 0, width: "100%", maxHeight: "100%", margin: 0 },
-				}),
-			confirm: (title, message) => this.showExtensionConfirm(title, message),
-			notify: (message, type) => this.showExtensionNotify(message, type),
-			focus: (id) => this.focusSubagent(id),
-		});
-		await this.agentsHub.open();
+	/** `/agents-tui`: the current session's subagents as a tree chart. Enter shows one in the main view. */
+	private async showAgents(): Promise<void> {
+		const manager = this.runtimeHost.session.sessionManager;
+		const root = manager.getSessionId();
+		let selected: string | undefined;
+		await this.showExtensionCustom<void>(
+			(tui, theme, keys, done) =>
+				new AgentsDashboard(
+					{
+						list: () => childAgents.list(root),
+						subscribe: (listener) => childAgents.subscribe(listener),
+						rootLabel: () => manager.getSessionName() ?? "main session",
+					},
+					tui,
+					theme,
+					keys,
+					{
+						open: (id) => {
+							selected = id;
+							done();
+						},
+						stop: (id) => {
+							if (!childAgents.stop(id)) this.showExtensionNotify("That subagent is not running.", "info");
+						},
+						close: () => done(),
+					},
+				),
+			{
+				overlay: true,
+				overlayOptions: { anchor: "top-left", row: 0, col: 0, width: "100%", maxHeight: "100%", margin: 0 },
+			},
+		);
+		if (selected) await this.focusSubagent(selected);
 	}
 
 	/** Show a subagent's own session: its transcript, Python cells, footer, and an editor that steers it. */

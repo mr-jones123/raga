@@ -24,7 +24,9 @@ const windowsKeybindings = useWindowsKeybindings();
 
 const APP_KEYBINDINGS = {
 	"app.agents.details": { defaultKeys: "tab", description: "Agents dashboard: toggle the details panel" },
-	"app.agents.tree": { defaultKeys: "t", description: "Agents dashboard: toggle tree and flat views" },
+	"app.agents.tree": { defaultKeys: "t", description: "Agents dashboard: cycle chart, tree, and flat views" },
+	"app.agents.left": { defaultKeys: "left", description: "Agents chart: previous subagent at the same depth" },
+	"app.agents.right": { defaultKeys: "right", description: "Agents chart: next subagent at the same depth" },
 	"app.agents.stop": { defaultKeys: "x", description: "Agents dashboard: stop the selected subagent" },
 	"app.agentSetup.inherit": { defaultKeys: "i", description: "Agent setup: let the role inherit the parent model" },
 	"app.agentSetup.addSeat": { defaultKeys: "a", description: "Agent setup: add a seat to a panel role" },

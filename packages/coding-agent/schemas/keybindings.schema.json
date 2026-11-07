@@ -201,7 +201,15 @@
     },
     "app.agents.tree": {
       "$ref": "#/$defs/KeybindingValue",
-      "description": "Agents dashboard: toggle tree and flat views"
+      "description": "Agents dashboard: cycle chart, tree, and flat views"
+    },
+    "app.agents.left": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents chart: previous subagent at the same depth"
+    },
+    "app.agents.right": {
+      "$ref": "#/$defs/KeybindingValue",
+      "description": "Agents chart: next subagent at the same depth"
     },
     "app.agents.stop": {
       "$ref": "#/$defs/KeybindingValue",

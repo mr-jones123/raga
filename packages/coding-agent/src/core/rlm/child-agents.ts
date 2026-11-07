@@ -1,7 +1,7 @@
 /**
  * Live child sessions created by `rlm_query`. Each record owns a real `AgentSession` (and its Python
- * kernel) while the child runs and after it answers, so the TUI and Rex views open the child itself
- * rather than a copy of its output. See docs/AGENTS.md.
+ * kernel) while the child runs and after it answers, so `/agents-tui` opens the child itself rather than a
+ * copy of its output. See docs/AGENTS.md.
  */
 import type { AgentSession, AgentSessionEvent } from "../agent-session.ts";
 

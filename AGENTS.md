@@ -16,7 +16,7 @@ Raga is an opinionated coding harness, forked from [pi](https://github.com/badlo
   - `src/core/instances/`: instance mode (`.raga/instance.json`, harness revisions, sandbox, memory). Sandbox is Linux-only (bubblewrap).
   - `src/core/tenmo.ts`, `src/extensions/tenmo/`, `src/cli/tenmo-command.ts`: tenmo. Each process writes `~/.raga/agent/tenmo/<pid>.json`; `/tenmo` and `raga tenmo` read it; spawns go to tmux windows. Tenmo can delete a session (process, session file, subagents, forks, kernel snapshots); it never sends messages to sessions.
   - `src/extensions/`: built-in extensions, registered in `src/extensions/index.ts`.
-  - `src/modes/interactive/`: TUI mode, including `/agents` (`agents/`).
+  - `src/modes/interactive/`: TUI mode, including `/agents-tui` (`agents/`).
   - `src/cli/`: CLI subcommands (`instance-command.ts`, `tenmo-command.ts`, args and help).
   - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `raga-artifacts`).
   - `test/`: vitest tests; `test/suite/` uses the faux provider harness.

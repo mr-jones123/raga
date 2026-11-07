@@ -112,7 +112,7 @@ See [docs/TENMO.md](docs/TENMO.md).
 
 ## Subagents
 
-Each `rlm_query` child is its own named Raga session with its own Python kernel. Run `/agents` to see them in a dashboard (name, state, model, tokens, cost, turns) and open one to read its cells or steer it. Optionally, Rex shows one pane per subagent. Run `/agent-setup` to choose which model each workflow role (such as `arena runners` or `bug-fix`) uses. See [docs/AGENTS.md](docs/AGENTS.md).
+Each `rlm_query` child is its own named Raga session with its own Python kernel. Run `/agents-tui` to see them as a tree, from the session at depth 0 down through each level of subagents, with each one's state, model, tokens, cost, and turns. Open one to read its cells or steer it. Run `/agent-setup` to choose which model each workflow role (such as `arena runners` or `bug-fix`) uses. See [docs/AGENTS.md](docs/AGENTS.md).
 
 ## What the model does in RLM mode
 
@@ -160,7 +160,7 @@ print(counts.most_common(5))
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the pi base works and where raga's layers attach. |
 | [docs/RLM.md](docs/RLM.md) | The RLM runtime reference. |
-| [docs/AGENTS.md](docs/AGENTS.md) | Subagent sessions, the `/agents` dashboard, and Rex panes. |
+| [docs/AGENTS.md](docs/AGENTS.md) | Subagent sessions and the `/agents-tui` tree. |
 | [docs/TENMO.md](docs/TENMO.md) | Track, start, and delete sessions across folders and worktrees. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |

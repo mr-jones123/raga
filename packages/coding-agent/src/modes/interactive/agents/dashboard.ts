@@ -1,13 +1,33 @@
 import { type Component, type TUI, truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import type { Keybinding, KeybindingsManager } from "../../../core/keybindings.ts";
 import type { ChildAgentInfo } from "../../../core/rlm/child-agents.ts";
-import type { Theme, ThemeColor } from "../theme/theme.ts";
+import type { Theme } from "../theme/theme.ts";
+import {
+	active,
+	type DisplayStatus,
+	displayStatus,
+	formatAgentCost,
+	formatAgentDuration,
+	formatAgentTokens,
+	modelId,
+	oneLine,
+	STATUS,
+	safe,
+} from "./format.ts";
+import { type AgentTreeChart, buildAgentTreeChart, CHART_GUTTER } from "./tree-chart.ts";
+
+export { formatAgentCost, formatAgentDuration, formatAgentTokens } from "./format.ts";
 
 /** Live view of the child registry; `list()` returns copies, `subscribe()` fires on every change. */
 export interface AgentsDashboardSource {
 	list(): ChildAgentInfo[];
 	subscribe(listener: () => void): () => void;
+	/** The session's name for the chart's depth-0 box. */
+	rootLabel(): string;
 }
+
+type View = "chart" | "tree" | "flat";
+const NEXT_VIEW: Record<View, View> = { chart: "tree", tree: "flat", flat: "chart" };
 
 export interface AgentsDashboardActions {
 	/** Open the child's real session. Called only for openable children. */
@@ -16,8 +36,6 @@ export interface AgentsDashboardActions {
 	stop(id: string): void;
 	close(): void;
 }
-
-type DisplayStatus = "running" | "queued" | "done" | "partial" | "failed" | "stopped";
 
 interface Row {
 	info: ChildAgentInfo;
@@ -44,58 +62,13 @@ const GAP = 2;
 const MARKER = 2;
 const LABEL = 10;
 
-const STATUS: Record<DisplayStatus, { glyph: string; color: ThemeColor }> = {
-	running: { glyph: "●", color: "accent" },
-	queued: { glyph: "◌", color: "muted" },
-	done: { glyph: "✓", color: "success" },
-	partial: { glyph: "◐", color: "warning" },
-	failed: { glyph: "✗", color: "error" },
-	stopped: { glyph: "■", color: "warning" },
-};
 const STATUS_ORDER: DisplayStatus[] = ["running", "queued", "done", "partial", "stopped", "failed"];
 
-// Task text, model output, and names come from agents; never let them drive the terminal.
-const UNSAFE = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g;
-function safe(text: string): string {
-	return text.replace(UNSAFE, (char) =>
-		char === "\t" ? " " : `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`,
-	);
-}
-function oneLine(text: string): string {
-	return safe(text.replace(/\s*[\r\n]+\s*/g, " "));
-}
-
-function displayStatus(info: ChildAgentInfo): DisplayStatus {
-	return info.busy ? "running" : info.status;
-}
-function active(info: ChildAgentInfo): boolean {
-	const status = displayStatus(info);
-	return status === "running" || status === "queued";
-}
-
-export function formatAgentTokens(count: number): string {
-	if (count < 1000) return String(Math.max(0, Math.round(count)));
-	if (count < 999_950) return `${(count / 1000).toFixed(1)}k`;
-	return `${(count / 1_000_000).toFixed(1)}M`;
-}
-export function formatAgentCost(cost: number): string {
-	return `$${cost < 1 ? cost.toFixed(3) : cost.toFixed(2)}`;
-}
-export function formatAgentDuration(ms: number): string {
-	const seconds = Math.max(0, Math.floor(ms / 1000));
-	if (seconds < 60) return `${seconds}s`;
-	if (seconds < 3600) return `${Math.floor(seconds / 60)}m${String(seconds % 60).padStart(2, "0")}s`;
-	return `${Math.floor(seconds / 3600)}h${String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")}m`;
-}
 function elapsed(info: ChildAgentInfo, now: number): number {
 	const start = info.startedAt ?? info.createdAt;
 	// The run's own time: a later user follow-up does not stretch it.
 	const end = info.status === "queued" || info.status === "running" ? now : (info.endedAt ?? info.lastActivityAt);
 	return Math.max(0, end - start);
-}
-function modelId(model: string): string {
-	const slash = model.indexOf("/");
-	return slash < 0 ? model : model.slice(slash + 1);
 }
 function clock(time: number): string {
 	const date = new Date(time);
@@ -125,7 +98,8 @@ export class AgentsDashboard implements Component {
 	private agents: ChildAgentInfo[] = [];
 	private rows: Row[] = [];
 	private selectedId: string | undefined;
-	private tree = true;
+	private view: View = "chart";
+	private chartScroll = { x: 0, y: 0 };
 	private narrowDetails = false;
 	private sideHidden = false;
 	private confirmStopId: string | undefined;
@@ -193,7 +167,7 @@ export class AgentsDashboard implements Component {
 	}
 
 	private order(): void {
-		if (!this.tree) {
+		if (this.view === "flat") {
 			const sorted = this.agents
 				.map((info, index) => ({ info, index }))
 				.sort(
@@ -294,8 +268,10 @@ export class AgentsDashboard implements Component {
 			if (this.wide()) this.sideHidden = !this.sideHidden;
 			else this.narrowDetails = !this.narrowDetails;
 		} else if (kb.matches(data, "app.agents.tree")) {
-			this.tree = !this.tree;
+			this.view = NEXT_VIEW[this.view];
 			this.order();
+		} else if (this.view === "chart" && this.moveInChart(data)) {
+			// Arrows follow the tree's shape in the chart.
 		} else if (kb.matches(data, "tui.select.up")) this.select(this.selectedIndex() - 1);
 		else if (kb.matches(data, "tui.select.down")) this.select(this.selectedIndex() + 1);
 		else if (kb.matches(data, "tui.select.pageUp")) this.select(this.selectedIndex() - this.page());
@@ -303,6 +279,54 @@ export class AgentsDashboard implements Component {
 		else if (kb.matches(data, "app.agents.first")) this.select(0);
 		else if (kb.matches(data, "app.agents.last")) this.select(this.rows.length - 1);
 		this.tui.requestRender();
+	}
+
+	private chart(): AgentTreeChart {
+		return buildAgentTreeChart({
+			agents: this.agents,
+			rootLabel: this.source.rootLabel(),
+			selectedId: this.selectedId,
+			theme: this.theme,
+		});
+	}
+
+	/** Up: parent. Down: first child. Left and right: the neighbor at the same depth. */
+	private moveInChart(data: string): boolean {
+		const kb = this.keybindings;
+		const { nodes, levels } = this.chart();
+		const node = this.selectedId ? nodes.get(this.selectedId) : undefined;
+		if (!node) return false;
+		let target: string | undefined;
+		if (kb.matches(data, "tui.select.up")) target = node.parent;
+		else if (kb.matches(data, "tui.select.down")) target = node.children[0];
+		else if (kb.matches(data, "app.agents.left") || kb.matches(data, "app.agents.right")) {
+			const level = levels[node.depth - 1] ?? [];
+			const index = level.indexOf(this.selectedId ?? "");
+			target = level[index + (kb.matches(data, "app.agents.left") ? -1 : 1)];
+		} else return false;
+		if (target) this.selectedId = target;
+		return true;
+	}
+
+	/** The chart scrolled so the selected box is visible; the gutter stays pinned. */
+	private chartView(width: number, height: number): string[] {
+		const chart = this.chart();
+		const cols = Math.max(0, width - CHART_GUTTER);
+		const box = this.selectedId ? chart.nodes.get(this.selectedId) : undefined;
+		const scroll = this.chartScroll;
+		if (box) {
+			if (box.x + box.w > scroll.x + cols) scroll.x = box.x + box.w - cols;
+			if (box.x < scroll.x) scroll.x = box.x;
+			// Keep the bar row above the box in view so the link to the parent shows.
+			if (box.y + box.h > scroll.y + height) scroll.y = box.y + box.h - height;
+			if (box.y - 1 < scroll.y) scroll.y = Math.max(0, box.y - 1);
+		}
+		scroll.x = Math.max(0, Math.min(scroll.x, chart.width - cols));
+		scroll.y = Math.max(0, Math.min(scroll.y, chart.height - height));
+		const lines = chart.render(scroll.x, scroll.y, width, height);
+		if (!this.agents.length && lines.length < height)
+			lines.push("", this.theme.fg("muted", "  No subagents yet. Agents started by rlm_query appear here."));
+		return lines;
 	}
 
 	private key(action: Keybinding): string {
@@ -517,7 +541,13 @@ export class AgentsDashboard implements Component {
 		const items: string[] = [];
 		if (selected?.openable) items.push(item("tui.select.confirm", "open session"));
 		if (selected) items.push(item("app.agents.details", "details"));
-		items.push(item("app.agents.tree", this.tree ? "flat view" : "tree view"));
+		if (this.view === "chart" && selected) {
+			const move = ["tui.select.up", "tui.select.down", "app.agents.left", "app.agents.right"] as const;
+			items.push(
+				`${t.style(move.map((action) => this.key(action)).join("/"), { fg: "accent", bold: true })} ${t.fg("muted", "move")}`,
+			);
+		}
+		items.push(item("app.agents.tree", `${NEXT_VIEW[this.view]} view`));
 		if (selected && active(selected)) items.push(item("app.agents.stop", "stop"));
 		items.push(item("tui.select.cancel", this.narrowDetails && !this.wide() ? "back" : "close"));
 		return ` ${items.join(t.fg("borderMuted", " · "))}`;
@@ -533,7 +563,7 @@ export class AgentsDashboard implements Component {
 		if (this.wide(width) && !this.sideHidden && this.rows.length) {
 			const side = Math.floor(width * 0.4);
 			const left = width - side - 1;
-			const listLines = this.list(left - 1, body);
+			const listLines = this.view === "chart" ? this.chartView(left - 1, body) : this.list(left - 1, body);
 			const detailLines = this.details(side - 1).map((line) => ` ${line}`);
 			const bar = this.theme.fg("borderMuted", "│");
 			main = Array.from(
@@ -544,7 +574,7 @@ export class AgentsDashboard implements Component {
 		} else if (this.narrowDetails && !this.wide(width) && this.rows.length) {
 			main = this.details(Math.max(1, width - 1)).map((line) => ` ${line}`);
 		} else {
-			main = this.list(width, body);
+			main = this.view === "chart" ? this.chartView(width, body) : this.list(width, body);
 		}
 		const lines = [this.header(width), ...main.slice(0, body)];
 		while (lines.length < height - 1) lines.push("");

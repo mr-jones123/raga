@@ -141,7 +141,7 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		const [childFile] = childSessionFiles(harness, sessionDir);
 		const child = readSession(childFile);
 		expect(child.header.parentSession).toBe(harness.session.sessionFile);
-		// The child stays a live, named session that /agents can open.
+		// The child stays a live, named session that /agents-tui can open.
 		const [observed] = childAgents.list(harness.sessionManager.getSessionId());
 		expect(observed.status).toBe("done");
 		expect(observed.name).toMatch(/^[A-Z][a-z]+[A-Z][a-z]+\d*$/);

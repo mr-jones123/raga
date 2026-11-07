@@ -45,7 +45,8 @@ function agent(id: string, overrides: Partial<ChildAgentInfo> = {}): ChildAgentI
 	};
 }
 
-function fixture(agents: ChildAgentInfo[], rows = 30) {
+/** `view` is the view after opening: the dashboard starts in the chart, and `t` cycles chart, tree, flat. */
+function fixture(agents: ChildAgentInfo[], rows = 30, view: "chart" | "tree" = "tree") {
 	let list = agents;
 	const listeners = new Set<() => void>();
 	const source: AgentsDashboardSource = {
@@ -54,10 +55,12 @@ function fixture(agents: ChildAgentInfo[], rows = 30) {
 			listeners.add(listener);
 			return () => listeners.delete(listener);
 		},
+		rootLabel: () => "main session",
 	};
 	const tui = { terminal: { rows }, requestRender: vi.fn() };
 	const actions = { open: vi.fn(), stop: vi.fn(), close: vi.fn() };
 	const dashboard = new AgentsDashboard(source, tui as unknown as TUI, theme, new KeybindingsManager(), actions);
+	if (view === "tree") dashboard.handleInput("t");
 	const lines = (width = 100) => dashboard.render(width).map(stripVTControlCharacters);
 	const text = (width = 100) => lines(width).join("\n");
 	const update = (next: ChildAgentInfo[]) => {
@@ -202,6 +205,8 @@ describe("agents dashboard", () => {
 		expect(f.selectedLine()).toMatch(/^▶ B/);
 		f.update([agents[0], agents[2]]);
 		expect(f.selectedLine()).toMatch(/^▶ (A|C)/);
+		// Flat -> chart -> tree.
+		f.dashboard.handleInput("t");
 		f.dashboard.handleInput("t");
 		f.dashboard.handleInput("\x1b[F");
 		expect(f.selectedLine()).toMatch(/^▶ C/);
@@ -383,5 +388,81 @@ describe("agents dashboard", () => {
 		expect(f.actions.open).not.toHaveBeenCalled();
 		expect(f.actions.close).not.toHaveBeenCalled();
 		expect(f.tui.requestRender).not.toHaveBeenCalled();
+	});
+
+	describe("chart view", () => {
+		const LEFT = "\x1b[D";
+		const RIGHT = "\x1b[C";
+		const family = () => [
+			agent("Alpha", { createdAt: NOW - 50_000 }),
+			agent("Beta", { createdAt: NOW - 40_000 }),
+			agent("Kid", { parentId: "Alpha", createdAt: NOW - 30_000 }),
+			agent("Kid2", { parentId: "Alpha", createdAt: NOW - 20_000 }),
+		];
+		/** The name of the selected box: the details panel's first line names it. */
+		const selected = (f: ReturnType<typeof fixture>) => {
+			const line = f.lines(140).find((text) => /│ (Alpha|Beta|Kid2?)\s*$/.test(text)) ?? "";
+			return /│ (\w+)\s*$/.exec(line)?.[1];
+		};
+
+		it("opens in the chart with the session as depth 0", () => {
+			const f = fixture(family(), 40, "chart");
+			const text = f.text(140);
+			expect(text).toContain("main session · 4 agents");
+			expect(f.lines(140).some((line) => line.startsWith("D0"))).toBe(true);
+			expect(f.lines(140).some((line) => line.startsWith("D2"))).toBe(true);
+			expect(f.lines(140).at(-1)).toContain("t tree view");
+		});
+
+		it("cycles chart, tree, and flat with t", () => {
+			const f = fixture(family(), 40, "chart");
+			f.dashboard.handleInput("t");
+			expect(f.text(140)).toContain("└ Kid2");
+			expect(f.lines(140).at(-1)).toContain("t flat view");
+			f.dashboard.handleInput("t");
+			expect(f.lines(140).at(-1)).toContain("t chart view");
+			f.dashboard.handleInput("t");
+			expect(f.text(140)).toContain("main session · 4 agents");
+		});
+
+		it("moves along the tree: down to a child, sideways at one depth, up to the parent", () => {
+			const f = fixture(family(), 40, "chart");
+			expect(selected(f)).toBe("Alpha");
+			f.dashboard.handleInput(RIGHT);
+			expect(selected(f)).toBe("Beta");
+			f.dashboard.handleInput(DOWN);
+			expect(selected(f)).toBe("Beta");
+			f.dashboard.handleInput(LEFT);
+			f.dashboard.handleInput(DOWN);
+			expect(selected(f)).toBe("Kid");
+			f.dashboard.handleInput(RIGHT);
+			expect(selected(f)).toBe("Kid2");
+			f.dashboard.handleInput(UP);
+			expect(selected(f)).toBe("Alpha");
+			f.dashboard.handleInput(UP);
+			expect(selected(f)).toBe("Alpha");
+			f.dashboard.handleInput(ENTER);
+			expect(f.actions.open).toHaveBeenCalledWith("Alpha");
+		});
+
+		it("scrolls sideways to keep the selected box visible", () => {
+			const agents = Array.from({ length: 8 }, (_, index) =>
+				agent(`Agent${index}`, { createdAt: NOW - 1000 + index }),
+			);
+			const f = fixture(agents, 30, "chart");
+			expect(f.text(80)).toContain("Agent0");
+			f.dashboard.handleInput("\x1b[F");
+			const text = f.text(80);
+			expect(text).toContain("Agent7");
+			expect(text).not.toContain("Agent0");
+			expect(f.lines(80).every((line) => visibleWidth(line) <= 80)).toBe(true);
+		});
+
+		it("shows the session box and a hint when there are no subagents", () => {
+			const f = fixture([], 30, "chart");
+			const text = f.text(100);
+			expect(text).toContain("main session · 0 agents");
+			expect(text).toContain("No subagents yet");
+		});
 	});
 });

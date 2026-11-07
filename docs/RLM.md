@@ -19,7 +19,6 @@ In RLM mode the model has one tool, `python`. Each `AgentSession` owns one Pytho
 | `packages/coding-agent/src/core/tools/renderers/python.ts` | The TUI renderer of the `python` tool. |
 | `packages/coding-agent/src/core/rlm/children.ts` | Child sessions for `rlm_query`. |
 | `packages/coding-agent/src/core/rlm/child-agents.ts` | Registry of live child sessions: names, state, usage, parking, follow-ups. |
-| `packages/coding-agent/src/core/rlm/child-agent-server.ts` | Private local socket through which `raga agent-attach` panes show and steer a child. |
 
 `packages/coding-agent/python/` ships in the npm package and next to the standalone binary. `getPackageDir()` in `src/config.ts` locates it.
 
@@ -117,7 +116,7 @@ Usage from `llm.*` and `rlm.query` during a cell adds up on the `python` tool re
 
 ### Child sessions in the UI
 
-Each child keeps its `AgentSession` and kernel after `rlm_query` returns. It gets a generated name, which is also its session name. `/agents` lists the children of the current session and opens a child's session in the main view or in Rex panes; the user can steer a child or continue with it, and those turns stay in the child's session. Finished children beyond four per root session are parked: their kernel snapshot is flushed and the session is closed, then reopened from its file on demand. Children of an unsaved session are never parked. A root session's children close with it. See [AGENTS.md](AGENTS.md).
+Each child keeps its `AgentSession` and kernel after `rlm_query` returns. It gets a generated name, which is also its session name. `/agents-tui` shows the children of the current session as a tree and opens a child's session in the main view; the user can steer a child or continue with it, and those turns stay in the child's session. Finished children beyond four per root session are parked: their kernel snapshot is flushed and the session is closed, then reopened from its file on demand. Children of an unsaved session are never parked. A root session's children close with it. See [AGENTS.md](AGENTS.md).
 
 ### Child sessions (`rlm.query`)
 
