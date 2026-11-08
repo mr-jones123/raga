@@ -74,12 +74,6 @@ function frame(theme: Theme, title: string, body: Component[], footer?: string):
 	return container;
 }
 
-export interface ModelSearchOptions {
-	title?: string;
-	placeholder?: string;
-	emptyMessage?: string;
-}
-
 export interface LlamaUi {
 	showModels(serverUrl: string, models: LlamaModelInfo[]): Promise<LlamaManagerAction>;
 	select(title: string, options: string[]): Promise<string | undefined>;
@@ -87,7 +81,6 @@ export interface LlamaUi {
 	connectionError(serverUrl: string, message: string): Promise<"retry" | "close">;
 	searchModels(
 		search: (query: string, signal: AbortSignal) => Promise<HuggingFaceModel[]>,
-		options?: ModelSearchOptions,
 	): Promise<string | undefined>;
 	showStatus(title: string, message: string): void;
 	progress(state: ProgressState): Promise<void>;
@@ -107,7 +100,6 @@ class HuggingFaceSearch extends Container implements Focusable {
 	private readonly search: (query: string, signal: AbortSignal) => Promise<HuggingFaceModel[]>;
 	private readonly cache: Map<string, HuggingFaceModel[]>;
 	private readonly onSelectModel: (model: string | undefined) => void;
-	private readonly emptyMessage: string;
 	private readonly input = new Input();
 	private readonly resultsContainer = new Container();
 	private results: HuggingFaceModel[] = [];
@@ -127,7 +119,6 @@ class HuggingFaceSearch extends Container implements Focusable {
 		search: (query: string, signal: AbortSignal) => Promise<HuggingFaceModel[]>,
 		cache: Map<string, HuggingFaceModel[]>,
 		onSelectModel: (model: string | undefined) => void,
-		options: ModelSearchOptions = {},
 	) {
 		super();
 		this.tui = tui;
@@ -136,8 +127,7 @@ class HuggingFaceSearch extends Container implements Focusable {
 		this.search = search;
 		this.cache = cache;
 		this.onSelectModel = onSelectModel;
-		this.emptyMessage = options.emptyMessage ?? "No GGUF models found";
-		this.addChild(new Text(theme.fg("dim", options.placeholder ?? "Model name or owner/repository[:quant]"), 1, 0));
+		this.addChild(new Text(theme.fg("dim", "Model name or owner/repository[:quant]"), 1, 0));
 		this.addChild(this.input);
 		this.addChild(new Spacer(1));
 		this.addChild(this.resultsContainer);
@@ -212,7 +202,7 @@ class HuggingFaceSearch extends Container implements Focusable {
 		const cached = this.cache.get(this.query.toLowerCase());
 		if (cached) {
 			this.results = cached;
-			this.status = cached.length === 0 ? this.emptyMessage : "";
+			this.status = cached.length === 0 ? "No GGUF models found" : "";
 			this.filterResults();
 			return;
 		}
@@ -230,7 +220,7 @@ class HuggingFaceSearch extends Container implements Focusable {
 			if (this.closed || request.signal.aborted || this.query !== query) return;
 			this.results = results;
 			this.selectedIndex = 0;
-			this.status = results.length === 0 ? this.emptyMessage : "";
+			this.status = results.length === 0 ? "No GGUF models found" : "";
 			this.filterResults();
 		} catch (error) {
 			if (this.closed || request.signal.aborted || this.query !== query) return;
@@ -399,7 +389,6 @@ class LlamaView implements LlamaUi, Focusable {
 
 	searchModels(
 		search: (query: string, signal: AbortSignal) => Promise<HuggingFaceModel[]>,
-		options: ModelSearchOptions = {},
 	): Promise<string | undefined> {
 		return new Promise((resolve) => {
 			const component = new HuggingFaceSearch(
@@ -409,12 +398,11 @@ class LlamaView implements LlamaUi, Focusable {
 				search,
 				this.searchCache,
 				resolve,
-				options,
 			);
 			this.setContent(
 				frame(
 					this.theme,
-					options.title ?? "Download model",
+					"Download model",
 					[new Spacer(1), component],
 					`${keyHint("tui.select.confirm", "select")} • ${keyHint("tui.select.cancel", "back")}`,
 				),

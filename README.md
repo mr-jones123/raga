@@ -90,10 +90,6 @@ On the first `--rlm` run, raga creates a Python 3.11 environment with `uv` at `~
 
 Without `--rlm`, raga behaves like pi, with `read`, `bash`, `edit`, and `write` as model tools.
 
-## Local models
-
-On macOS and Linux, `/local-models` searches Hugging Face, asks before downloading missing weights, and starts models locally. The first recommendation is the official LFM3-1.7B GGUF Q4_K_M build through llama.cpp. The same command detects MLX models automatically on Apple Silicon; no separate backend command is needed. See [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) for setup, cache behavior, and limits.
-
 ## Track sessions
 
 If you keep many worktrees, or run one or two sessions per project, `/tenmo` shows every running raga session on the machine in one list: its folder, whether it is working, waiting on you, or idle, the message it was started with, and what it is doing now. Press Enter to jump to its tmux pane, or `x` twice to end it and delete its history.
@@ -164,7 +160,6 @@ print(counts.most_common(5))
 | [docs/TENMO.md](docs/TENMO.md) | Track, start, and delete sessions across folders and worktrees. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
 | [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
-| [docs/LOCAL-MODELS.md](docs/LOCAL-MODELS.md) | Search, download, and run local Hugging Face models with llama.cpp or MLX. |
 | [docs/UPDATING.md](docs/UPDATING.md) | Install and update the CLI, extensions, and model catalogs. |
 | [docs/RELEASING.md](docs/RELEASING.md) | Automatic npm publishing, versioning, and merging upstream pi. |
 | [packages/coding-agent/docs/](packages/coding-agent/docs/) | Pi's own docs, which still apply to everything raga inherits. |
