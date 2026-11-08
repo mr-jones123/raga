@@ -52,9 +52,6 @@ export const SETTINGS_DEFAULTS = {
 		codeBlockIndent: "  ",
 		mermaid: "streaming",
 	},
-	warnings: {
-		anthropicExtraUsage: true,
-	},
 	codemode: {
 		mode: "on",
 		inlineBudget: 3000,

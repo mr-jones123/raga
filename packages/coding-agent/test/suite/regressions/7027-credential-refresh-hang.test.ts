@@ -107,7 +107,6 @@ describe("issues #7027 and #7113 credential refresh hang", () => {
 			showStatus: vi.fn(),
 			showError: vi.fn(),
 			showWarning,
-			maybeWarnAboutAnthropicSubscriptionAuth: vi.fn(),
 			ui: { requestRender: vi.fn() },
 		};
 		await complete.call(context, dynamicModel.provider, "Stalled Login", "api_key", harness.getModel());
@@ -159,7 +158,6 @@ describe("post-login model discovery", () => {
 			showStatus: vi.fn(),
 			showError: vi.fn(),
 			showWarning: vi.fn(),
-			maybeWarnAboutAnthropicSubscriptionAuth: vi.fn(),
 			ui: { requestRender: vi.fn() },
 		};
 		await complete.call(context, "radius", "Radius", "oauth", unknownModel);

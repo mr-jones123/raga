@@ -35,7 +35,6 @@ describe("issue #7829 invalid settings warning", () => {
 				session: harness.session,
 				checkForPackageUpdates: vi.fn().mockResolvedValue([]),
 				checkTmuxKeyboardSetup: vi.fn().mockResolvedValue(undefined),
-				maybeWarnAboutAnthropicSubscriptionAuth: vi.fn(),
 				getUserInput: vi.fn(() => new Promise<string>(() => {})),
 			};
 			const run = (InteractiveMode.prototype as unknown as { run(this: typeof context): Promise<void> }).run;

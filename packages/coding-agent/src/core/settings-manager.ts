@@ -25,7 +25,6 @@ import type {
 	ThinkingBudgetsSettings,
 	TransportSetting,
 	TuiMode,
-	WarningSettings,
 } from "./settings-schema.ts";
 
 export type {
@@ -53,7 +52,6 @@ export type {
 	ThinkingBudgetsSettings,
 	TransportSetting,
 	TuiMode,
-	WarningSettings,
 } from "./settings-schema.ts";
 /** Cache-warming profile. "idle" also warms between agent runs. */
 export const CACHE_WARMING_MODES = ["off", "streaming", "idle"] as const satisfies readonly CacheWarmingMode[];
@@ -1471,16 +1469,6 @@ export class SettingsManager {
 		this.globalSettings.markdown ??= {};
 		this.globalSettings.markdown.mermaid = mode;
 		this.markModified("markdown", "mermaid");
-		this.save();
-	}
-
-	getWarnings(): WarningSettings {
-		return { ...(this.settings.warnings ?? {}) };
-	}
-
-	setWarnings(warnings: WarningSettings): void {
-		this.globalSettings.warnings = { ...warnings };
-		this.markModified("warnings");
 		this.save();
 	}
 }

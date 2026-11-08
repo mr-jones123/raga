@@ -611,15 +611,6 @@
         }
       }
     },
-    "warnings": {
-      "type": "object",
-      "properties": {
-        "anthropicExtraUsage": {
-          "type": "boolean",
-          "default": true
-        }
-      }
-    },
     "codemode": {
       "type": "object",
       "properties": {
