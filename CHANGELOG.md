@@ -1,3 +1,10 @@
+## [0.14.0](https://github.com/mr-jones123/raga/compare/raga-v0.13.0...raga-v0.14.0) (2026-11-08)
+
+### Features
+
+* **coding-agent:** add /btw for side questions ([5df1ec5](https://github.com/mr-jones123/raga/commit/5df1ec57403a66f82e1ac3a69a7b8c0930395d99))
+* **coding-agent:** boxed indigo editor and one-line footer ([65c2c7c](https://github.com/mr-jones123/raga/commit/65c2c7c41b0e04c1cd860701230857bc28f092b3))
+
 ## [0.13.0](https://github.com/mr-jones123/raga/compare/raga-v0.12.1...raga-v0.13.0) (2026-11-07)
 
 ### Features
