@@ -44,6 +44,8 @@ interface Family {
 	saturation: { min: number; max: number };
 	/** ANSI palette slot the family takes its hue and saturation from. */
 	slot: number;
+	/** Keep the family's own hue even when the terminal reports a palette (raga's brand color). */
+	fixed?: boolean;
 }
 
 const FAMILIES = {
@@ -61,6 +63,7 @@ const FAMILIES = {
 	thinkingViolet: { hue: 295, saturation: { min: 0.4, max: 0.75 }, slot: 5 },
 	thinkingMagenta: { hue: 337.5, saturation: { min: 0.5, max: 0.85 }, slot: 13 },
 	thinkingRed: { hue: 20, saturation: { min: 0.95, max: 1 }, slot: 1 },
+	indigo: { hue: 279, saturation: { min: 0.3, max: 0.85 }, slot: 4, fixed: true },
 } satisfies Record<string, Family>;
 
 type FamilyName = keyof typeof FAMILIES;
@@ -110,6 +113,8 @@ const TOKEN_FAMILIES: Record<ThemeToken, FamilyName> = {
 	mdCodeBlock: "green",
 	toolDiffAdded: "green",
 	bashMode: "green",
+	brand: "indigo",
+	brandBorder: "indigo",
 	syntaxNumber: "green",
 	error: "red",
 	toolDiffRemoved: "red",
@@ -329,8 +334,8 @@ const RULES: Rule[] = [
 		"readable",
 	),
 	{ token: "searchMatchText", on: ["searchMatchBg"], level: "readable" },
-	...each(["bashMode", "border", "borderAccent"], ["background"], "readable"),
-	{ token: "borderMuted", on: ["background"], level: "subtle" },
+	...each(["bashMode", "border", "borderAccent", "brand"], ["background"], "readable"),
+	...each(["borderMuted", "brandBorder"], ["background"], "subtle"),
 	...each(["mdQuoteBorder", "mdHr"], ["background", ...MESSAGE_PANELS, ...TOOL_PANELS], "readable"),
 	{ token: "scrollbarTrack", on: ["background"], level: "track" },
 	{ token: "scrollbarThumb", on: ["scrollbarTrack"], level: "thumb" },
@@ -480,7 +485,7 @@ export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeC
 	const paint = (token: ThemeToken, oklabL: number): RgbColor => {
 		const lightness = oklabToOkhslLightness(oklabL);
 		const family: Family = FAMILIES[TOKEN_FAMILIES[token]];
-		if (!palette) {
+		if (!palette || family.fixed) {
 			const { min, max } = family.saturation;
 			return okhslColor(family.hue, (min + (max - min) * bellWeight(lightness)) * saturation, lightness);
 		}

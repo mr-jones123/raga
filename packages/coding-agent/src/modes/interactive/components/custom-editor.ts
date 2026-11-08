@@ -1,5 +1,15 @@
-import { Editor, type EditorOptions, type EditorTheme, type TUI, visibleWidth } from "@earendil-works/pi-tui";
+import {
+	Editor,
+	type EditorOptions,
+	type EditorTheme,
+	type TUI,
+	type TuiMouseEvent,
+	type TuiMouseEventResult,
+	truncateToWidth,
+	visibleWidth,
+} from "@earendil-works/pi-tui";
 import type { AppKeybinding, KeybindingsManager } from "../../../core/keybindings.ts";
+import { theme } from "../theme/theme.ts";
 import type { StatusIndicator } from "./status-indicator.ts";
 
 export type CustomEditorOptions = EditorOptions & {
@@ -7,8 +17,15 @@ export type CustomEditorOptions = EditorOptions & {
 	embedWorkingStatus?: boolean;
 };
 
+/** Columns the box adds on each side: `│ › ` on the left, ` │` on the right. */
+const BOX_LEFT = 4;
+const BOX_RIGHT = 2;
+/** Below this width the box and prompt cost too much room; draw the plain editor. */
+const BOX_MIN_WIDTH = 16;
+
 /**
- * Custom editor that handles app-level keybindings for coding-agent.
+ * Custom editor that handles app-level keybindings for coding-agent. Draws the input in a rounded
+ * box with a `›` prompt, and the session name in the top border.
  */
 export class CustomEditor extends Editor {
 	private keybindings: KeybindingsManager;
@@ -22,6 +39,8 @@ export class CustomEditor extends Editor {
 	public onPasteImage?: () => void;
 	/** Handler for extension-registered shortcuts. Returns true if handled. */
 	public onExtensionShortcut?: (data: string) => boolean;
+	/** Session name for the top border; hidden while a working status is shown there. */
+	public sessionLabel?: () => string | undefined;
 
 	constructor(tui: TUI, theme: EditorTheme, keybindings: KeybindingsManager, options?: CustomEditorOptions) {
 		super(tui, theme, options);
@@ -33,14 +52,39 @@ export class CustomEditor extends Editor {
 		this.workingStatusIndicator = indicator;
 	}
 
-	protected override renderTopBorder(width: number, hiddenLineCount: number): string {
-		if (!this.embedWorkingStatus || !this.workingStatusIndicator || width <= 0) {
-			return super.renderTopBorder(width, hiddenLineCount);
-		}
+	override render(width: number): string[] {
+		if (width < BOX_MIN_WIDTH) return super.render(width);
+		const lines = super.render(width - BOX_LEFT - BOX_RIGHT);
+		const bottom = this.renderedVisibleLineCount + 1;
+		const edge = (text: string) => this.borderColor(text);
+		const prompt = theme.fg("brand", "›");
+		return lines.map((line, index) => {
+			if (index === 0) return `${edge("╭──")}${line}${edge("──╮")}`;
+			if (index < bottom) return `${edge("│")} ${index === 1 ? prompt : " "} ${line} ${edge("│")}`;
+			if (index === bottom) return `${edge("╰──")}${line}${edge("──╯")}`;
+			// Autocomplete rows sit under the box, aligned with the text.
+			return `${" ".repeat(BOX_LEFT)}${line}`;
+		});
+	}
 
-		let status = this.workingStatusIndicator.renderInBorder(Math.max(1, width - 5));
+	override handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
+		if (event.width < BOX_MIN_WIDTH) return super.handleMouse(event);
+		return super.handleMouse({ ...event, x: event.x - BOX_LEFT, width: event.width - BOX_LEFT - BOX_RIGHT });
+	}
+
+	protected override renderTopBorder(width: number, hiddenLineCount: number): string {
+		let status =
+			this.embedWorkingStatus && this.workingStatusIndicator && width > 0
+				? this.workingStatusIndicator.renderInBorder(Math.max(1, width - 5))
+				: "";
 		let statusWidth = visibleWidth(status);
-		if (statusWidth === 0) return super.renderTopBorder(width, hiddenLineCount);
+		if (statusWidth === 0) {
+			const label = hiddenLineCount === 0 ? this.sessionLabel?.()?.replace(/\s+/g, " ").trim() : undefined;
+			if (!label || width < 8) return super.renderTopBorder(width, hiddenLineCount);
+			const text = ` ${truncateToWidth(label, width - 4, "…")} `;
+			return theme.fg("brand", text) + this.borderColor("─".repeat(width - visibleWidth(text)));
+		}
+		if (!this.workingStatusIndicator) return super.renderTopBorder(width, hiddenLineCount);
 
 		const overflowLabel = hiddenLineCount > 0 ? ` ↑ ${hiddenLineCount} more ` : undefined;
 		const overflowLabelWidth = overflowLabel ? visibleWidth(overflowLabel) : 0;

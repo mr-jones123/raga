@@ -68,7 +68,9 @@
 		"thinkingHigh": "okhsl(295 73% 59%)",
 		"thinkingXhigh": "okhsl(337 81% 61%)",
 		"thinkingMax": "okhsl(20 99% 63%)",
-		"bashMode": "okhsl(159 64% 65%)"
+		"bashMode": "okhsl(159 64% 65%)",
+		"brand": "okhsl(279 80% 62%)",
+		"brandBorder": "okhsl(279 35% 40%)"
 	},
 	"export": {
 		"pageBg": "okhsl(262 14% 16%)",

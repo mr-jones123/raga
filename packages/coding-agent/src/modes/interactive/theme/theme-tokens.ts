@@ -98,6 +98,16 @@ export const THEME_TOKENS = defineThemeTokens({
 		fallback: "thinkingXhigh",
 	},
 	bashMode: { slot: "foreground", description: "Editor border color in bash mode" },
+	brand: {
+		slot: "foreground",
+		description: "Editor prompt, session name, and context bar (falls back to accent when omitted)",
+		fallback: "accent",
+	},
+	brandBorder: {
+		slot: "foreground",
+		description: "Editor box border (falls back to borderMuted when omitted)",
+		fallback: "borderMuted",
+	},
 });
 
 export type ThemeToken = keyof typeof THEME_TOKENS;

@@ -45,7 +45,7 @@ States: `queued` waits for a free slot; `running`; `done`; `partial` stopped at 
 
 ### Inside a subagent's session
 
-Enter replaces the main view with the subagent's session: its transcript, its Python cells rendered exactly like the main session's, and a footer with its model, tokens, and cost. A banner above the footer names the subagent and shows whether the main session is still working.
+Enter replaces the main view with the subagent's session: its transcript, its Python cells rendered exactly like the main session's, and a footer with its folder, branch, context bar, and model. A banner above the footer names the subagent and shows whether the main session is still working.
 
 - Type a message to steer the subagent while it works, or to continue with it after it answered. Its reply is saved to its own session, not returned to the parent's `rlm_query`.
 - Esc (with an empty editor) returns to the main session. It does not interrupt the subagent; stop it with `x` in `/agents-tui`.

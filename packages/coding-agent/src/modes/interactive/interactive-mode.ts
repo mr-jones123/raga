@@ -654,12 +654,12 @@ export class InteractiveMode {
 			autocompleteMaxVisible,
 			embedWorkingStatus: true,
 		});
+		this.defaultEditor.sessionLabel = () => this.session.sessionManager.getSessionName();
 		this.editor = this.defaultEditor;
 		this.editorContainer = new Container();
 		this.editorContainer.addChild(this.editor as Component);
 		this.footerDataProvider = new FooterDataProvider(this.sessionManager.getCwd());
 		this.footer = new FooterComponent(this.session, this.footerDataProvider);
-		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
 		this.footerContainer = new Container();
 		this.footerContainer.addChild(this.footer);
 
@@ -2090,7 +2090,6 @@ export class InteractiveMode {
 			this.renderer.setWheelScrollLines(this.settingsManager.getFullscreenWheelScrollLines());
 		}
 		this.footer.setSession(this.session);
-		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
 		this.footerDataProvider.setCwd(this.sessionManager.getCwd());
 		this.hideThinkingBlock = this.settingsManager.getHideThinkingBlock();
 		this.outputPad = this.settingsManager.getOutputPad();
@@ -4718,7 +4717,6 @@ export class InteractiveMode {
 		this.unsubscribe = undefined;
 		this.clearStatusIndicator();
 		this.footer.setSession(this.session);
-		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
 		this.renderFooterContainer();
 		this.renderCurrentSessionState();
 		this.subscribeToAgent();
@@ -4768,8 +4766,8 @@ export class InteractiveMode {
 		if (this.isBashMode) {
 			this.editor.borderColor = theme.getBashModeBorderColor();
 		} else {
-			const level = this.session.thinkingLevel || "off";
-			this.editor.borderColor = theme.getThinkingBorderColor(level);
+			// The thinking level is in the footer; the box keeps raga's border color.
+			this.editor.borderColor = (text: string) => theme.fg("brandBorder", text);
 		}
 		this.activeStatusIndicator?.invalidate();
 		this.ui.requestRender();
@@ -5209,7 +5207,6 @@ export class InteractiveMode {
 				{
 					onAutoCompactChange: (enabled) => {
 						this.session.setAutoCompactionEnabled(enabled);
-						this.footer.setAutoCompactEnabled(enabled);
 					},
 					onShowImagesChange: (enabled) => {
 						this.settingsManager.setShowImages(enabled);

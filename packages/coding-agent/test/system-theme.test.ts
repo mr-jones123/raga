@@ -83,6 +83,18 @@ describe("generateSystemThemeColors", () => {
 		expect(Math.abs(hue(resolved(DRACULA, "error")) - hue(DRACULA.palette![1]))).toBeLessThan(8);
 	});
 
+	it("keeps raga's brand indigo instead of taking a hue from the terminal palette", () => {
+		const hue = ({ r, g, b }: RgbColor) => colorToOklch(rgbColor(r, g, b)).h;
+		// Mid-gray is left out: contrast pushes the color to white there, which has no hue.
+		for (const name of ["dracula", "solarizedLight", "backgroundOnly"]) {
+			const input = TERMINALS[name]!;
+			for (const token of ["brand", "brandBorder"] as const) {
+				expect(Math.abs(hue(resolved(input, token)) - 279), `${name} ${token}`).toBeLessThan(8);
+			}
+		}
+		expect(generateSystemThemeColors({}).colors.brand).toBe(4);
+	});
+
 	// https://github.com/earendil-works/pi/issues/10255
 	it("keeps pastel palette colors pastel at other lightnesses", () => {
 		const frappe: SystemThemeInput = {

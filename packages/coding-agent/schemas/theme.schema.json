@@ -318,6 +318,14 @@
         "bashMode": {
           "$ref": "#/$defs/ColorValue",
           "description": "Editor border color in bash mode"
+        },
+        "brand": {
+          "$ref": "#/$defs/ColorValue",
+          "description": "Editor prompt, session name, and context bar (falls back to accent when omitted)"
+        },
+        "brandBorder": {
+          "$ref": "#/$defs/ColorValue",
+          "description": "Editor box border (falls back to borderMuted when omitted)"
         }
       },
       "description": "Theme color definitions (scrollbar, thinkingMax, and search highlight colors are optional and use compatible fallbacks)",
