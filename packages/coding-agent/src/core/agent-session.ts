@@ -1591,6 +1591,51 @@ export class AgentSession {
 		return buildSystemPrompt(this._runSystemPromptOptions ?? this._baseSystemPromptOptions);
 	}
 
+	/**
+	 * Answer a side question (`/btw`) from the current conversation without adding it to the session.
+	 * The request repeats the session's system prompt, tools, and messages so it reads the main
+	 * prompt cache; only the question and answer are new tokens. The model is told not to use tools,
+	 * and any tool call it makes is dropped. Usage is recorded as a `btw` entry so `/session` counts it.
+	 * Safe to call while an agent run is streaming: it neither waits for nor changes the run.
+	 */
+	async askAside(question: string, signal?: AbortSignal): Promise<{ text: string; usage: Usage }> {
+		const selected = this.model;
+		if (!selected) throw new Error(formatNoModelSelectedMessage());
+		// A virtual model routes per request; ask the model the latest response went to.
+		const routed = this.routedModel;
+		const model = routed?.model ?? selected;
+		if (isVirtualModel(model)) throw new Error("/btw needs a response from the session first to pick a model");
+		const messages = convertToLlm(this.sessionManager.buildSessionProjection().messages);
+		messages.push({
+			role: "user",
+			content: `<btw>\nSide question from the user. Answer it from the conversation so far, briefly. Do not call tools and do not continue the task; this exchange is not saved.\n\n${question}\n</btw>`,
+			timestamp: Date.now(),
+		});
+		const thinkingLevel = routed?.thinkingLevel ?? this.thinkingLevel;
+		const message = await this._modelRuntime.completeSimple(
+			model,
+			{ systemPrompt: this.agent.state.systemPrompt, messages, tools: this.agent.state.tools },
+			{
+				onPayload: this.agent.onPayload,
+				onResponse: this.agent.onResponse,
+				signal,
+				// The session id routes OpenAI requests to the server holding this session's cache.
+				sessionId: this.sessionId,
+				reasoning: thinkingLevel === "off" ? undefined : thinkingLevel,
+			},
+		);
+		this.sessionManager.appendUsage("btw", message.provider, message.responseModel ?? message.model, message.usage);
+		if (message.stopReason === "error" || message.stopReason === "aborted") {
+			throw new Error(message.errorMessage ?? `The side question ended with ${message.stopReason}`);
+		}
+		const text = message.content
+			.filter((block): block is TextContent => block.type === "text")
+			.map((block) => block.text)
+			.join("")
+			.trim();
+		return { text: text || "(no answer: the model tried to use a tool)", usage: message.usage };
+	}
+
 	/** Current retry attempt (0 if not retrying) */
 	get retryAttempt(): number {
 		return this._retryAttempt;

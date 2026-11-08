@@ -3213,6 +3213,11 @@ export class InteractiveMode {
 			text = text.trim();
 			if (!text) return;
 
+			if (text === "/btw" || text.startsWith("/btw ")) {
+				this.editor.setText("");
+				await this.handleBtwCommand(text.slice("/btw".length).trim());
+				return;
+			}
 			if (text === "/agents-tui") {
 				this.editor.setText("");
 				await this.showAgents();
@@ -7132,6 +7137,38 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(hotkeys.trim(), 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	/**
+	 * `/btw <question>`: answer from the conversation in view without saving the exchange. It runs
+	 * beside an active agent run, so the block shows up wherever the transcript is when it is asked.
+	 */
+	private async handleBtwCommand(question: string): Promise<void> {
+		if (!question) {
+			this.showWarning("Usage: /btw <question>");
+			return;
+		}
+		const session = this.focusedAgent?.session ?? this.session;
+		const block = new Container();
+		const status = new ThemedText(() => theme.fg("dim", "  thinking…"), 1, 0);
+		block.addChild(new Spacer(1));
+		block.addChild(new ThemedText(() => `${theme.fg("brand", "btw ›")} ${theme.fg("muted", question)}`, 1, 0));
+		block.addChild(status);
+		this.chatContainer.addChild(block);
+		this.ui.requestRender();
+		try {
+			const { text, usage } = await session.askAside(question);
+			block.removeChild(status);
+			block.addChild(new Markdown(text, 1, 0, this.getMarkdownThemeWithSettings()));
+			const cached = usage.cacheRead > 0 ? ` · ${formatTokens(usage.cacheRead)} cached` : "";
+			const cost = usage.cost.total >= 0.001 ? ` · $${usage.cost.total.toFixed(3)}` : "";
+			block.addChild(new ThemedText(() => theme.fg("dim", `  not saved to the session${cached}${cost}`), 1, 0));
+		} catch (error) {
+			block.removeChild(status);
+			const message = error instanceof Error ? error.message : String(error);
+			block.addChild(new ThemedText(() => theme.fg("error", `  ${message}`), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 

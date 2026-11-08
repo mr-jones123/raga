@@ -30,6 +30,11 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 		description: "Export a bug report or upload it to the upstream pi developers",
 		argumentHint: "<description>",
 	},
+	{
+		name: "btw",
+		description: "Ask a side question about the conversation without saving it",
+		argumentHint: "<question>",
+	},
 	{ name: "copy", description: "Copy last agent message to clipboard" },
 	{ name: "name", description: "Set session display name" },
 	{ name: "session", description: "Show session info and stats" },

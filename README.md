@@ -11,6 +11,7 @@ Raga is an opinionated coding harness, forked from [pi](https://github.com/badlo
 - The model works inside a persistent Python REPL, a native [Recursive Language Model](https://arxiv.org/abs/2512.24601) runtime. It keeps large inputs and its history in variables instead of its context window, and calls sub-LLMs and recursive sub-agents from code.
 - Every session loads one engineering playbook skill, `peak`, with its references and the no-mistakes workflow.
 - `/tenmo` tracks every running session across folders and worktrees, and `/diff` reviews changes without leaving the terminal.
+- `/btw <question>` asks a side question about the conversation, even mid-run. The answer reuses the prompt cache and is not saved to the session.
 - Model pickers show only current OpenAI and Anthropic models.
 
 The name comes from Mahoraga in *Jujutsu Kaisen*, whose wheel turns after each hit so the same attack works less well. A harness that improves at a task each time the task repeats is still the long-term goal. The pieces for it exist as experimental instance mode (Linux only), and no measurement has shown that improvement yet.
