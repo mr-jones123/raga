@@ -250,7 +250,10 @@ describe("AgentSession prompt characterization", () => {
 		expect(expandedPrompt).toContain("explain this");
 	});
 
-	it("expands /review to the review skill", async () => {
+	it.each([
+		["a space", " "],
+		["a newline", "\n"],
+	])("expands /review followed by %s to the review skill", async (_, separator) => {
 		const tempDir = join(tmpdir(), `pi-skill-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		mkdirSync(tempDir, { recursive: true });
 		tempDirs.push(tempDir);
@@ -288,7 +291,7 @@ describe("AgentSession prompt characterization", () => {
 			},
 		]);
 
-		await harness.session.prompt("/review main..HEAD");
+		await harness.session.prompt(`/review${separator}main..HEAD`);
 
 		expect(expandedPrompt).toContain('<skill name="review" location="');
 		expect(expandedPrompt).toContain("Prove each finding.");

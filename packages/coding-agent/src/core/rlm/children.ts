@@ -5,8 +5,8 @@
 
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { realpathSync } from "node:fs";
-import { mkdir, readdir } from "node:fs/promises";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
+import { mkdir, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
@@ -370,17 +370,15 @@ async function runChild(
 				join(childrenRoot, randomUUID()),
 			)
 		: undefined;
-	if (workspace && projectRoot && !host.instance) await cloneDependencies(projectRoot, workspace.path);
-	if (workspace) parent.appendCustomEntry("raga-child-workspace", { workspace });
-	const sourceRoot = existingWorkspace?.path ?? projectRoot ?? host.cwd;
-	const cwd = workspace ? join(workspace.path, relative(realpathSync(sourceRoot), parentCwd)) : host.cwd;
-	if (workspace) await mkdir(cwd, { recursive: true, mode: 0o700 });
-	const sessionManager = parent.isPersisted()
-		? SessionManager.create(cwd, parent.getSessionDir(), { parentSession })
-		: SessionManager.inMemory(cwd, { parentSession });
+	// Copy-on-write dependency clones are not the child's work: they leave before its change is captured.
+	const cloned: string[] = [];
+	const removeWorkspace = async () => {
+		if (workspace && !host.instance) await removeChildWorkspace(workspace);
+	};
 	let change: ChildChange | undefined;
 	const captureChange = async () => {
 		if (!workspace || change) return;
+		await Promise.all(cloned.map((path) => rm(join(workspace.path, path), { recursive: true, force: true })));
 		change = await collectChildChange(workspace);
 		parent.appendCustomEntry("raga-child-change", { workspace, change });
 	};
@@ -388,18 +386,33 @@ async function runChild(
 	// refs/raga/changes, so its checkout goes once the change is captured.
 	const release = async () => {
 		await captureChange();
-		if (workspace && !host.instance) await removeChildWorkspace(workspace);
+		await removeWorkspace();
 	};
-	// An isolated child's writes are confined to its checkout: bubblewrap on Linux, Seatbelt on macOS.
-	// ponytail: without a backend it falls back to the bare checkout; fail closed if that is ever too weak.
-	const isolatedSandbox: SandboxPolicy | undefined =
-		workspace && !host.instance && (await checkSandbox("writes")).available
-			? confinedToWorkspace(workspace.path, cwd)
-			: undefined;
+	const setup = async () => {
+		if (workspace && projectRoot && !host.instance)
+			cloned.push(...(await cloneDependencies(projectRoot, workspace.path)));
+		if (workspace) parent.appendCustomEntry("raga-child-workspace", { workspace });
+		const sourceRoot = existingWorkspace?.path ?? projectRoot ?? host.cwd;
+		const cwd = workspace ? join(workspace.path, relative(realpathSync(sourceRoot), parentCwd)) : host.cwd;
+		if (workspace) await mkdir(cwd, { recursive: true, mode: 0o700 });
+		const sessionManager = parent.isPersisted()
+			? SessionManager.create(cwd, parent.getSessionDir(), { parentSession })
+			: SessionManager.inMemory(cwd, { parentSession });
+		// An isolated child's writes are confined to its checkout: bubblewrap on Linux, Seatbelt on macOS.
+		// ponytail: without a backend it falls back to the bare checkout; fail closed if that is ever too weak.
+		const confine = workspace !== undefined && !host.instance && (await checkSandbox("writes")).available;
+		return { cwd, sessionManager, confine };
+	};
+	const { cwd, sessionManager, confine } = await setup().catch(async (error) => {
+		await removeWorkspace();
+		throw error;
+	});
 	const createChild = (manager: SessionManager) => {
 		const baseSandbox = host.instance
 			? instanceSandbox(host.instance, cwd, manager, workspace?.path ?? host.sandbox?.workspace ?? cwd)
-			: (isolatedSandbox ?? host.sandbox);
+			: confine && workspace
+				? confinedToWorkspace(workspace.path, cwd, rlmSnapshotDir(manager))
+				: host.sandbox;
 		const sandbox = baseSandbox && options.readOnly ? { ...baseSandbox, workspaceReadOnly: true } : baseSandbox;
 		return createAgentSession({
 			cwd,
@@ -522,7 +535,7 @@ async function gitTopLevel(cwd: string): Promise<string> {
  * without an install. APFS (`cp -c`) and reflink filesystems clone without copying data.
  */
 // ponytail: node_modules only; add venv/target dirs when a non-JS repo needs them.
-async function cloneDependencies(source: string, target: string): Promise<void> {
+async function cloneDependencies(source: string, target: string): Promise<string[]> {
 	const find = async (rel: string, depth: number): Promise<string[]> => {
 		const found: string[] = [];
 		for (const entry of await readdir(join(source, rel), { withFileTypes: true })) {
@@ -534,21 +547,38 @@ async function cloneDependencies(source: string, target: string): Promise<void> 
 		return found;
 	};
 	const flags = process.platform === "darwin" ? ["-cR"] : ["-R", "--reflink=auto"];
+	const cloned: string[] = [];
 	for (const path of await find("", 0)) {
+		// A node_modules directory that git tracks is already in the checkout.
+		if (existsSync(join(target, path))) continue;
 		await mkdir(dirname(join(target, path)), { recursive: true });
 		await promisify(execFile)("cp", [...flags, join(source, path), join(target, path)]);
+		cloned.push(path);
 	}
+	return cloned;
 }
 
-/** Writes only inside the checkout; the running Node's install stays readable so npm and node work. */
-function confinedToWorkspace(workspace: string, cwd: string): SandboxPolicy {
+/**
+ * Writes only inside the checkout and the kernel's snapshot directory; the running Node's install stays
+ * readable so npm and node work.
+ */
+function confinedToWorkspace(workspace: string, cwd: string, snapshotDir: string): SandboxPolicy {
 	const nodePrefix = realpathSync(dirname(dirname(process.execPath)));
+	mkdirSync(snapshotDir, { recursive: true, mode: 0o700 });
 	return {
 		workspace,
 		cwd,
 		readOnly: [nodePrefix],
-		writable: [],
+		writable: [realpathSync(snapshotDir)],
 		confinement: "writes",
 		env: { PATH: [join(nodePrefix, "bin"), process.env.PATH].filter(Boolean).join(delimiter) },
 	};
+}
+
+/** Where an ordinary session's kernel snapshot lives; a sandboxed kernel needs it writable. */
+export function rlmSnapshotDir(sessionManager: SessionManager): string {
+	const sessionId = sessionManager.getSessionId();
+	return sessionManager.isPersisted()
+		? join(sessionManager.getSessionDir(), `${sessionId}.rlm`)
+		: join(tmpdir(), "raga-rlm", sessionId);
 }

@@ -4,7 +4,6 @@
  * namespace, and provides the `python` tool. See docs/RLM.md.
  */
 import { copyFileSync, existsSync, realpathSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import type {
 	AgentMessage,
@@ -29,7 +28,7 @@ import { pythonRenderers } from "../tools/renderers/python.ts";
 import { combineUsage } from "../usage-totals.ts";
 import { emitRlmCellEvent, type RlmCellStatus } from "./cell-events.ts";
 import { childAgents } from "./child-agents.ts";
-import { createRlmQueryHandler, describeAgentRoles, RlmChildSlots } from "./children.ts";
+import { createRlmQueryHandler, describeAgentRoles, RlmChildSlots, rlmSnapshotDir } from "./children.ts";
 import { type CellOutput, type HostHandler, type HostRequest, Kernel } from "./kernel.ts";
 
 /** The tools a python cell reaches through `tool.call`. */
@@ -516,12 +515,9 @@ export class RlmRuntime {
 	 * in-memory session. A fork has its own session id, so it never writes its parent's file.
 	 */
 	private snapshotPath(): string {
-		const sessionManager = this.host.sessionManager;
-		const sessionId = sessionManager.getSessionId();
+		const sessionId = this.host.sessionManager.getSessionId();
 		if (this.host.instance) return join(this.host.instance.stateRoot, "kernels", sessionId, "kernel.dill");
-		return sessionManager.isPersisted()
-			? join(sessionManager.getSessionDir(), `${sessionId}.rlm`, "kernel.dill")
-			: join(tmpdir(), "raga-rlm", sessionId, "kernel.dill");
+		return join(rlmSnapshotDir(this.host.sessionManager), "kernel.dill");
 	}
 
 	private queueSnapshot(): void {

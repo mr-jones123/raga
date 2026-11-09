@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import {
+	chmodSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -21,6 +22,7 @@ import type { AssistantMessage, FauxResponseStep, Usage } from "@earendil-works/
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/index.ts";
 import { checkSandbox } from "../../src/core/instances/sandbox.ts";
+import { listChildWorkspaces } from "../../src/core/instances/workspaces.ts";
 import { childAgents } from "../../src/core/rlm/child-agents.ts";
 import type { SessionEntry, SessionHeader } from "../../src/core/session-manager.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
@@ -555,6 +557,90 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 			},
 			{ timeout: 5000 },
 		);
+	});
+
+	/** A git repository in the harness cwd with one committed file, plus whatever `prepare` adds first. */
+	function initRepo(repo: string, prepare: () => void = () => {}): (...args: string[]) => Buffer {
+		const git = (...args: string[]) =>
+			execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: repo });
+		writeFileSync(join(repo, ".gitignore"), "node_modules\n*.jsonl\n");
+		writeFileSync(join(repo, "src.txt"), "original\n");
+		git("init", "-q");
+		prepare();
+		git("add", "-A");
+		git("commit", "-qm", "init");
+		return git;
+	}
+
+	/** Runs one isolated child with `childCode` and returns what the parent printed about its change. */
+	async function runIsolated(harness: Harness, childCode: string): Promise<string> {
+		harness.setResponses(
+			routed({
+				Parent: [
+					pythonCall(
+						'try:\n    r = await rlm_query("Child", isolated=True, details=True)\n    print(r["change"]["files"])\nexcept HostError as e:\n    print("failed:", e)',
+					),
+					fauxAssistantMessage("done"),
+				],
+				Child: [
+					pythonCall(`${childCode}\nanswer["content"] = "ok"\nanswer["ready"] = True`),
+					fauxAssistantMessage("set"),
+				],
+			}),
+		);
+		await harness.session.prompt("Parent");
+		return getMessageText(getToolResult(harness, "python"));
+	}
+
+	it("keeps cloned node_modules out of the change even when only .git/info/exclude ignores them", async () => {
+		const { harness } = await setup();
+		const repo = harness.tempDir;
+		initRepo(repo, () => {
+			writeFileSync(join(repo, ".gitignore"), "*.jsonl\n");
+			writeFileSync(join(repo, ".git", "info", "exclude"), "node_modules\n");
+			mkdirSync(join(repo, "node_modules", "dep"), { recursive: true });
+			writeFileSync(join(repo, "node_modules", "dep", "index.js"), "module.exports = 1;\n");
+		});
+		expect(await runIsolated(harness, 'open("proof.txt", "w").write("x\\n")')).toBe("[stdout]\n['proof.txt']");
+	});
+
+	it("leaves a node_modules directory that git tracks as it is", async () => {
+		const { harness } = await setup();
+		const repo = harness.tempDir;
+		initRepo(repo, () => {
+			writeFileSync(join(repo, ".gitignore"), "*.jsonl\n");
+			mkdirSync(join(repo, "test", "fixtures", "node_modules"), { recursive: true });
+			writeFileSync(join(repo, "test", "fixtures", "node_modules", "a.js"), "module.exports = 1;\n");
+		});
+		expect(await runIsolated(harness, "pass")).toBe("[stdout]\n[]");
+	});
+
+	it("removes the checkout when setting up an isolated child fails", async () => {
+		const { harness } = await setup();
+		const repo = harness.tempDir;
+		const locked = join(repo, "node_modules");
+		initRepo(repo, () => mkdirSync(locked));
+		chmodSync(locked, 0o000);
+		try {
+			expect(await runIsolated(harness, "pass")).toMatch(/^\[stdout\]\nfailed:/);
+		} finally {
+			chmodSync(locked, 0o700);
+		}
+		expect(await listChildWorkspaces(repo)).toEqual([]);
+	});
+
+	it("lets an isolated child's sandboxed kernel write its snapshot", async () => {
+		const { harness } = await setup();
+		initRepo(harness.tempDir);
+		expect(await runIsolated(harness, "kept = 41")).toBe("[stdout]\n[]");
+		const [observed] = childAgents.list(harness.sessionManager.getSessionId());
+		const child = childAgents.session(observed.id);
+		await child?.flushRlmSnapshot();
+		const snapshot = child?.sessionManager
+			.getEntries()
+			.find((entry) => entry.type === "custom" && entry.customType === "rlm-kernel-snapshot");
+		const path = snapshot?.type === "custom" ? (snapshot.data as { path: string }).path : "";
+		expect(existsSync(path)).toBe(true);
 	});
 
 	it("runs an isolated child in a throwaway checkout with cloned node_modules and returns its edits as a change", async () => {

@@ -342,14 +342,31 @@ function sbplString(value: string): string {
 	return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
+/** The path a symlink resolves to, or the path itself when it is dangling or absent. */
+function resolvedOrSelf(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path;
+	}
+}
+
 /**
  * The Seatbelt profile for a plan. Later rules win, so the denials of credentials and masked
  * directories come after the allowances they carve out of.
+ *
+ * A sandboxed process could otherwise ask an unconfined one to act for it. Unix sockets are limited to
+ * the writable roots (so not the Docker or SSH agent sockets), and Apple Events, LaunchServices and the
+ * helpers that start processes outside the sandbox (`open`, `osascript`, `launchctl`) are denied.
  */
-// ponytail: reads stay open except credentials and masks; deny reads under $HOME by default if a stricter macOS boundary is needed.
+// ponytail: reads and Mach lookups stay open except the named ones; a deny-default profile is the stricter upgrade.
 function seatbeltProfile(plan: SandboxPlan): string {
 	const subpaths = (paths: string[]) => paths.map((path) => `(subpath ${sbplString(path)})`).join(" ");
-	const writable = plan.mounts.filter((mount) => mount.kind === "rw").map((mount) => mount.path);
+	const writable = [
+		...plan.mounts.filter((mount) => mount.kind === "rw").map((mount) => mount.path),
+		"/private/tmp",
+		"/private/var/tmp",
+	];
 	const masked = plan.mounts
 		.filter((mount) => mount.kind === "mask-dir" || mount.kind === "mask-file")
 		.map((mount) => mount.path);
@@ -357,15 +374,21 @@ function seatbeltProfile(plan: SandboxPlan): string {
 		"(version 1)",
 		"(allow default)",
 		"(deny file-write*)",
-		`(allow file-write* ${subpaths([...writable, "/private/tmp", "/private/var/tmp"])} (literal "/dev/null") (literal "/dev/zero") (regex #"^/dev/tty") (regex #"^/dev/fd/"))`,
-		`(deny file-read* file-write* ${subpaths(credentialPaths().map((path) => (lstatOrUndefined(path) ? realpathSync(path) : path)))})`,
+		`(allow file-write* ${subpaths(writable)} (literal "/dev/null") (literal "/dev/zero") (regex #"^/dev/tty") (regex #"^/dev/fd/"))`,
+		`(deny file-read* file-write* ${subpaths(credentialPaths().map(resolvedOrSelf))})`,
+		"(deny appleevent-send)",
+		'(deny mach-lookup (global-name "com.apple.coreservices.launchservicesd") (global-name "com.apple.coreservices.appleevents"))',
+		'(deny process-exec (literal "/usr/bin/open") (literal "/usr/bin/osascript") (literal "/bin/launchctl"))',
+		"(deny network-outbound (remote unix-socket))",
+		// One clause per root: several paths inside a single `remote unix-socket` filter do not match as "any".
+		`(allow network-outbound ${writable.map((path) => `(remote unix-socket (subpath ${sbplString(path)}))`).join(" ")})`,
 	];
 	if (masked.length > 0) lines.push(`(deny file-read* file-write* ${subpaths(masked)})`);
 	if (!plan.network) {
 		lines.push(
-			// Test servers may listen; connections may only go to loopback and local sockets.
-			"(deny network-outbound)",
-			'(allow network-outbound (remote ip "localhost:*") (remote unix-socket))',
+			// Test servers may listen; outbound connections may only go to loopback.
+			"(deny network-outbound (remote ip))",
+			'(allow network-outbound (remote ip "localhost:*"))',
 		);
 	}
 	return lines.join("\n");

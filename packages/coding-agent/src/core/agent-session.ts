@@ -2374,7 +2374,8 @@ export class AgentSession {
 			text = `/skill:review${text.slice("/review".length)}`;
 		if (!text.startsWith("/skill:")) return text;
 
-		const spaceIndex = text.indexOf(" ");
+		// Arguments start at the first whitespace, so `/skill:name` may be followed by a newline.
+		const spaceIndex = text.search(/\s/);
 		const skillName = spaceIndex === -1 ? text.slice(7) : text.slice(7, spaceIndex);
 		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1).trim();
 
