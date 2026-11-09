@@ -1,3 +1,9 @@
+## [0.15.1](https://github.com/mr-jones123/raga/compare/raga-v0.15.0...raga-v0.15.1) (2026-11-09)
+
+### Bug Fixes
+
+* **release:** ship the pi-tui native helpers in raga-cli ([2d46c45](https://github.com/mr-jones123/raga/commit/2d46c452c3b0635ebb6697716eff090e3b468ba8))
+
 ## [0.15.0](https://github.com/mr-jones123/raga/compare/raga-v0.14.0...raga-v0.15.0) (2026-11-09)
 
 ### Features
