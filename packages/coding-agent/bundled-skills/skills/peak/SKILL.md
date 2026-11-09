@@ -39,7 +39,7 @@ Remaining triggers:
 
 ## Reference index
 
-Peak, `bend`, and `raga-artifacts` are the installed skills. `bend` handles Bend formal verification, and `raga-artifacts` makes shareable slides and documents. Every other workflow is a reference under `references/<name>/SKILL.md`. Pick the reference whose description matches the task and read it in full before acting. Do not read them all.
+Peak, `bend`, `quiz`, and `raga-artifacts` are the installed skills. `bend` handles Bend formal verification, `quiz` explains a set of commits and quizzes the user on them, and `raga-artifacts` makes shareable slides and documents. Every other workflow is a reference under `references/<name>/SKILL.md`. Pick the reference whose description matches the task and read it in full before acting. Do not read them all.
 
 ### Principles
 

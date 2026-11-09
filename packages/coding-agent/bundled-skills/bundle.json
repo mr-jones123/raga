@@ -34,6 +34,11 @@
       "source": "pstack"
     },
     {
+      "name": "quiz",
+      "path": "skills/quiz/SKILL.md",
+      "source": "raga"
+    },
+    {
       "name": "raga-artifacts",
       "path": "skills/raga-artifacts/SKILL.md",
       "source": "raga"
@@ -252,9 +257,9 @@
     },
     {
       "path": "README.md",
-      "sha256": "f58c9364c2f5a4b25f589ae4bbef0557f2d7fc60a16d87fd087cee3b13013154",
+      "sha256": "5c637796fffd6e92cfba5b13a30a80371a47beb12d91e509eee8b5cebe3db9a5",
       "source": "raga bundle maintenance guide",
-      "sourceSha256": "f58c9364c2f5a4b25f589ae4bbef0557f2d7fc60a16d87fd087cee3b13013154",
+      "sourceSha256": "5c637796fffd6e92cfba5b13a30a80371a47beb12d91e509eee8b5cebe3db9a5",
       "adaptation": "raga bundle maintenance guide"
     },
     {
@@ -1414,7 +1419,7 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "b8062baa06a1e870f988b155b16f82b8cac383e31085b1370431c84d6c29b662",
+      "sha256": "68c2fc57423770abe7f271359a38b0221def0c92b79179bbb11fd5ddc26d4261",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"
@@ -1459,6 +1464,27 @@
       "sha256": "1aa47336acfe08114464cf27e13131714c23d4f7667940a92620eb39fb626c3c",
       "source": "raga native adaptation",
       "sourceSha256": "1aa47336acfe08114464cf27e13131714c23d4f7667940a92620eb39fb626c3c",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/quiz/SKILL.md",
+      "sha256": "e5cd4f21742000d176676ecdab4932d89f861b0712aa9434c0e4b2de38693f61",
+      "source": "raga native adaptation",
+      "sourceSha256": "e5cd4f21742000d176676ecdab4932d89f861b0712aa9434c0e4b2de38693f61",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/quiz/assets/template.html",
+      "sha256": "422ff9695ddfa9ade78bd0fe52912609b1052a95d574fba88fca61dc4863a05e",
+      "source": "raga native adaptation",
+      "sourceSha256": "422ff9695ddfa9ade78bd0fe52912609b1052a95d574fba88fca61dc4863a05e",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/quiz/scripts/quiz.mjs",
+      "sha256": "c22eab58225ac5166c754b33c6e57c76431cad74287ff134a44744229da06e67",
+      "source": "raga native adaptation",
+      "sourceSha256": "c22eab58225ac5166c754b33c6e57c76431cad74287ff134a44744229da06e67",
       "adaptation": "raga native adaptation"
     }
   ],

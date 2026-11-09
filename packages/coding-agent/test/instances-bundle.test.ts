@@ -16,11 +16,12 @@ afterEach(async () => {
 });
 
 describe("portable default harness", () => {
-	it("discovers bend, peak, and raga-artifacts and keeps every engineering workflow as a peak reference", async () => {
+	it("discovers bend, peak, quiz, and raga-artifacts and keeps every engineering workflow as a peak reference", async () => {
 		const skills = await inspectBundledSkills();
 		expect(skills.map((skill) => ({ name: skill.name, source: skill.source }))).toEqual([
 			{ name: "bend", source: "raga" },
 			{ name: "peak", source: "pstack" },
+			{ name: "quiz", source: "raga" },
 			{ name: "raga-artifacts", source: "raga" },
 		]);
 		const manifest = JSON.parse(await readFile(join(getBundledHarnessPath(), "bundle.json"), "utf8")) as {
@@ -54,7 +55,7 @@ describe("portable default harness", () => {
 		temporary.push(root);
 		await cp(source, join(root, "bundled-skills"), { recursive: true });
 		process.env.PI_PACKAGE_DIR = root;
-		expect(await inspectBundledSkills()).toHaveLength(3);
+		expect(await inspectBundledSkills()).toHaveLength(4);
 		await writeFile(
 			join(root, "bundled-skills", "skills", "peak", "references", "how", "SKILL.md"),
 			"changed package bytes",

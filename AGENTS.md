@@ -18,7 +18,7 @@ Raga is an opinionated coding harness, forked from [pi](https://github.com/badlo
   - `src/extensions/`: built-in extensions, registered in `src/extensions/index.ts`.
   - `src/modes/interactive/`: TUI mode, including `/agents-tui` (`agents/`).
   - `src/cli/`: CLI subcommands (`instance-command.ts`, `tenmo-command.ts`, args and help).
-  - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `raga-artifacts`).
+  - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `quiz`, `raga-artifacts`).
   - `test/`: vitest tests; `test/suite/` uses the faux provider harness.
 - `packages/codemode`, `packages/mcp`, `packages/durable`, `packages/env`, `packages/chord`, `packages/telemetry`, `packages/evals`: supporting packages.
 - `docs/`: raga docs (`ARCHITECTURE.md`, `INSTANCE-PLAN.md`, `PROGRESS.md`, `RLM.md`, `RELEASING.md`). `packages/coding-agent/docs/` holds the upstream pi user docs.
