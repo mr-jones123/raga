@@ -1,3 +1,17 @@
+## [0.15.0](https://github.com/mr-jones123/raga/compare/raga-v0.14.0...raga-v0.15.0) (2026-11-09)
+
+### Features
+
+* **coding-agent:** add /review with isolated verifiers confined by Seatbelt or bubblewrap ([b364dcc](https://github.com/mr-jones123/raga/commit/b364dcc2f8a69a34d40bf533297d740f2ff400f6))
+* **coding-agent:** bundle a quiz skill that explains commits and tests the user before shipping ([71c6aa3](https://github.com/mr-jones123/raga/commit/71c6aa364390dc8f83b090fa61edad0b9cb12b8e))
+
+### Bug Fixes
+
+* **ai:** allow prompt cache keys for compatible proxies ([#9442](https://github.com/mr-jones123/raga/issues/9442)) ([35c9724](https://github.com/mr-jones123/raga/commit/35c9724db5c87e887a4bfa89f753ae77c9267b4b))
+* **ai:** send session-id instead of session_id on OpenAI Responses ([#11793](https://github.com/mr-jones123/raga/issues/11793)) ([63dce08](https://github.com/mr-jones123/raga/commit/63dce08842c285d95ca863f9d47df67383c4e319)), closes [#4967](https://github.com/mr-jones123/raga/issues/4967) [#11639](https://github.com/mr-jones123/raga/issues/11639)
+* **coding-agent:** harden isolated rlm_query children and the Seatbelt profile ([738e1ca](https://github.com/mr-jones123/raga/commit/738e1cacd200c9898d2d4e3d8d03c30bdbecc1f7))
+* **tui:** prevent cursor marker leaks ([#9441](https://github.com/mr-jones123/raga/issues/9441)) ([a82d23a](https://github.com/mr-jones123/raga/commit/a82d23a20fdcbc8d2246941563801453730e32be)), closes [#9257](https://github.com/mr-jones123/raga/issues/9257) [#9332](https://github.com/mr-jones123/raga/issues/9332)
+
 ## [0.14.0](https://github.com/mr-jones123/raga/compare/raga-v0.13.0...raga-v0.14.0) (2026-11-08)
 
 ### Features
