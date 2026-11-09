@@ -6,7 +6,7 @@
  *   node scripts/raga-pack.mjs [--skip-build] [--allow-unreleased]
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -49,6 +49,16 @@ const copy = (from, to = relative(agentDir, from), filter) =>
 	cpSync(from, join(outDir, to), { recursive: true, ...(filter ? { filter } : {}) });
 
 copy(join(agentDir, "dist", "bundle"));
+// The pi-tui native helpers (clipboard images, file paths, modifier keys). The bundle has no installed
+// pi-tui package, so its chunks look for them at dist/bundle/native (see tui native-module-path.ts).
+copy(
+	join(repoRoot, "packages", "tui", "native"),
+	join("dist", "bundle", "native"),
+	(source) => statSync(source).isDirectory() || source.endsWith(".node"),
+);
+for (const helper of ["darwin/prebuilds/darwin-arm64/darwin-platform.node", "win32/prebuilds/win32-x64/win32-platform.node"]) {
+	if (!existsSync(join(outDir, "dist", "bundle", "native", helper))) throw new Error(`Missing native helper ${helper}`);
+}
 copy(join(agentDir, "dist", "modes", "interactive", "theme"), undefined, (source) => /(theme|\.json)$/.test(source));
 copy(join(agentDir, "dist", "modes", "interactive", "assets"));
 copy(join(agentDir, "dist", "core", "export-html"), undefined, (source) =>
