@@ -24,6 +24,7 @@ import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/i
 import { checkSandbox } from "../../src/core/instances/sandbox.ts";
 import { listChildWorkspaces } from "../../src/core/instances/workspaces.ts";
 import { childAgents } from "../../src/core/rlm/child-agents.ts";
+import { resolvePythonEnv } from "../../src/core/rlm/python-env.ts";
 import type { SessionEntry, SessionHeader } from "../../src/core/session-manager.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
@@ -629,7 +630,8 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		expect(await listChildWorkspaces(repo)).toEqual([]);
 	});
 
-	it("lets an isolated child's sandboxed kernel write its snapshot", async () => {
+	it("lets an isolated child's sandboxed kernel write its snapshot", async (ctx) => {
+		if (!(await resolvePythonEnv()).hasDill) ctx.skip("dill is required for kernel snapshots");
 		const { harness } = await setup();
 		initRepo(harness.tempDir);
 		expect(await runIsolated(harness, "kept = 41")).toBe("[stdout]\n[]");
@@ -665,7 +667,7 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 				],
 				"Write proof": [
 					pythonCall(
-						`import os\nopen("proof.txt", "w").write("fails\\n")\ntry:\n    open(${JSON.stringify(join(realpathSync(repo), "escape.txt"))}, "w").write("x")\n    escaped = "escaped"\nexcept PermissionError:\n    escaped = "blocked"\nanswer["content"] = f"{os.path.exists('node_modules/dep/index.js')} {escaped}"\nanswer["ready"] = True`,
+						`import os\nopen("proof.txt", "w").write("fails\\n")\ntry:\n    open(${JSON.stringify(join(realpathSync(repo), "escape.txt"))}, "w").write("x")\n    escaped = "escaped"\nexcept OSError:\n    escaped = "blocked"\nanswer["content"] = f"{os.path.exists('node_modules/dep/index.js')} {escaped}"\nanswer["ready"] = True`,
 					),
 					fauxAssistantMessage("set"),
 				],
@@ -673,7 +675,8 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 		);
 		await harness.session.prompt("Verify");
 
-		// With a sandbox backend (Seatbelt on macOS, bubblewrap on Linux) the child cannot write outside its checkout.
+		// With a sandbox backend the child cannot write outside its checkout: Seatbelt denies the write
+		// (PermissionError), bubblewrap hides the path (FileNotFoundError); the child catches both as OSError.
 		const confined = (await checkSandbox("writes")).available;
 		expect(getMessageText(getToolResult(harness, "python"))).toBe(
 			`[stdout]\nTrue ${confined ? "blocked" : "escaped"} ['proof.txt'] False False\n"isolated" and "read_only" cannot both be set`,
