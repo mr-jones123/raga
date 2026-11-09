@@ -42,6 +42,11 @@
       "name": "raga-artifacts",
       "path": "skills/raga-artifacts/SKILL.md",
       "source": "raga"
+    },
+    {
+      "name": "review",
+      "path": "skills/review/SKILL.md",
+      "source": "raga"
     }
   ],
   "files": [
@@ -257,9 +262,9 @@
     },
     {
       "path": "README.md",
-      "sha256": "5c637796fffd6e92cfba5b13a30a80371a47beb12d91e509eee8b5cebe3db9a5",
+      "sha256": "dd527ba9cb149d899c953fc817599f9bb29b2670b86cf530d053f453939c75e1",
       "source": "raga bundle maintenance guide",
-      "sourceSha256": "5c637796fffd6e92cfba5b13a30a80371a47beb12d91e509eee8b5cebe3db9a5",
+      "sourceSha256": "dd527ba9cb149d899c953fc817599f9bb29b2670b86cf530d053f453939c75e1",
       "adaptation": "raga bundle maintenance guide"
     },
     {
@@ -1419,7 +1424,7 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "68c2fc57423770abe7f271359a38b0221def0c92b79179bbb11fd5ddc26d4261",
+      "sha256": "f0362f33593f3bd9290b789a17e61eeb4d5d1cdb0cad209ee3b1eb8ba6c73986",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"
@@ -1485,6 +1490,13 @@
       "sha256": "c22eab58225ac5166c754b33c6e57c76431cad74287ff134a44744229da06e67",
       "source": "raga native adaptation",
       "sourceSha256": "c22eab58225ac5166c754b33c6e57c76431cad74287ff134a44744229da06e67",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/review/SKILL.md",
+      "sha256": "29bfb4a1ea01fab9f6cab8f2bd8a09aea61b3e4dff76a8f075b6561e2a63f743",
+      "source": "raga native adaptation",
+      "sourceSha256": "29bfb4a1ea01fab9f6cab8f2bd8a09aea61b3e4dff76a8f075b6561e2a63f743",
       "adaptation": "raga native adaptation"
     }
   ],

@@ -250,6 +250,51 @@ describe("AgentSession prompt characterization", () => {
 		expect(expandedPrompt).toContain("explain this");
 	});
 
+	it("expands /review to the review skill", async () => {
+		const tempDir = join(tmpdir(), `pi-skill-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		mkdirSync(tempDir, { recursive: true });
+		tempDirs.push(tempDir);
+		const skillPath = join(tempDir, "SKILL.md");
+		writeFileSync(skillPath, "# Review\n\nProve each finding.");
+		const resourceLoader = {
+			...createTestResourceLoader(),
+			getSkills: () => ({
+				skills: [
+					{
+						name: "review",
+						description: "Review skill",
+						filePath: skillPath,
+						disableModelInvocation: false,
+						baseDir: tempDir,
+						sourceInfo: createSyntheticSourceInfo(skillPath, {
+							source: "local",
+							scope: "project",
+							origin: "top-level",
+							baseDir: tempDir,
+						}),
+					},
+				],
+				diagnostics: [],
+			}),
+		};
+		const harness = await createHarness({ resourceLoader });
+		harnesses.push(harness);
+		let expandedPrompt = "";
+		harness.setResponses([
+			(context) => {
+				const user = context.messages.find((message) => message.role === "user");
+				expandedPrompt = user ? getMessageText(user) : "";
+				return fauxAssistantMessage("ok");
+			},
+		]);
+
+		await harness.session.prompt("/review main..HEAD");
+
+		expect(expandedPrompt).toContain('<skill name="review" location="');
+		expect(expandedPrompt).toContain("Prove each finding.");
+		expect(expandedPrompt.endsWith("main..HEAD")).toBe(true);
+	});
+
 	it("expands prompt templates before sending the prompt", async () => {
 		const template: PromptTemplate = {
 			name: "review",

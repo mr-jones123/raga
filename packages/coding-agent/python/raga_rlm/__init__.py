@@ -7,9 +7,17 @@ function is a coroutine that sends one `host_request` and awaits the reply.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
-from collections.abc import Iterator, Mapping
+import tempfile
+from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 
 # The kernel starts in the session cwd; `read` resolves relative paths against it even after a cell chdirs.
 _SESSION_CWD = os.getcwd()
@@ -37,6 +45,7 @@ __all__ = [
     "record_cell",
     "rlm_query",
     "set_context",
+    "test_lock",
     "write",
 ]
 
@@ -150,20 +159,51 @@ async def rlm_query(
     max_turns: int | None = None,
     *,
     read_only: bool = False,
+    isolated: bool = False,
     details: bool = False,
     role: str | None = None,
     seat: int | None = None,
 ) -> str | dict[str, Any]:
-    """Run a child. Instance writers get isolated checkouts; details includes the change artifact.
+    """Run a child. Instance writers and `isolated` children get throwaway checkouts; details includes the change.
 
     Without `model`, `role` (and `seat` for panel roles) picks the model and reasoning budget assigned to
     that role: the user's /agent-setup choices, or the pinned revision's roles in an instance session.
     """
     payload = _drop_none(
-        task=task, context=context, model=model, max_turns=max_turns, read_only=read_only, role=role, seat=seat
+        task=task,
+        context=context,
+        model=model,
+        max_turns=max_turns,
+        read_only=read_only,
+        isolated=isolated,
+        role=role,
+        seat=seat,
     )
     result = await host_request({"type": "rlm.query", **payload})
     return result if details else result["answer"]
+
+
+@contextlib.asynccontextmanager
+async def test_lock() -> AsyncIterator[None]:
+    """Hold the machine-wide test lock, so parallel isolated children don't fight over ports and shared files.
+
+    A child in its own VM (`RAGA_VM=1`) shares nothing, so there the lock is a no-op.
+    """
+    # ponytail: one global lock serializes tests across children; Tart VMs remove the need.
+    if fcntl is None or os.environ.get("RAGA_VM") == "1":
+        yield
+        return
+    fd = os.open(os.path.join(tempfile.gettempdir(), "raga-test.lock"), os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                await asyncio.sleep(0.2)
+        yield
+    finally:
+        os.close(fd)
 
 
 class Inputs(Mapping[str, str]):
@@ -301,6 +341,7 @@ BOOTSTRAP_NAMES = frozenset(
         "llm_query",
         "llm_batch",
         "rlm_query",
+        "test_lock",
         "memory",
         "instance",
         "context",

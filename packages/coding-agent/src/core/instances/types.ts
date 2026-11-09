@@ -50,6 +50,11 @@ export interface SandboxPolicy {
 	cwd?: string;
 	network?: boolean;
 	env?: Record<string, string>;
+	/**
+	 * `full` (default): an empty-root boundary that hides host paths; bubblewrap, Linux only.
+	 * `writes`: writes are confined to the writable roots; bubblewrap on Linux, Seatbelt on macOS.
+	 */
+	confinement?: "full" | "writes";
 }
 
 export interface SandboxCommand {

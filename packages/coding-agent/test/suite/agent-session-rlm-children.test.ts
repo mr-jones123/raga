@@ -1,4 +1,14 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	realpathSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -10,6 +20,7 @@ import {
 import type { AssistantMessage, FauxResponseStep, Usage } from "@earendil-works/pi-ai/compat";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/index.ts";
+import { checkSandbox } from "../../src/core/instances/sandbox.ts";
 import { childAgents } from "../../src/core/rlm/child-agents.ts";
 import type { SessionEntry, SessionHeader } from "../../src/core/session-manager.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
@@ -544,5 +555,45 @@ describe("AgentSession RLM child sessions (rlm_query)", () => {
 			},
 			{ timeout: 5000 },
 		);
+	});
+
+	it("runs an isolated child in a throwaway checkout with cloned node_modules and returns its edits as a change", async () => {
+		const { harness } = await setup();
+		const repo = harness.tempDir;
+		const git = (...args: string[]) =>
+			execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: repo });
+		writeFileSync(join(repo, ".gitignore"), "node_modules\n*.jsonl\n");
+		writeFileSync(join(repo, "src.txt"), "original\n");
+		mkdirSync(join(repo, "node_modules", "dep"), { recursive: true });
+		writeFileSync(join(repo, "node_modules", "dep", "index.js"), "module.exports = 1;\n");
+		git("init", "-q");
+		git("add", ".gitignore", "src.txt");
+		git("commit", "-qm", "init");
+		harness.setResponses(
+			routed({
+				Verify: [
+					pythonCall(
+						'import os\nr = await rlm_query("Write proof", isolated=True, details=True)\nprint(r["answer"], r["change"]["files"], os.path.exists("proof.txt"), os.path.exists(r["workspace"]["path"]))\ntry:\n    await rlm_query("x", isolated=True, read_only=True)\nexcept HostError as e:\n    print(e)',
+					),
+					fauxAssistantMessage("done"),
+				],
+				"Write proof": [
+					pythonCall(
+						`import os\nopen("proof.txt", "w").write("fails\\n")\ntry:\n    open(${JSON.stringify(join(realpathSync(repo), "escape.txt"))}, "w").write("x")\n    escaped = "escaped"\nexcept PermissionError:\n    escaped = "blocked"\nanswer["content"] = f"{os.path.exists('node_modules/dep/index.js')} {escaped}"\nanswer["ready"] = True`,
+					),
+					fauxAssistantMessage("set"),
+				],
+			}),
+		);
+		await harness.session.prompt("Verify");
+
+		// With a sandbox backend (Seatbelt on macOS, bubblewrap on Linux) the child cannot write outside its checkout.
+		const confined = (await checkSandbox("writes")).available;
+		expect(getMessageText(getToolResult(harness, "python"))).toBe(
+			`[stdout]\nTrue ${confined ? "blocked" : "escaped"} ['proof.txt'] False False\n"isolated" and "read_only" cannot both be set`,
+		);
+		expect(existsSync(join(repo, "escape.txt"))).toBe(!confined);
+		expect(readFileSync(join(repo, "src.txt"), "utf8")).toBe("original\n");
+		expect(git("status", "--porcelain").toString()).toBe("");
 	});
 });

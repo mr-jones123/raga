@@ -2365,6 +2365,13 @@ export class AgentSession {
 	 * Emits errors via extension runner if file read fails.
 	 */
 	private _expandSkillCommand(text: string): string {
+		// `/review` is the bundled review skill, unless the user has a prompt template of that name.
+		if (
+			/^\/review(\s|$)/.test(text) &&
+			!this.promptTemplates.some((template) => template.name === "review") &&
+			this.resourceLoader.getSkills().skills.some((skill) => skill.name === "review")
+		)
+			text = `/skill:review${text.slice("/review".length)}`;
 		if (!text.startsWith("/skill:")) return text;
 
 		const spaceIndex = text.indexOf(" ");

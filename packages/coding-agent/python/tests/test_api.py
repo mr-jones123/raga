@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
+
+import pytest
 
 from conftest import KernelProcess, only, text_of
 
@@ -165,3 +168,30 @@ def test_read_returns_the_whole_file_without_a_host_call(kernel: KernelProcess, 
     expected = (3001, "bad \ufffd byte", "line 2\nline 3\nline 4\n", "line 3000\nbad \ufffd byte\n")
     assert only(events, "result")["text"] == repr(expected)
     assert host.requests == []
+
+
+def test_test_lock_serializes_holders_and_is_a_noop_in_a_vm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+    import tempfile
+
+    import raga_rlm
+
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    order: list[str] = []
+
+    async def hold(name: str) -> None:
+        async with raga_rlm.test_lock():
+            order.append(f"{name} in")
+            await asyncio.sleep(0.3)
+            order.append(f"{name} out")
+
+    async def both() -> None:
+        await asyncio.gather(hold("a"), hold("b"))
+
+    asyncio.run(both())
+    assert order in (["a in", "a out", "b in", "b out"], ["b in", "b out", "a in", "a out"])
+
+    monkeypatch.setenv("RAGA_VM", "1")
+    order.clear()
+    asyncio.run(both())
+    assert order[:2] in (["a in", "b in"], ["b in", "a in"])

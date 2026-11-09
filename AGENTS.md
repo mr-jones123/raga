@@ -13,12 +13,12 @@ Raga is an opinionated coding harness, forked from [pi](https://github.com/badlo
   - `src/core/current-models.ts`: hides superseded OpenAI and Anthropic models from the `openai`, `openai-codex`, and `anthropic` providers.
   - `src/core/`: sessions (`session-manager.ts`, `agent-session.ts`), SDK (`sdk.ts`), extensions runtime, settings, keybindings.
   - `src/core/rlm/`: Python kernel, `rlm_query` child agents.
-  - `src/core/instances/`: instance mode (`.raga/instance.json`, harness revisions, sandbox, memory). Sandbox is Linux-only (bubblewrap).
+  - `src/core/instances/`: instance mode (`.raga/instance.json`, harness revisions, sandbox, memory). Instance sandboxes are Linux-only (bubblewrap); `isolated` RLM children are also confined on macOS, where Seatbelt limits their writes to their checkout.
   - `src/core/tenmo.ts`, `src/extensions/tenmo/`, `src/cli/tenmo-command.ts`: tenmo. Each process writes `~/.raga/agent/tenmo/<pid>.json`; `/tenmo` and `raga tenmo` read it; spawns go to tmux windows. Tenmo can delete a session (process, session file, subagents, forks, kernel snapshots); it never sends messages to sessions.
   - `src/extensions/`: built-in extensions, registered in `src/extensions/index.ts`.
   - `src/modes/interactive/`: TUI mode, including `/agents-tui` (`agents/`).
   - `src/cli/`: CLI subcommands (`instance-command.ts`, `tenmo-command.ts`, args and help).
-  - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `quiz`, `raga-artifacts`).
+  - `bundled-skills/`: skills shipped with raga (`peak`, `bend`, `quiz`, `raga-artifacts`, `review`).
   - `test/`: vitest tests; `test/suite/` uses the faux provider harness.
 - `packages/codemode`, `packages/mcp`, `packages/durable`, `packages/env`, `packages/chord`, `packages/telemetry`, `packages/evals`: supporting packages.
 - `docs/`: raga docs (`ARCHITECTURE.md`, `INSTANCE-PLAN.md`, `PROGRESS.md`, `RLM.md`, `RELEASING.md`). `packages/coding-agent/docs/` holds the upstream pi user docs.

@@ -375,7 +375,7 @@ export class Kernel {
 		try {
 			python = await this.envPromise;
 			if (this.options.sandbox) {
-				const isolation = await checkSandbox();
+				const isolation = await checkSandbox(this.options.sandbox.confinement);
 				if (!isolation.available) throw new Error(`Restricted execution is unavailable: ${isolation.reason}`);
 			}
 		} catch (error) {

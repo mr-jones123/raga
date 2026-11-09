@@ -35,6 +35,11 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 		description: "Ask a side question about the conversation without saving it",
 		argumentHint: "<question>",
 	},
+	{
+		name: "review",
+		description: "Find bugs in the changes, beyond the diff, and prove each with a failing test",
+		argumentHint: "[range]",
+	},
 	{ name: "copy", description: "Copy last agent message to clipboard" },
 	{ name: "name", description: "Set session display name" },
 	{ name: "session", description: "Show session info and stats" },

@@ -1,11 +1,17 @@
 /**
- * Linux bubblewrap boundary for worker processes: generated Python, candidate probes, and
- * host-mediated shell/file operations. See docs/INSTANCE-PLAN.md M11.
+ * Sandbox boundary for worker processes: generated Python, candidate probes, and host-mediated
+ * shell/file operations. See docs/INSTANCE-PLAN.md M11.
  *
- * The sandbox starts from an empty root. It sees read-only system runtime directories, a few
- * runtime files from /etc, a private /tmp, and only the policy's roots at their host paths.
- * Nothing from the host environment is inherited. Restricted execution fails closed when
- * bubblewrap is unavailable.
+ * Linux uses bubblewrap. The sandbox starts from an empty root. It sees read-only system runtime
+ * directories, a few runtime files from /etc, a private /tmp, and only the policy's roots at their
+ * host paths. Nothing from the host environment is inherited.
+ *
+ * A policy with `confinement: "writes"` also runs on macOS, under Seatbelt (`sandbox-exec`). Seatbelt
+ * cannot hide the filesystem the way an empty mount namespace does, so it denies writes outside the policy's writable roots and /private/tmp, denies
+ * reads of credential paths and masked supervisor directories, and allows only loopback network
+ * unless the policy enables it. The host PATH is kept so the user's toolchain stays usable.
+ *
+ * Restricted execution fails closed when no backend is available.
  */
 import { spawn } from "node:child_process";
 import { accessSync, constants as fsConstants, lstatSync, readlinkSync, realpathSync, type Stats } from "node:fs";
@@ -42,6 +48,7 @@ export interface SandboxLaunch {
 export const NOT_STARTED_EXIT_CODE = -1;
 export const DEFAULT_MAX_OUTPUT_BYTES = 1024 * 1024;
 
+const SANDBOX_EXEC = "/usr/bin/sandbox-exec";
 const BWRAP_CANDIDATES = ["/usr/bin/bwrap", "/bin/bwrap", "/usr/local/bin/bwrap", "/run/current-system/sw/bin/bwrap"];
 /** Mounted read-only (or recreated as the same symlink) when present on the host. */
 const RUNTIME_ROOTS = ["/usr", "/bin", "/sbin", "/lib", "/lib32", "/lib64", "/libx32", "/nix/store"];
@@ -330,8 +337,44 @@ function checkCommandVisible(command: string, plan: SandboxPlan): void {
 	}
 }
 
+/** A Seatbelt string literal. */
+function sbplString(value: string): string {
+	return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * The Seatbelt profile for a plan. Later rules win, so the denials of credentials and masked
+ * directories come after the allowances they carve out of.
+ */
+// ponytail: reads stay open except credentials and masks; deny reads under $HOME by default if a stricter macOS boundary is needed.
+function seatbeltProfile(plan: SandboxPlan): string {
+	const subpaths = (paths: string[]) => paths.map((path) => `(subpath ${sbplString(path)})`).join(" ");
+	const writable = plan.mounts.filter((mount) => mount.kind === "rw").map((mount) => mount.path);
+	const masked = plan.mounts
+		.filter((mount) => mount.kind === "mask-dir" || mount.kind === "mask-file")
+		.map((mount) => mount.path);
+	const lines = [
+		"(version 1)",
+		"(allow default)",
+		"(deny file-write*)",
+		`(allow file-write* ${subpaths([...writable, "/private/tmp", "/private/var/tmp"])} (literal "/dev/null") (literal "/dev/zero") (regex #"^/dev/tty") (regex #"^/dev/fd/"))`,
+		`(deny file-read* file-write* ${subpaths(credentialPaths().map((path) => (lstatOrUndefined(path) ? realpathSync(path) : path)))})`,
+	];
+	if (masked.length > 0) lines.push(`(deny file-read* file-write* ${subpaths(masked)})`);
+	if (!plan.network) {
+		lines.push(
+			// Test servers may listen; connections may only go to loopback and local sockets.
+			"(deny network-outbound)",
+			'(allow network-outbound (remote ip "localhost:*") (remote unix-socket))',
+		);
+	}
+	return lines.join("\n");
+}
+
+let verifiedSeatbelt = false;
 let verifiedBwrap: string | undefined;
 let availability: Promise<{ available: boolean; reason?: string }> | undefined;
+let seatbeltAvailability: Promise<{ available: boolean; reason?: string }> | undefined;
 
 function findBwrap(): string | undefined {
 	for (const candidate of BWRAP_CANDIDATES) {
@@ -346,14 +389,25 @@ function findBwrap(): string | undefined {
 }
 
 /**
- * Build a bubblewrap invocation for a long-lived process (the RLM kernel). Spawn the result with
+ * Build a sandboxed invocation for a long-lived process (the RLM kernel). Spawn the result with
  * `detached: true` and kill its process group; the returned env is complete. Throws
  * SandboxUnavailableError unless checkSandbox() has confirmed a working backend.
  */
 export function sandboxLaunch(command: string, args: string[], policy: SandboxPolicy): SandboxLaunch {
-	if (verifiedBwrap === undefined) {
-		throw new SandboxUnavailableError("Sandbox backend not verified; call checkSandbox() and require available");
+	const unverified = () =>
+		new SandboxUnavailableError("Sandbox backend not verified; call checkSandbox() and require available");
+	if (usesSeatbelt(policy.confinement)) {
+		if (!verifiedSeatbelt) throw unverified();
+		const plan = planSandbox(policy);
+		if (command === "") throw new SandboxPolicyError("command must not be empty");
+		return {
+			command: SANDBOX_EXEC,
+			args: ["-p", seatbeltProfile(plan), command, ...args],
+			env: { ...plan.env, PATH: policy.env?.PATH ?? process.env.PATH ?? DEFAULT_PATH },
+			cwd: plan.cwd,
+		};
 	}
+	if (verifiedBwrap === undefined) throw unverified();
 	const plan = planSandbox(policy);
 	checkCommandVisible(command, plan);
 	return {
@@ -364,8 +418,22 @@ export function sandboxLaunch(command: string, args: string[], policy: SandboxPo
 	};
 }
 
-/** Probes bubblewrap once per process with a real sandboxed run. Failure is cached: restricted execution stays closed. */
-export function checkSandbox(): Promise<{ available: boolean; reason?: string }> {
+function usesSeatbelt(confinement: SandboxPolicy["confinement"]): boolean {
+	return confinement === "writes" && process.platform === "darwin";
+}
+
+/**
+ * Probes the backend for a confinement level once per process with a real sandboxed run. Failure is
+ * cached: restricted execution stays closed. `full` (the default) needs bubblewrap; `writes` also
+ * accepts Seatbelt on macOS.
+ */
+export function checkSandbox(
+	confinement: SandboxPolicy["confinement"] = "full",
+): Promise<{ available: boolean; reason?: string }> {
+	if (usesSeatbelt(confinement)) {
+		seatbeltAvailability ??= probeSeatbelt();
+		return seatbeltAvailability;
+	}
 	availability ??= probeSandbox();
 	return availability;
 }
@@ -406,9 +474,54 @@ async function probeSandbox(): Promise<{ available: boolean; reason?: string }> 
 	}
 }
 
+/** Probes Seatbelt with a real sandboxed run: a write inside the workspace works and one outside it fails. */
+async function probeSeatbelt(): Promise<{ available: boolean; reason?: string }> {
+	try {
+		accessSync(SANDBOX_EXEC, fsConstants.X_OK);
+	} catch {
+		return { available: false, reason: `${SANDBOX_EXEC} not found` };
+	}
+	const probeRoot = await realpath(await mkdtemp(join(tmpdir(), "raga-sandbox-probe-")));
+	const outside = await realpath(await mkdtemp(join(tmpdir(), "raga-sandbox-outside-")));
+	try {
+		const plan = planSandbox({ workspace: probeRoot, readOnly: [], writable: [] });
+		const result = await runBounded(
+			{
+				command: SANDBOX_EXEC,
+				args: [
+					"-p",
+					seatbeltProfile(plan),
+					"/bin/sh",
+					"-c",
+					`touch in && ! touch ${JSON.stringify(join(outside, "escaped"))} 2>/dev/null && echo sandbox-ok`,
+				],
+				env: plan.env,
+				cwd: probeRoot,
+			},
+			{ timeoutMs: 15_000, maxOutputBytes: 4096 },
+		);
+		if (result.exitCode !== 0 || result.stdout.trim() !== "sandbox-ok") {
+			return {
+				available: false,
+				reason: `Seatbelt probe failed (exit ${result.exitCode}): ${result.stderr.trim() || result.stdout.trim()}`,
+			};
+		}
+		verifiedSeatbelt = true;
+		return { available: true };
+	} catch (error) {
+		return {
+			available: false,
+			reason: `Seatbelt probe failed: ${error instanceof Error ? error.message : String(error)}`,
+		};
+	} finally {
+		await rm(probeRoot, { recursive: true, force: true });
+		await rm(outside, { recursive: true, force: true });
+	}
+}
+
 /** Runs one command inside the sandbox with time, cancellation, and output bounds. */
 export async function sandboxCommand(command: SandboxCommand): Promise<CommandResult> {
-	const status = await checkSandbox();
+	const status = await checkSandbox(command.policy.confinement);
 	if (!status.available) throw new SandboxUnavailableError(status.reason ?? "sandbox unavailable");
 	if (!Number.isFinite(command.timeoutMs) || command.timeoutMs <= 0) {
 		throw new SandboxPolicyError(`timeoutMs must be a positive number, got ${command.timeoutMs}`);

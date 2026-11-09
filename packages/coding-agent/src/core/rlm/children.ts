@@ -3,21 +3,26 @@
  * `AgentSession` in RLM mode and returns the child's `answer`. See docs/RLM.md "Host requests".
  */
 
+import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { realpathSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { mkdir, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { delimiter, dirname, join, relative, sep } from "node:path";
+import { promisify } from "node:util";
 import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { effectiveAgentRoles, resolveAgentRole } from "../agent-roles.ts";
 import { createExtensionRuntime } from "../extensions/loader.ts";
 import { type MemoryService, readOnlyMemoryService } from "../instances/memory-service.ts";
+import { checkSandbox } from "../instances/sandbox.ts";
 import { instanceSandbox } from "../instances/session.ts";
 import type { ChildChange, ChildWorkspace, HarnessPin, SandboxPolicy } from "../instances/types.ts";
 import {
 	collectChildChange,
 	createChildWorkspace,
 	listChildWorkspaces,
+	removeChildWorkspace,
 	snapshotChildWorkspace,
 	snapshotProject,
 } from "../instances/workspaces.ts";
@@ -191,6 +196,10 @@ export function createRlmQueryHandler(
 		}
 		if (data.read_only !== undefined && typeof data.read_only !== "boolean")
 			throw new Error('"read_only" must be boolean');
+		if (data.isolated !== undefined && typeof data.isolated !== "boolean")
+			throw new Error('"isolated" must be boolean');
+		if (data.isolated === true && data.read_only === true)
+			throw new Error('"isolated" and "read_only" cannot both be set');
 		const maxTurnsValue = data.max_turns ?? RLM_CHILD_DEFAULT_MAX_TURNS;
 		if (typeof maxTurnsValue !== "number" || !Number.isSafeInteger(maxTurnsValue) || maxTurnsValue < 1) {
 			throw new Error('"max_turns" must be a positive integer');
@@ -254,6 +263,7 @@ export function createRlmQueryHandler(
 						depth,
 						maxTurns: maxTurnsValue,
 						readOnly: data.read_only === true,
+						isolated: data.isolated === true,
 					},
 					controller.signal,
 				);
@@ -336,31 +346,33 @@ async function runChild(
 		depth: number;
 		maxTurns: number;
 		readOnly: boolean;
+		/** Run in a throwaway checkout of the parent's git repository, outside instance mode too. */
+		isolated: boolean;
 	},
 	signal: AbortSignal,
 ): Promise<RlmQueryResult> {
 	const parent = host.sessionManager;
 	const parentSession = parent.getSessionFile();
 	const parentCwd = realpathSync(host.cwd);
-	const existingWorkspace =
-		host.instance && !options.readOnly
-			? (await listChildWorkspaces(host.instance.projectRoot)).find(
-					(entry) => parentCwd === entry.path || parentCwd.startsWith(`${entry.path}${sep}`),
-				)
-			: undefined;
-	if (host.instance && !options.readOnly)
-		await mkdir(join(host.instance.stateRoot, "children"), { recursive: true, mode: 0o700 });
-	const workspace =
-		host.instance && !options.readOnly
-			? await createChildWorkspace(
-					existingWorkspace
-						? await snapshotChildWorkspace(existingWorkspace)
-						: await snapshotProject(host.instance.projectRoot),
-					join(host.instance.stateRoot, "children", randomUUID()),
-				)
-			: undefined;
+	// Instance writers always get a checkout; an ordinary session's child only when it asks for `isolated`.
+	const projectRoot = host.instance?.projectRoot ?? (options.isolated ? await gitTopLevel(host.cwd) : undefined);
+	const writable = projectRoot !== undefined && !options.readOnly;
+	const existingWorkspace = writable
+		? (await listChildWorkspaces(projectRoot)).find(
+				(entry) => parentCwd === entry.path || parentCwd.startsWith(`${entry.path}${sep}`),
+			)
+		: undefined;
+	const childrenRoot = host.instance ? join(host.instance.stateRoot, "children") : join(tmpdir(), "raga-children");
+	if (writable) await mkdir(childrenRoot, { recursive: true, mode: 0o700 });
+	const workspace = writable
+		? await createChildWorkspace(
+				existingWorkspace ? await snapshotChildWorkspace(existingWorkspace) : await snapshotProject(projectRoot),
+				join(childrenRoot, randomUUID()),
+			)
+		: undefined;
+	if (workspace && projectRoot && !host.instance) await cloneDependencies(projectRoot, workspace.path);
 	if (workspace) parent.appendCustomEntry("raga-child-workspace", { workspace });
-	const sourceRoot = existingWorkspace?.path ?? host.instance?.projectRoot ?? host.cwd;
+	const sourceRoot = existingWorkspace?.path ?? projectRoot ?? host.cwd;
 	const cwd = workspace ? join(workspace.path, relative(realpathSync(sourceRoot), parentCwd)) : host.cwd;
 	if (workspace) await mkdir(cwd, { recursive: true, mode: 0o700 });
 	const sessionManager = parent.isPersisted()
@@ -372,10 +384,22 @@ async function runChild(
 		change = await collectChildChange(workspace);
 		parent.appendCustomEntry("raga-child-change", { workspace, change });
 	};
+	// An instance keeps its children's checkouts for integration; an isolated child's change lives on in
+	// refs/raga/changes, so its checkout goes once the change is captured.
+	const release = async () => {
+		await captureChange();
+		if (workspace && !host.instance) await removeChildWorkspace(workspace);
+	};
+	// An isolated child's writes are confined to its checkout: bubblewrap on Linux, Seatbelt on macOS.
+	// ponytail: without a backend it falls back to the bare checkout; fail closed if that is ever too weak.
+	const isolatedSandbox: SandboxPolicy | undefined =
+		workspace && !host.instance && (await checkSandbox("writes")).available
+			? confinedToWorkspace(workspace.path, cwd)
+			: undefined;
 	const createChild = (manager: SessionManager) => {
 		const baseSandbox = host.instance
 			? instanceSandbox(host.instance, cwd, manager, workspace?.path ?? host.sandbox?.workspace ?? cwd)
-			: host.sandbox;
+			: (isolatedSandbox ?? host.sandbox);
 		const sandbox = baseSandbox && options.readOnly ? { ...baseSandbox, workspaceReadOnly: true } : baseSandbox;
 		return createAgentSession({
 			cwd,
@@ -395,7 +419,7 @@ async function runChild(
 		});
 	};
 	const { session: child } = await createChild(sessionManager).catch(async (error) => {
-		await captureChange();
+		await release();
 		throw error;
 	});
 	child.setSessionName(options.name);
@@ -481,6 +505,50 @@ async function runChild(
 	} finally {
 		// The session and kernel stay open for /agents; the registry parks idle children and the parent's
 		// runtime disposes them with itself.
-		await captureChange();
+		await release();
 	}
+}
+
+async function gitTopLevel(cwd: string): Promise<string> {
+	try {
+		return (await promisify(execFile)("git", ["rev-parse", "--show-toplevel"], { cwd })).stdout.trim();
+	} catch {
+		throw new Error(`"isolated" needs a git repository; ${cwd} is not inside one`);
+	}
+}
+
+/**
+ * Copy-on-write clones of the project's `node_modules` directories, so tests run in the checkout
+ * without an install. APFS (`cp -c`) and reflink filesystems clone without copying data.
+ */
+// ponytail: node_modules only; add venv/target dirs when a non-JS repo needs them.
+async function cloneDependencies(source: string, target: string): Promise<void> {
+	const find = async (rel: string, depth: number): Promise<string[]> => {
+		const found: string[] = [];
+		for (const entry of await readdir(join(source, rel), { withFileTypes: true })) {
+			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+			const path = join(rel, entry.name);
+			if (entry.name === "node_modules") found.push(path);
+			else if (depth < 2) found.push(...(await find(path, depth + 1)));
+		}
+		return found;
+	};
+	const flags = process.platform === "darwin" ? ["-cR"] : ["-R", "--reflink=auto"];
+	for (const path of await find("", 0)) {
+		await mkdir(dirname(join(target, path)), { recursive: true });
+		await promisify(execFile)("cp", [...flags, join(source, path), join(target, path)]);
+	}
+}
+
+/** Writes only inside the checkout; the running Node's install stays readable so npm and node work. */
+function confinedToWorkspace(workspace: string, cwd: string): SandboxPolicy {
+	const nodePrefix = realpathSync(dirname(dirname(process.execPath)));
+	return {
+		workspace,
+		cwd,
+		readOnly: [nodePrefix],
+		writable: [],
+		confinement: "writes",
+		env: { PATH: [join(nodePrefix, "bin"), process.env.PATH].filter(Boolean).join(delimiter) },
+	};
 }
