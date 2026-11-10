@@ -74,7 +74,6 @@ Tool output reaches the model shortened to a head and a tail. The full output st
 | `packages/coding-agent/src/core/instances/` | Instances. `store.ts` owns revisions and activation, `session.ts` pins sessions, `sandbox.ts` runs bubblewrap (and Seatbelt on macOS for policies that only confine writes), `workspaces.ts` owns child checkouts and integration, `memory.ts` stores and retrieves memory, `skills.ts` validates learned skills, `refinement.ts` and `model-refinement.ts` run Propose-Probe-Compose, `automation.ts` and `checkpoint.ts` run opt-in checkpoint refinement, and `no-mistakes.ts` manages the pinned backend. |
 | `packages/coding-agent/src/cli/instance-command.ts` | The top-level `raga` instance commands and compatible `pi instance` commands. |
 | `packages/coding-agent/bundled-skills/` | The default harness that `raga init` copies. `bundle.json` pins its sources and checksums. `scripts/raga-sync-skills.mjs` regenerates it. |
-| `bench/rlm/instances/` | The transfer benchmark and the deterministic two-project scenario. |
 | `packages/codemode`, `packages/durable`, `packages/env`, `packages/mcp`, `packages/chord`, `packages/tui`, `packages/telemetry` | Pi packages that raga keeps as they are. |
 | `docs/` | Raga docs. Pi's own docs are in `packages/coding-agent/docs/`. |
 

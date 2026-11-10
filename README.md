@@ -32,6 +32,7 @@ The RLM runtime, subagents, `peak`, and tenmo work end to end. Instance mode, wh
 | Session tracking across folders (`/tenmo`) | Done |
 | Native engineering skills (`peak`, no-mistakes) | Done |
 | Self-editing harness state (prompt notes, memories, skills) with rollback | Experimental, Linux only |
+| Benchmarks: pi against raga, and transfer across instances | Planned |
 | Goal and metric loop (`--goal`, `--gate`, `--metric`) | Not started |
 
 User-facing commands and messages use Raga branding. The SDK packages retain their upstream names (`@earendil-works/pi-*`); imports, extension APIs, and protocol identifiers are not renamed. The `raga` command keeps its own user directory, `~/.raga/agent`, for logins, settings, sessions, skills, extensions, and packages. Set `RAGA_CODING_AGENT_DIR` to move it. It does not read `~/.pi/agent` or the shared `~/.agents/skills` folder, so an existing pi setup does not carry over. The `pi` command still uses `~/.pi/agent`.
@@ -138,19 +139,6 @@ print(counts.most_common(5))
 
 [docs/RLM.md](docs/RLM.md) is the reference for the protocol, the Python API, the settings, and the memory limit.
 
-## Benchmarks
-
-`bench/rlm/` runs the same tasks with pi's tools and with raga's RLM mode on the same model. The table shows Claude Haiku 4.5, seed 1, and 3 runs per row.
-
-| Task | Harness | Success | Mean answer error | Cost per run |
-|---|---|---|---|---|
-| T1: count billing complaints among 800 messages (truth 181) | pi | 0/3 | 49.0 | $0.337 |
-| | raga | 0/3 | 5.7 | $0.225 |
-| T2: multi-file Python refactor | pi | 2/3 | | $0.122 |
-| | raga | 2/3 | | $0.085 |
-
-[docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the full numbers, the first run before a fix, and what limits each result.
-
 ## Docs
 
 | File | Contents |
@@ -160,7 +148,6 @@ print(counts.most_common(5))
 | [docs/AGENTS.md](docs/AGENTS.md) | Subagent sessions and the `/agents-tui` tree. |
 | [docs/TENMO.md](docs/TENMO.md) | Track, start, and delete sessions across folders and worktrees. |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | Milestones, status, and decisions. |
-| [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | Benchmark tasks and results. |
 | [docs/UPDATING.md](docs/UPDATING.md) | Install and update the CLI, extensions, and model catalogs. |
 | [docs/RELEASING.md](docs/RELEASING.md) | Automatic npm publishing, versioning, and merging upstream pi. |
 | [packages/coding-agent/docs/](packages/coding-agent/docs/) | Pi's own docs, which still apply to everything raga inherits. |

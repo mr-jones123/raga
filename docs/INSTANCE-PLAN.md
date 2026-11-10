@@ -1,6 +1,6 @@
 # Versioned, adaptive raga instances
 
-Status: M9 through M16 are implemented and exercised, including the default skill bundle, real-model skill acquisition, and a seven-arm transfer comparison. [PROGRESS.md](PROGRESS.md) records the evidence. The comparison does not establish a learning-quality gain. No refinement candidate was activated, combined arms exhausted conservative dollar reservations, and each arm had only four held-out trials. Automatic promotion stays off by default.
+Status: M9 through M16 are implemented and exercised, including the default skill bundle and real-model skill acquisition. [PROGRESS.md](PROGRESS.md) records the evidence. A transfer benchmark is planned; until held-out evidence exists, automatic promotion stays off by default.
 
 ## Goal
 
@@ -372,9 +372,9 @@ Each probe replay builds a fresh project workspace from one snapshot, runs a rea
 
 ### M16. Transfer evaluation and bounded automation
 
-**Delivered.** `bench/rlm/instances/` defines recurring task families across repositories with development, selection, and held-out splits, and seven arms: `fixed`, `equal-budget`, `memory`, `skills`, `refinement`, `combined`, and `combined-scoped`. `node bench/rlm/instances/run.mjs --list` prints the arms and cases without contacting a provider. `--scenario` runs the deterministic two-project system scenario with zero model calls. `--run --model provider/id` runs the paid comparison with one call, dollar, and time ledger per arm and repetition. The scenario exercises the system mechanisms only and makes no learning-quality comparison.
+**Planned.** A transfer benchmark with recurring task families across repositories, development, selection, and held-out splits, and arms that separate memory, skills, and refinement from equal-budget retries.
 
-`src/core/instances/automation.ts` implements opt-in checkpoint refinement with a minimum interval, daily run, call, and wall-time caps, a stop after repeated runs without progress, and a lock that holds across processes. `src/core/instances/checkpoint.ts` runs one bounded model refinement per admitted call. Policy promotion requires a held-out report outside the project, and its digest is rechecked at each decision.
+**Delivered.** `src/core/instances/automation.ts` implements opt-in checkpoint refinement with a minimum interval, daily run, call, and wall-time caps, a stop after repeated runs without progress, and a lock that holds across processes. `src/core/instances/checkpoint.ts` runs one bounded model refinement per admitted call. Policy promotion requires a held-out report outside the project, and its digest is rechecked at each decision.
 
 **Acceptance.** A two-project scenario shows independent evolution, pinned running children, deliberate sharing, and rollback. Held-out comparisons separate the benefit of learning from additional inference spending. Do not claim an adaptive quality gain unless the measured evidence supports it. A negative result keeps automatic promotion disabled.
 
