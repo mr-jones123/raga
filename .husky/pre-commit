@@ -53,9 +53,10 @@ if [ $RUN_BROWSER_SMOKE -eq 1 ]; then
   fi
 fi
 
-# Restage files that were previously staged and may have been modified by formatting
+# Restage files that were previously staged and may have been modified by formatting.
+# Skip paths removed from the index (git rm --cached): adding them would track them again.
 for file in $STAGED_FILES; do
-  if [ -f "$file" ]; then
+  if [ -f "$file" ] && git ls-files --cached --error-unmatch -- "$file" >/dev/null 2>&1; then
     git add "$file"
   fi
 done

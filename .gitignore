@@ -50,3 +50,7 @@ packages/agent/docs/extensions/pi-server-artifact/index.md
 # Python (RLM runtime)
 __pycache__/
 .pytest_cache/
+
+# Local benchmarks and tool state, not tracked
+bench/
+.loki/

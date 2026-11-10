@@ -22,7 +22,7 @@ Raga is an opinionated coding harness, forked from [pi](https://github.com/badlo
   - `test/`: vitest tests; `test/suite/` uses the faux provider harness.
 - `packages/codemode`, `packages/mcp`, `packages/durable`, `packages/env`, `packages/chord`, `packages/telemetry`, `packages/evals`: supporting packages.
 - `docs/`: raga docs (`ARCHITECTURE.md`, `INSTANCE-PLAN.md`, `PROGRESS.md`, `RLM.md`, `RELEASING.md`). `packages/coding-agent/docs/` holds the upstream pi user docs.
-- `bench/`: benchmarks. `.cache/` snapshots under it are not source; ignore them when searching.
+- `bench/`: local benchmarks, not tracked by git. Ignore it when searching.
 - `./raga-test.sh` runs `raga` from source; `./pi-test.sh` runs `pi` from source.
 
 # Development Rules
