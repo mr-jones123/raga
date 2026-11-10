@@ -19,6 +19,7 @@ import {
 	startToolTimer,
 	str,
 } from "../render-utils.ts";
+import { renderNoMistakesStepper } from "./no-mistakes-stepper.ts";
 
 const RESET_FG = "\x1b[39m";
 /** Label lines the runtime puts before each part of a cell's output. */
@@ -78,7 +79,14 @@ class PythonCell implements Component {
 				lines.push(...output.split("\n").map((line) => `${gutter}${theme.fg("toolOutput", line)}`));
 			}
 		}
-		return lines.map(fit);
+		const fitted = lines.map(fit);
+		// A cell that drove no-mistakes gets the run's stepper as its own box under the cell's row.
+		const progress = this.details?.noMistakes;
+		if (progress) {
+			const stepper = renderNoMistakesStepper(progress, Math.max(1, width - this.pad), { final: this.final });
+			fitted.push(...stepper.map(fit));
+		}
+		return fitted;
 	}
 
 	invalidate(): void {}

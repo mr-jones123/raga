@@ -30,12 +30,20 @@ it.skipIf(process.env.RAGA_NM_SMOKE !== "1")(
 			return result.stdout.trim();
 		};
 		const backend = new NoMistakesBackend({
-			instanceRoot: join(project, ".raga"),
+			stateRoot: join(project, ".raga", "state", "backends", "no-mistakes"),
 			projectRoot: project,
 			agent: { executable, version, args: JSON.parse(process.env.RAGA_NM_AGENT_ARGS ?? "[]") as string[] },
 			environment: JSON.parse(process.env.RAGA_NM_AGENT_ENV ?? "{}") as Record<string, string>,
 		});
-		const publicSkill = join(getBundledHarnessPath(), "skills", "no-mistakes", "upstream", "SKILL.md");
+		const publicSkill = join(
+			getBundledHarnessPath(),
+			"skills",
+			"peak",
+			"references",
+			"no-mistakes",
+			"upstream",
+			"SKILL.md",
+		);
 		const originalSkill = await readFile(publicSkill);
 		let provisioned = false;
 		try {

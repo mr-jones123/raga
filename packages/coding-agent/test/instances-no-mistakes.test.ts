@@ -1,14 +1,18 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ENV_AGENT_DIR } from "../src/config.ts";
+import { noMistakesHostHandler } from "../src/core/instances/host-api.ts";
 import {
 	getNoMistakesBackend,
 	interpretNoMistakesResult,
 	NO_MISTAKES_PIN,
 	NoMistakesBackend,
 	noMistakesRunPolicy,
+	noMistakesTarget,
 } from "../src/core/instances/no-mistakes.ts";
 import type { CommandResult } from "../src/core/instances/types.ts";
 
@@ -22,7 +26,13 @@ afterEach(async () => {
 async function fixture(): Promise<{ project: string; backend: NoMistakesBackend }> {
 	const project = await realpath(await mkdtemp(join(tmpdir(), "raga-gate-")));
 	temporary.push(project);
-	return { project, backend: new NoMistakesBackend({ instanceRoot: join(project, ".raga"), projectRoot: project }) };
+	return {
+		project,
+		backend: new NoMistakesBackend({
+			stateRoot: join(project, ".raga", "state", "backends", "no-mistakes"),
+			projectRoot: project,
+		}),
+	};
 }
 
 function command(stdout: string, exitCode = 0): CommandResult {
@@ -125,7 +135,7 @@ describe("managed no-mistakes authorization", () => {
 		expect(
 			() =>
 				new NoMistakesBackend({
-					instanceRoot: "/tmp/instance",
+					stateRoot: "/tmp/instance/state/backends/no-mistakes",
 					projectRoot: "/tmp/project",
 					environment: { HOME: "/home/operator" },
 				}),
@@ -133,7 +143,7 @@ describe("managed no-mistakes authorization", () => {
 		expect(
 			() =>
 				new NoMistakesBackend({
-					instanceRoot: "/tmp/instance",
+					stateRoot: "/tmp/instance/state/backends/no-mistakes",
 					projectRoot: "/tmp/project",
 					environment: { NM_TEST_START_DAEMON: "0" },
 				}),
@@ -158,14 +168,18 @@ describe("managed no-mistakes authorization", () => {
 				agentHash: createHash("sha256").update(bytes).digest("hex"),
 			}),
 		);
-		expect((await (await getNoMistakesBackend(join(project, ".raga"), project)).inspect()).enabled).toBe(true);
+		expect(
+			(await (await getNoMistakesBackend({ stateRoot: backend.root, projectRoot: project })).inspect()).enabled,
+		).toBe(true);
 		expect((await backend.inspect()).enabled).toBe(true);
 		const wrongProject = await realpath(await mkdtemp(join(tmpdir(), "raga-other-project-")));
 		temporary.push(wrongProject);
-		const wrongBinding = await getNoMistakesBackend(join(project, ".raga"), wrongProject);
+		const wrongBinding = await getNoMistakesBackend({ stateRoot: backend.root, projectRoot: wrongProject });
 		expect((await wrongBinding.inspect()).enabled).toBe(false);
 		await writeFile(executable, "changed agent bytes");
-		const inspection = await (await getNoMistakesBackend(join(project, ".raga"), project)).inspect();
+		const inspection = await (
+			await getNoMistakesBackend({ stateRoot: backend.root, projectRoot: project })
+		).inspect();
 		expect(inspection.enabled).toBe(false);
 		expect(inspection.prerequisites.join(" ")).toContain("enable again");
 	});
@@ -214,5 +228,38 @@ describe("AXI result reporting", () => {
 		).toBe("running");
 		expect(interpretNoMistakesResult({ ...command(""), aborted: true }).state).toBe("inconclusive");
 		expect(interpretNoMistakesResult(command("outcome: failed\n", 1)).state).toBe("failed");
+	});
+});
+
+describe("no-mistakes without an instance", () => {
+	it("binds the enclosing Git repository and keeps state under the agent directory", async () => {
+		const project = await realpath(await mkdtemp(join(tmpdir(), "raga-plain-project-")));
+		const agentDir = await realpath(await mkdtemp(join(tmpdir(), "raga-plain-agent-")));
+		temporary.push(project, agentDir);
+		vi.stubEnv(ENV_AGENT_DIR, agentDir);
+		execFileSync("git", ["init", "--quiet"], { cwd: project });
+		await mkdir(join(project, "src"));
+
+		const target = noMistakesTarget(join(project, "src"));
+		expect(target.projectRoot).toBe(project);
+		expect(dirname(target.stateRoot)).toBe(join(agentDir, "no-mistakes"));
+		expect(noMistakesTarget(project)).toEqual(target);
+		expect(noMistakesTarget(project, { instanceRoot: join(project, ".raga"), projectRoot: project })).toEqual({
+			stateRoot: join(project, ".raga", "state", "backends", "no-mistakes"),
+			projectRoot: project,
+		});
+
+		const handler = noMistakesHostHandler(() => target);
+		const context = { cellId: null, signal: new AbortController().signal };
+		const inspection = (await handler({ type: "instance.no_mistakes", action: "inspect" }, context)) as {
+			installed: boolean;
+			enabled: boolean;
+			executable: string;
+		};
+		expect(inspection).toMatchObject({ installed: false, enabled: false });
+		expect(inspection.executable.startsWith(target.stateRoot)).toBe(true);
+		await expect(
+			handler({ type: "instance.no_mistakes", action: "run", options: { intent: "Ship it" } }, context),
+		).rejects.toThrow(/explicitly enable no-mistakes/);
 	});
 });

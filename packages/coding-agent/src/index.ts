@@ -249,7 +249,12 @@ export {
 	type ModelRefinementResult,
 	runModelRefinement,
 } from "./core/instances/model-refinement.ts";
-export { getNoMistakesBackend, NoMistakesBackend } from "./core/instances/no-mistakes.ts";
+export {
+	getNoMistakesBackend,
+	NoMistakesBackend,
+	type NoMistakesTarget,
+	noMistakesTarget,
+} from "./core/instances/no-mistakes.ts";
 export { type RefinementOptions, type RefinementResult, refineInstance } from "./core/instances/refinement.ts";
 export { checkSandbox, sandboxCommand } from "./core/instances/sandbox.ts";
 export { proposeSkill, validateSkill, verifySkillRevision } from "./core/instances/skills.ts";

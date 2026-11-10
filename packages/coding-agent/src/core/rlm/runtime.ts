@@ -15,8 +15,10 @@ import { contentText, type ModelsSimpleStreamOptions, uuidv7 } from "@earendil-w
 import type { Api, Model, Usage } from "@earendil-works/pi-ai/compat";
 import { type Static, Type } from "typebox";
 import type { ToolDefinition } from "../extensions/types.ts";
-import { instanceHostHandlers } from "../instances/host-api.ts";
+import { instanceHostHandlers, noMistakesHostHandler } from "../instances/host-api.ts";
 import type { MemoryService } from "../instances/memory-service.ts";
+import { noMistakesTarget } from "../instances/no-mistakes.ts";
+import type { NoMistakesProgress } from "../instances/no-mistakes-progress.ts";
 import { sandboxCommand } from "../instances/sandbox.ts";
 import type { HarnessPin, SandboxPolicy } from "../instances/types.ts";
 import { bashExecutionToText } from "../messages.ts";
@@ -114,6 +116,8 @@ export interface PythonToolDetails {
 	depth?: number;
 	/** Exception name of a failed cell, such as `ToolError`. */
 	error?: string;
+	/** The no-mistakes run this cell drove, drawn as a stepper under the cell. */
+	noMistakes?: NoMistakesProgress;
 }
 
 function errorMessage(error: unknown): string {
@@ -235,6 +239,10 @@ export class RlmRuntime {
 	private lastCellPid: number | undefined;
 	/** The python call whose cell is running; nested tool calls are attributed to it. */
 	private currentToolCallId: string | undefined;
+	/** The no-mistakes run the current cell started, shown under the cell. */
+	private cellNoMistakes: NoMistakesProgress | undefined;
+	/** Redraw the current cell with its latest output and no-mistakes progress. */
+	private cellUpdate: (() => void) | undefined;
 	private cellUsage: Usage | undefined;
 	/** The first kernel process looked for a snapshot entry to restore. */
 	private restoreChecked = false;
@@ -273,6 +281,16 @@ export class RlmRuntime {
 			["context.history", async (data) => this.handleHistory(data)],
 			["rlm.query", (data, ctx) => rlmQuery(data, ctx.signal)],
 			["agent.roles", async () => describeAgentRoles(host)],
+			[
+				"instance.no_mistakes",
+				noMistakesHostHandler(
+					() => noMistakesTarget(host.cwd, host.instance),
+					(progress) => {
+						this.cellNoMistakes = { ...progress, steps: progress.steps.map((step) => ({ ...step })) };
+						this.cellUpdate?.();
+					},
+				),
+			],
 		]);
 		if (host.instance) {
 			for (const [name, handler] of instanceHostHandlers(
@@ -387,17 +405,25 @@ export class RlmRuntime {
 			const { outputLimit } = this.host.settingsManager.getRlmSettings();
 			this.currentToolCallId = toolCallId;
 			this.cellUsage = undefined;
+			this.cellNoMistakes = undefined;
 			let streamed = "";
 			let lastUpdate = 0;
+			this.cellUpdate = () =>
+				onUpdate?.({
+					content: streamed ? [{ type: "text", text: streamed }] : [],
+					details: {
+						cutCharacters: 0,
+						restarted: false,
+						...cellInfo,
+						...(this.cellNoMistakes ? { noMistakes: this.cellNoMistakes } : {}),
+					},
+				});
 			const onOutput = (_stream: "stdout" | "stderr", text: string) => {
 				streamed = (streamed + text).slice(-outputLimit);
 				const now = Date.now();
-				if (!onUpdate || now - lastUpdate < UPDATE_THROTTLE_MS) return;
+				if (now - lastUpdate < UPDATE_THROTTLE_MS) return;
 				lastUpdate = now;
-				onUpdate({
-					content: [{ type: "text", text: streamed }],
-					details: { cutCharacters: 0, restarted: false, ...cellInfo },
-				});
+				this.cellUpdate?.();
 			};
 
 			const notices: string[] = [];
@@ -474,11 +500,18 @@ export class RlmRuntime {
 				content: [
 					{ type: "text", text: [...notices, text, ...formatMemoryNotes(output, this.memoryLimitMb)].join("\n") },
 				],
-				details: { cutCharacters, restarted, ...cellInfo, ...(output.error ? { error: output.error.ename } : {}) },
+				details: {
+					cutCharacters,
+					restarted,
+					...cellInfo,
+					...(output.error ? { error: output.error.ename } : {}),
+					...(this.cellNoMistakes ? { noMistakes: this.cellNoMistakes } : {}),
+				},
 				...(usage ? { usage } : {}),
 				...(output.status === "error" ? { isError: true } : {}),
 			};
 		} finally {
+			this.cellUpdate = undefined;
 			emitRlmCellEvent({
 				type: "end",
 				cellId: toolCallId,

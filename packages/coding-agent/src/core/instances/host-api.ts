@@ -4,7 +4,8 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { HostHandler, HostRequest } from "../rlm/kernel.ts";
 import type { SessionManager } from "../session-manager.ts";
 import type { MemoryService } from "./memory-service.ts";
-import { getNoMistakesBackend } from "./no-mistakes.ts";
+import { getNoMistakesBackend, type NoMistakesTarget } from "./no-mistakes.ts";
+import type { NoMistakesProgress } from "./no-mistakes-progress.ts";
 import { commitCandidate, createCandidate, getCandidate } from "./store.ts";
 import type { ChildChange, ChildWorkspace, HarnessPin } from "./types.ts";
 import {
@@ -59,6 +60,48 @@ async function candidateFile(root: string, input: string): Promise<string> {
 	return path;
 }
 
+/**
+ * The `instance.no_mistakes` host request. Every session has it; `target` resolves on first use, so a
+ * session that never calls no-mistakes does not run git.
+ */
+export function noMistakesHostHandler(
+	target: () => NoMistakesTarget,
+	onProgress?: (progress: NoMistakesProgress) => void,
+): HostHandler {
+	let resolved: NoMistakesTarget | undefined;
+	return async (data, context) => {
+		resolved ??= target();
+		const backend = await getNoMistakesBackend(resolved);
+		switch (text(data, "action")) {
+			case "inspect":
+				return backend.inspect();
+			case "status":
+				return backend.status();
+			case "run": {
+				if (!(await backend.inspect()).enabled)
+					throw new Error("The user must explicitly enable no-mistakes for this repository first");
+				const options = data.options;
+				if (
+					typeof options !== "object" ||
+					options === null ||
+					!("intent" in options) ||
+					typeof options.intent !== "string"
+				) {
+					throw new Error("no-mistakes run requires the user's complete intent");
+				}
+				return backend.run({
+					intent: options.intent,
+					approval: { network: true },
+					signal: context.signal,
+					onProgress,
+				});
+			}
+			default:
+				throw new Error("Provisioning, lifecycle changes, publication, and gate responses require the user CLI");
+		}
+	};
+}
+
 /** Host requests of an instance session. Without `memory`, the `memory.*` requests are absent. */
 export function instanceHostHandlers(
 	pin: HarnessPin,
@@ -96,36 +139,6 @@ export function instanceHostHandlers(
 				projectRoot: pin.projectRoot,
 				harnessPath: pin.resourceRoot,
 			}),
-		],
-		[
-			"instance.no_mistakes",
-			async (data, context) => {
-				const backend = await getNoMistakesBackend(pin.instanceRoot, pin.projectRoot);
-				switch (text(data, "action")) {
-					case "inspect":
-						return backend.inspect();
-					case "status":
-						return backend.status();
-					case "run": {
-						if (!(await backend.inspect()).enabled)
-							throw new Error("The user must explicitly enable no-mistakes for this instance first");
-						const options = data.options;
-						if (
-							typeof options !== "object" ||
-							options === null ||
-							!("intent" in options) ||
-							typeof options.intent !== "string"
-						) {
-							throw new Error("no-mistakes run requires the user's complete intent");
-						}
-						return backend.run({ intent: options.intent, approval: { network: true }, signal: context.signal });
-					}
-					default:
-						throw new Error(
-							"Provisioning, lifecycle changes, publication, and gate responses require the user CLI",
-						);
-				}
-			},
 		],
 		[
 			"instance.child_patch",

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
 import { NO_MISTAKES_PIN, NoMistakesBackend } from "../src/core/instances/no-mistakes.ts";
+import type { NoMistakesProgress } from "../src/core/instances/no-mistakes-progress.ts";
 
 const temporary: string[] = [];
 afterEach(async () => {
@@ -30,7 +31,7 @@ else {
 `,
 	);
 	const backend = new NoMistakesBackend({
-		instanceRoot: join(project, ".raga"),
+		stateRoot: join(project, ".raga", "state", "backends", "no-mistakes"),
 		projectRoot: project,
 		agent: { executable: process.execPath, args: [agent], version: "fixture-agent" },
 	});
@@ -105,3 +106,39 @@ fi
 		expect(response).toMatchObject({ state: "gate", skipped: ["push", "pr", "ci"], fullyVerified: false });
 	},
 );
+
+it("streams step transitions from axi run stderr to the progress callback", async () => {
+	const backend = await adapterFixture('{"raga_adapter_probe":true}');
+	await backend.enable({ approved: true, network: true });
+	await writeFile(
+		backend.executable,
+		`#!/bin/sh
+if [ "$1 $2" = 'daemon status' ]; then
+  echo 'daemon running'
+elif [ "$1 $2" = 'axi run' ]; then
+  printf 'run: running\\n  review: running\\n' >&2
+  sleep 0.2
+  printf '  review: completed\\n  test: running\\n' >&2
+  printf 'run:\\n  id: run-7\\n  branch: feature/x\\n  status: completed\\n  head: abcdef12\\n  steps[2]{step,status,findings,duration_ms}:\\n    review,completed,0,10\\n    test,completed,0,20\\noutcome: passed\\n'
+fi
+`,
+		{ mode: 0o700 },
+	);
+	const seen: string[] = [];
+	let last: NoMistakesProgress | undefined;
+	const result = await backend.run({
+		intent: "Validate fixture",
+		approval: { network: true },
+		onProgress: (progress) => {
+			last = progress;
+			seen.push(progress.steps.map((step) => `${step.name}:${step.status}`).join(" "));
+		},
+	});
+	expect(result.state).toBe("passed");
+	expect(seen.some((line) => line.includes("review:running"))).toBe(true);
+	expect(seen.some((line) => line.includes("review:completed test:running"))).toBe(true);
+	expect(last).toMatchObject({ state: "passed", outcome: "passed", branch: "feature/x", head: "abcdef12" });
+	expect(last?.endedAt).toBeTypeOf("number");
+	expect(last?.steps.find((step) => step.name === "test")?.status).toBe("completed");
+	expect(last?.steps.find((step) => step.name === "push")?.status).toBe("skipped");
+});

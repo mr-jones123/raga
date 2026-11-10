@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { constants } from "node:fs";
+import { constants, existsSync } from "node:fs";
 import { mkdir, open, writeFile } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import { APP_NAME, IS_RAGA_CLI } from "../config.ts";
@@ -18,7 +18,7 @@ import type { MemoryEntry, MemoryInput } from "../core/instances/memory.ts";
 import { selectMemoryService } from "../core/instances/memory-service.ts";
 import { migrateProjectConfig } from "../core/instances/migration.ts";
 import { runModelRefinement } from "../core/instances/model-refinement.ts";
-import { getNoMistakesBackend, NoMistakesBackend } from "../core/instances/no-mistakes.ts";
+import { getNoMistakesBackend, NoMistakesBackend, noMistakesTarget } from "../core/instances/no-mistakes.ts";
 import { checkSandbox } from "../core/instances/sandbox.ts";
 import { proposeSkill, validateSkill, verifySkillRevision } from "../core/instances/skills.ts";
 import {
@@ -201,7 +201,7 @@ Memory import files contain exported entry arrays. Retrieval scope defaults to t
 Import --scope deliberately remaps only lessons explicitly exported as reusable.
 RAGA_MEMORY_BACKEND selects local (default) or hindsight search for memory commands and sessions; see docs/INSTANCE-PLAN.md.
 Refinement checks are JSON argv arrays, never shell strings. Promotion requires supervisor evidence and explicit approval.
-No-mistakes setup and gate lifecycle are manual. Run skips push, PR, and CI unless individually authorized.
+No-mistakes works in any Git repository, with or without an instance. Its setup and gate lifecycle are manual. Run skips push, PR, and CI unless individually authorized.
 Use --help with any instance command to show this help. No command changes global user configuration.
 
 Session tracking (tenmo):
@@ -489,7 +489,7 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 			const manifest = await readInstance(root);
 			const pin = await openInstance(root, values.get("revision"));
 			const skills = loadSkillsFromDir({ dir: join(pin.resourceRoot, "skills"), source: "instance" });
-			const backend = new NoMistakesBackend({ instanceRoot: root, projectRoot: pin.projectRoot });
+			const backend = new NoMistakesBackend(noMistakesTarget(pin.projectRoot, pin));
 			return {
 				manifest,
 				pin,
@@ -600,7 +600,13 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 		}
 	}
 	if (name.startsWith("no-mistakes ")) {
-		const manifest = await readInstance(root);
+		// No-mistakes works in any Git repository; an instance only moves its state into `.raga/state`.
+		const target = noMistakesTarget(
+			projectRoot,
+			existsSync(instancePaths(projectRoot).manifest)
+				? { instanceRoot: root, projectRoot: (await readInstance(root)).projectRoot }
+				: undefined,
+		);
 		let agent = agentCommand();
 		if (values.has("agent-config")) {
 			const input = parseJson(await readText(value("agent-config")));
@@ -626,10 +632,8 @@ async function execute(command: ParsedCommand): Promise<unknown> {
 		}
 		const backend =
 			name === "no-mistakes enable"
-				? new NoMistakesBackend({ instanceRoot: root, projectRoot: manifest.projectRoot, agent })
-				: name === "no-mistakes inspect" || name === "no-mistakes provision"
-					? new NoMistakesBackend({ instanceRoot: root, projectRoot: manifest.projectRoot })
-					: await getNoMistakesBackend(root, manifest.projectRoot);
+				? new NoMistakesBackend({ ...target, agent })
+				: await getNoMistakesBackend(target);
 		switch (name) {
 			case "no-mistakes inspect":
 				return backend.inspect();

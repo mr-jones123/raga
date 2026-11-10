@@ -1,13 +1,20 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import type { Stats } from "node:fs";
+import { realpathSync, type Stats } from "node:fs";
 import { chmod, mkdir, open, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { gunzipSync } from "node:zlib";
 import lockfile from "proper-lockfile";
 import { stringify } from "yaml";
+import { getAgentDir } from "../../config.ts";
 import { getBundledHarnessPath } from "./bundle.ts";
+import {
+	applyNoMistakesOutput,
+	applyNoMistakesProgressLine,
+	initialNoMistakesProgress,
+	type NoMistakesProgress,
+} from "./no-mistakes-progress.ts";
 import type { CommandResult } from "./types.ts";
 
 export const NO_MISTAKES_PIN = {
@@ -25,7 +32,8 @@ export const NO_MISTAKES_PIN = {
 } as const;
 
 export interface NoMistakesOptions {
-	instanceRoot: string;
+	/** Directory for the binary, HOME, NM_HOME, the daemon log, and run authorizations. */
+	stateRoot: string;
 	projectRoot: string;
 	agent?: { executable: string; args?: string[]; version: string };
 	/** Explicit trusted credential values. Ambient environment values are never copied. */
@@ -65,8 +73,43 @@ interface Enablement {
 	agentVersion: string;
 }
 
-export async function getNoMistakesBackend(instanceRoot: string, projectRoot: string): Promise<NoMistakesBackend> {
-	return new NoMistakesBackend({ instanceRoot, projectRoot });
+/** The repository a backend validates and the directory that holds its state. */
+export interface NoMistakesTarget {
+	stateRoot: string;
+	projectRoot: string;
+}
+
+/**
+ * An instance keeps backend state in `.raga/state/backends/no-mistakes`. Without an instance, the
+ * project is the Git repository containing `cwd`, and its state lives under the agent directory.
+ */
+export function noMistakesTarget(
+	cwd: string,
+	instance?: { instanceRoot: string; projectRoot: string },
+): NoMistakesTarget {
+	if (instance) {
+		return {
+			stateRoot: join(resolve(instance.instanceRoot), "state", "backends", "no-mistakes"),
+			projectRoot: instance.projectRoot,
+		};
+	}
+	const git = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd, encoding: "utf8" });
+	const projectRoot = realpathSync(git.status === 0 && git.stdout.trim() ? git.stdout.trim() : cwd);
+	// The backend rejects symlinks in its state path, so resolve the agent directory itself.
+	let agentDir = resolve(getAgentDir());
+	try {
+		agentDir = realpathSync(agentDir);
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+	}
+	return {
+		stateRoot: join(agentDir, "no-mistakes", hash(Buffer.from(projectRoot)).slice(0, 16)),
+		projectRoot,
+	};
+}
+
+export async function getNoMistakesBackend(target: NoMistakesTarget): Promise<NoMistakesBackend> {
+	return new NoMistakesBackend(target);
 }
 
 export function noMistakesRunPolicy(
@@ -131,6 +174,7 @@ async function execute(
 	timeoutMs = 30_000,
 	signal?: AbortSignal,
 	input?: string,
+	onStderr?: (text: string) => void,
 ): Promise<CommandResult> {
 	const { promise, resolve: fulfill, reject } = Promise.withResolvers<CommandResult>();
 	if (signal?.aborted) return { exitCode: 1, stdout: "", stderr: "Cancelled", timedOut: false, aborted: true };
@@ -174,7 +218,10 @@ async function execute(
 		if (remaining < chunk.length) terminate();
 	};
 	child.stdout.on("data", (chunk: Buffer) => capture(stdout, chunk));
-	child.stderr.on("data", (chunk: Buffer) => capture(stderr, chunk));
+	child.stderr.on("data", (chunk: Buffer) => {
+		capture(stderr, chunk);
+		onStderr?.(chunk.toString());
+	});
 	child.stdin.on("error", () => {});
 	child.stdin.end(input);
 	const cleanup = () => {
@@ -240,7 +287,7 @@ export class NoMistakesBackend {
 			agent: options.agent ? { ...options.agent, args: options.agent.args?.slice() } : undefined,
 			environment: options.environment ? { ...options.environment } : undefined,
 		};
-		this.root = join(resolve(options.instanceRoot), "state", "backends", "no-mistakes");
+		this.root = resolve(options.stateRoot);
 		this.executable = join(this.root, "bin", NO_MISTAKES_PIN.tag, "no-mistakes");
 		this.home = join(this.root, "home");
 		this.nmHome = join(this.root, "data");
@@ -355,7 +402,9 @@ export class NoMistakesBackend {
 		let installed = false;
 		try {
 			await this.checkStatePaths();
-			const skill = await readFile(join(getBundledHarnessPath(), "skills", "no-mistakes", "upstream", "SKILL.md"));
+			const skill = await readFile(
+				join(getBundledHarnessPath(), "skills", "peak", "references", "no-mistakes", "upstream", "SKILL.md"),
+			);
 			if (hash(skill) !== NO_MISTAKES_PIN.skillSha256)
 				throw new Error("Pinned no-mistakes skill and executable revision do not match");
 			const { digest } = this.asset();
@@ -428,7 +477,12 @@ export class NoMistakesBackend {
 		}
 	}
 
-	private async invoke(args: string[], timeoutMs = 30_000, signal?: AbortSignal): Promise<CommandResult> {
+	private async invoke(
+		args: string[],
+		timeoutMs = 30_000,
+		signal?: AbortSignal,
+		onStderr?: (text: string) => void,
+	): Promise<CommandResult> {
 		let identity: Stats | undefined;
 		try {
 			identity = await stat(this.executable);
@@ -449,7 +503,16 @@ export class NoMistakesBackend {
 				throw new Error("No-mistakes is not provisioned. Approve managed provisioning first");
 		}
 		await this.checkStatePaths();
-		return execute(this.executable, args, this.options.projectRoot, this.environment(), timeoutMs, signal);
+		return execute(
+			this.executable,
+			args,
+			this.options.projectRoot,
+			this.environment(),
+			timeoutMs,
+			signal,
+			undefined,
+			onStderr,
+		);
 	}
 
 	private async verifyAgent(): Promise<void> {
@@ -647,10 +710,12 @@ export class NoMistakesBackend {
 		return interpretNoMistakesResult(await this.invoke(["axi", "status"]));
 	}
 
+	/** `onProgress` receives the same object each time a step changes, and once more with the final state. */
 	async run(options: {
 		intent: string;
 		approval?: NoMistakesApproval;
 		signal?: AbortSignal;
+		onProgress?: (progress: NoMistakesProgress) => void;
 	}): Promise<NoMistakesResult> {
 		requireApproval(options.approval?.network);
 		await this.prepare();
@@ -680,7 +745,21 @@ export class NoMistakesBackend {
 			// v1.84.0 accepts --intent, not --intent-file.
 			const { args } = noMistakesRunPolicy(await readFile(intentFile, "utf8"), options.approval);
 			args.push("--launch-nonce", randomUUID(), "--validation-generation", randomUUID());
-			const result = await this.invoke(args, 510_000, options.signal);
+			const progress = initialNoMistakesProgress(skipped, Date.now());
+			const git = { PATH: process.env.PATH ?? "/usr/bin:/bin" };
+			const branch = await execute("git", ["branch", "--show-current"], this.options.projectRoot, git);
+			const head = await execute("git", ["rev-parse", "--short", "HEAD"], this.options.projectRoot, git);
+			if (branch.exitCode === 0 && branch.stdout.trim()) progress.branch = branch.stdout.trim();
+			if (head.exitCode === 0 && head.stdout.trim()) progress.head = head.stdout.trim();
+			options.onProgress?.(progress);
+			let pending = "";
+			const result = await this.invoke(args, 510_000, options.signal, (text) => {
+				const lines = (pending + text).split("\n");
+				pending = lines.pop() ?? "";
+				let changed = false;
+				for (const line of lines) changed = applyNoMistakesProgressLine(progress, line) || changed;
+				if (changed) options.onProgress?.(progress);
+			});
 			const runId =
 				/^launch_receipt:\s*\n[ \t]+run_id:\s*("?)([A-Za-z0-9_-]+)\1\s*$/m.exec(result.stdout)?.[2] ??
 				/^run:\s*\n[ \t]+id:\s*("?)([A-Za-z0-9_-]+)\1\s*$/m.exec(result.stdout)?.[2] ??
@@ -697,7 +776,13 @@ export class NoMistakesBackend {
 					{ mode: 0o600 },
 				);
 			}
-			return interpretNoMistakesResult(result, skipped);
+			const interpreted = interpretNoMistakesResult(result, skipped);
+			applyNoMistakesOutput(progress, result.stdout);
+			progress.state = interpreted.state;
+			progress.outcome = interpreted.outcome ?? progress.outcome;
+			progress.endedAt = Date.now();
+			options.onProgress?.(progress);
+			return interpreted;
 		} finally {
 			await rm(intentFile, { force: true });
 			await release();
