@@ -1,3 +1,10 @@
+## [0.16.0](https://github.com/mr-jones123/raga/compare/raga-v0.15.1...raga-v0.16.0) (2026-11-10)
+
+### Features
+
+* **coding-agent:** add wiki skill for Obsidian vaults through the Obsidian CLI ([76add0a](https://github.com/mr-jones123/raga/commit/76add0a01dc850c8f45893cc08e76e0be9fb01c3))
+* **coding-agent:** run no-mistakes without an instance and show a live stepper ([9faa314](https://github.com/mr-jones123/raga/commit/9faa3143837b96aa49adb39812fdeba8554fee19))
+
 ## [0.15.1](https://github.com/mr-jones123/raga/compare/raga-v0.15.0...raga-v0.15.1) (2026-11-09)
 
 ### Bug Fixes
