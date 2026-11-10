@@ -47,6 +47,11 @@
       "name": "review",
       "path": "skills/review/SKILL.md",
       "source": "raga"
+    },
+    {
+      "name": "wiki",
+      "path": "skills/wiki/SKILL.md",
+      "source": "raga"
     }
   ],
   "files": [
@@ -262,9 +267,9 @@
     },
     {
       "path": "README.md",
-      "sha256": "dd527ba9cb149d899c953fc817599f9bb29b2670b86cf530d053f453939c75e1",
+      "sha256": "da7a528baead1b4ab3db79de470af05bffc6868e5e207e76fa2220daea9657ff",
       "source": "raga bundle maintenance guide",
-      "sourceSha256": "dd527ba9cb149d899c953fc817599f9bb29b2670b86cf530d053f453939c75e1",
+      "sourceSha256": "da7a528baead1b4ab3db79de470af05bffc6868e5e207e76fa2220daea9657ff",
       "adaptation": "raga bundle maintenance guide"
     },
     {
@@ -1424,7 +1429,7 @@
     },
     {
       "path": "skills/peak/SKILL.md",
-      "sha256": "f0362f33593f3bd9290b789a17e61eeb4d5d1cdb0cad209ee3b1eb8ba6c73986",
+      "sha256": "f39db8f2d36a23a5461a37c7b728eaec83f076e5f0dc235e6ad01522a06b8144",
       "source": "pstack/skills/poteto-mode/SKILL.md",
       "sourceSha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
       "adaptation": "raga native delegation policy"
@@ -1497,6 +1502,20 @@
       "sha256": "29bfb4a1ea01fab9f6cab8f2bd8a09aea61b3e4dff76a8f075b6561e2a63f743",
       "source": "raga native adaptation",
       "sourceSha256": "29bfb4a1ea01fab9f6cab8f2bd8a09aea61b3e4dff76a8f075b6561e2a63f743",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/wiki/SKILL.md",
+      "sha256": "fe6c8d2453dfb36e52eafc00fe633caa683a9f11d20c915f376b6fec8c7c3708",
+      "source": "raga native adaptation",
+      "sourceSha256": "fe6c8d2453dfb36e52eafc00fe633caa683a9f11d20c915f376b6fec8c7c3708",
+      "adaptation": "raga native adaptation"
+    },
+    {
+      "path": "skills/wiki/wiki_tool.py",
+      "sha256": "87e8ab8710b40f1dbb4d5eb9c8d55a823855c0e15f33433a8089d02b831954a7",
+      "source": "raga native adaptation",
+      "sourceSha256": "87e8ab8710b40f1dbb4d5eb9c8d55a823855c0e15f33433a8089d02b831954a7",
       "adaptation": "raga native adaptation"
     }
   ],

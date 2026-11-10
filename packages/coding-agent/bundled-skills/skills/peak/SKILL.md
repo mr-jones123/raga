@@ -39,7 +39,7 @@ Remaining triggers:
 
 ## Reference index
 
-Peak, `bend`, `quiz`, `raga-artifacts`, and `review` are the installed skills. `bend` handles Bend formal verification, `quiz` explains a set of commits and quizzes the user on them, `review` finds bugs and proves each with a failing test, and `raga-artifacts` makes shareable slides and documents. Every other workflow is a reference under `references/<name>/SKILL.md`. Pick the reference whose description matches the task and read it in full before acting. Do not read them all.
+Peak, `bend`, `quiz`, `raga-artifacts`, `review`, and `wiki` are the installed skills. `bend` handles Bend formal verification, `quiz` explains a set of commits and quizzes the user on them, `review` finds bugs and proves each with a failing test, `raga-artifacts` makes shareable slides and documents, and `wiki` reads and writes notes in the user's Obsidian vault. Every other workflow is a reference under `references/<name>/SKILL.md`. Pick the reference whose description matches the task and read it in full before acting. Do not read them all.
 
 ### Principles
 
