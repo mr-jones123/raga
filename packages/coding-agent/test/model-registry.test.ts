@@ -74,6 +74,19 @@ describe("ModelRegistry", () => {
 		writeFileSync(modelsJsonPath, JSON.stringify({ providers }));
 	}
 
+	/**
+	 * A built-in Anthropic Messages model the registry shows. The catalog is regenerated from upstream and
+	 * the current-model filter hides superseded ids, so a hardcoded id such as `claude-fable-5-1` disappears
+	 * once `claude-fable-5-2` is published.
+	 */
+	async function currentAnthropicMessagesModelId(): Promise<string> {
+		writeRawModelsJson({});
+		const registry = await createModelRegistry(authStorage, modelsJsonPath);
+		const model = getModelsForProvider(registry, "anthropic").find((m) => m.api === "anthropic-messages");
+		if (!model) throw new Error("The catalog has no Anthropic Messages model");
+		return model.id;
+	}
+
 	const openAiModel: Model<Api> = {
 		id: "test-openai-model",
 		name: "Test OpenAI Model",
@@ -742,10 +755,11 @@ describe("ModelRegistry", () => {
 					cost: { input: 4, output: 20, cacheRead: 0.4, cacheWrite: 5 },
 				},
 			];
+			const id = await currentAnthropicMessagesModelId();
 			writeRawModelsJson({
 				anthropic: {
 					modelOverrides: {
-						"claude-fable-5-1": {
+						[id]: {
 							compat: { allowedFallbackModels },
 						},
 					},
@@ -753,23 +767,24 @@ describe("ModelRegistry", () => {
 			});
 
 			const registry = await createModelRegistry(authStorage, modelsJsonPath);
-			const compat = registry.find("anthropic", "claude-fable-5-1")?.compat as AnthropicMessagesCompat | undefined;
+			const compat = registry.find("anthropic", id)?.compat as AnthropicMessagesCompat | undefined;
 
 			expect(registry.getError()).toBeUndefined();
 			expect(compat?.allowedFallbackModels).toEqual(allowedFallbackModels);
 		});
 
 		test("empty allowed fallback model override disables server-side fallback", async () => {
+			const id = await currentAnthropicMessagesModelId();
 			writeRawModelsJson({
 				anthropic: {
 					modelOverrides: {
-						"claude-fable-5-1": { compat: { allowedFallbackModels: [] } },
+						[id]: { compat: { allowedFallbackModels: [] } },
 					},
 				},
 			});
 
 			const registry = await createModelRegistry(authStorage, modelsJsonPath);
-			const compat = registry.find("anthropic", "claude-fable-5-1")?.compat as AnthropicMessagesCompat | undefined;
+			const compat = registry.find("anthropic", id)?.compat as AnthropicMessagesCompat | undefined;
 
 			expect(registry.getError()).toBeUndefined();
 			expect(compat?.allowedFallbackModels).toEqual([]);
